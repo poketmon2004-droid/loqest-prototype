@@ -24,7 +24,7 @@ const landmarks: Landmark[] = [
     landmarkGuide:
       "암사동 유적의 입구 또는 대표적인 유적 시설이 화면에 보이게 해주세요.",
     poseGuide:
-      "랜드마크 옆에서 한 손으로 유적지를 가리키는 포즈를 해주세요.",
+      "손 전체가 화면에 보이도록 한 손으로 엄지척 포즈를 해주세요.",
     latitude: 37.56056,
     longitude: 127.13028,
     radius: 250,
@@ -36,7 +36,7 @@ const landmarks: Landmark[] = [
     landmarkGuide:
       "한강과 공원의 풍경이 화면 뒤쪽에 충분히 보이게 해주세요.",
     poseGuide:
-      "한강을 배경으로 양팔을 벌리는 포즈를 해주세요.",
+      "손 전체가 화면에 보이도록 한 손으로 엄지척 포즈를 해주세요.",
     latitude: 37.553988,
     longitude: 127.12982,
     radius: 300,
@@ -48,7 +48,7 @@ const landmarks: Landmark[] = [
     landmarkGuide:
       "스타벅스 매장 간판이나 로고가 화면 중앙에 보이게 해주세요.",
     poseGuide:
-      "스타벅스 로고 옆에서 한 손으로 로고를 가리켜주세요.",
+      "손 전체가 화면에 보이도록 한 손으로 엄지척 포즈를 해주세요.",
     latitude: 37.55119212174066,
     longitude: 127.12807877121352,
     radius: 200,
