@@ -133,10 +133,6 @@ export default function CameraCapture({
             minTrackingConfidence: 0.5,
           });
       } catch {
-        /*
-          일부 휴대폰에서 GPU 실행이 지원되지 않으면
-          기본 CPU 방식으로 다시 실행합니다.
-        */
         recognizer =
           await GestureRecognizer.createFromOptions(vision, {
             baseOptions: {
@@ -181,11 +177,11 @@ export default function CameraCapture({
   }, [cameraOpen]);
 
   /*
-    카메라가 열리고 모델 준비가 끝나면
-    실시간 엄지척 감지를 시작합니다.
+    GPS 확인 중에는 실시간 엄지척 감지를 중지합니다.
+    촬영 버튼을 누른 뒤에는 자세를 풀어도 됩니다.
   */
   useEffect(() => {
-    if (!cameraOpen || !modelReady) {
+    if (!cameraOpen || !modelReady || checkingLocation) {
       return;
     }
 
@@ -201,7 +197,8 @@ export default function CameraCapture({
       const currentTime = performance.now();
 
       /*
-        휴대폰 부담을 줄이기 위해 약 150ms마다 감지합니다.
+        휴대폰의 부담을 줄이기 위해
+        약 150ms마다 손동작을 감지합니다.
       */
       if (
         video &&
@@ -228,13 +225,13 @@ export default function CameraCapture({
               thumbStableSinceRef.current = currentTime;
             }
 
-            /*
-              0.5초 이상 엄지척이 유지되면
-              포즈 성공으로 판단합니다.
-            */
             const stableDuration =
               currentTime - thumbStableSinceRef.current;
 
+            /*
+              엄지척이 0.5초 이상 유지되면
+              포즈 인증 성공으로 처리합니다.
+            */
             if (
               stableDuration >= 500 &&
               !thumbDetectedRef.current
@@ -269,7 +266,7 @@ export default function CameraCapture({
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [cameraOpen, modelReady]);
+  }, [cameraOpen, modelReady, checkingLocation]);
 
   function stopCamera() {
     if (animationFrameRef.current !== null) {
@@ -310,7 +307,7 @@ export default function CameraCapture({
 
     try {
       /*
-        인식 모델과 카메라를 함께 준비해서
+        인식 모델과 카메라를 동시에 준비해
         전체 대기시간을 줄입니다.
       */
       const modelPromise = initializeGestureRecognizer();
@@ -347,11 +344,9 @@ export default function CameraCapture({
 
       streamRef.current = null;
 
-      if (!error) {
-        setError(
-          "카메라 또는 엄지척 인식 기능을 실행하지 못했습니다. 권한을 확인한 뒤 다시 시도해주세요."
-        );
-      }
+      setError(
+        "카메라 또는 엄지척 인식 기능을 실행하지 못했습니다. 권한을 확인한 뒤 다시 시도해주세요."
+      );
     } finally {
       setOpeningCamera(false);
     }
@@ -387,6 +382,7 @@ export default function CameraCapture({
 
     /*
       엄지척이 확인된 순간 사진을 먼저 촬영합니다.
+      이후 GPS 확인 중에는 자세를 유지할 필요가 없습니다.
     */
     const canvas = document.createElement("canvas");
 
@@ -411,7 +407,7 @@ export default function CameraCapture({
 
     try {
       /*
-        촬영 순간의 최신 GPS를 확인합니다.
+        사진을 찍은 뒤 촬영 순간의 GPS를 확인합니다.
       */
       const position = await getCurrentLocation();
 
@@ -428,6 +424,7 @@ export default function CameraCapture({
 
       /*
         GPS 인증 반경 밖이면 스탬프 발급을 중단합니다.
+        엄지척 감지는 다시 시작됩니다.
       */
       if (currentDistance > allowedRadius) {
         setCheckingLocation(false);
@@ -604,20 +601,24 @@ export default function CameraCapture({
           <div
             style={{
               ...styles.landmarkFrame,
-              borderColor: thumbDetected
-                ? "#35e789"
-                : "white",
+              borderColor:
+                thumbDetected || checkingLocation
+                  ? "#35e789"
+                  : "white",
             }}
           >
             <span
               style={{
                 ...styles.frameText,
-                backgroundColor: thumbDetected
-                  ? "rgba(13, 125, 70, 0.88)"
-                  : "rgba(0, 0, 0, 0.55)",
+                backgroundColor:
+                  thumbDetected || checkingLocation
+                    ? "rgba(13, 125, 70, 0.88)"
+                    : "rgba(0, 0, 0, 0.55)",
               }}
             >
-              {thumbDetected
+              {checkingLocation
+                ? "✓ 엄지척 확인 완료"
+                : thumbDetected
                 ? "✓ 엄지척 포즈 확인"
                 : "👍 엄지척을 보여주세요"}
             </span>
@@ -626,15 +627,18 @@ export default function CameraCapture({
           <div
             style={{
               ...styles.gestureStatus,
-              backgroundColor: thumbDetected
-                ? "rgba(16, 126, 72, 0.9)"
-                : "rgba(0, 0, 0, 0.7)",
+              backgroundColor:
+                thumbDetected || checkingLocation
+                  ? "rgba(16, 126, 72, 0.9)"
+                  : "rgba(0, 0, 0, 0.7)",
             }}
           >
             <span style={styles.thumbIcon}>👍</span>
 
             <span>
-              {!modelReady
+              {checkingLocation
+                ? "엄지척 확인 완료 · 자세를 풀어도 됩니다"
+                : !modelReady
                 ? "인식 모델 준비 중"
                 : thumbDetected
                 ? "엄지척 인식 성공"
@@ -661,7 +665,7 @@ export default function CameraCapture({
 
           {checkingLocation && (
             <div style={styles.locationChecking}>
-              촬영 위치를 확인하고 있습니다.
+              위치 확인 중 · 자세를 풀어도 됩니다.
             </div>
           )}
         </div>
