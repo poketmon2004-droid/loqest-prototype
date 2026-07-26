@@ -1,352 +1,767 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import CameraCapture from "@/components/CameraCapture";
+import CameraCapture from "../components/CameraCapture";
 
-const landmarks = [
+type Landmark = {
+  id: string;
+  name: string;
+  description: string;
+  landmarkGuide: string;
+  poseGuide: string;
+  latitude: number;
+  longitude: number;
+  radius: number;
+};
+
+type Screen = "home" | "quests" | "progress" | "verification";
+
+type LocationStatus =
+  | "idle"
+  | "checking"
+  | "inside"
+  | "outside"
+  | "error";
+
+const landmarks: Landmark[] = [
   {
-    id: 1,
+    id: "amsa-history",
     name: "서울 암사동 유적",
-    landmarkGuide: "움집이 화면 중앙에 오도록 맞춰주세요.",
-    poseGuide: "움집 오른쪽에서 양손으로 지붕 모양을 만들어주세요.",
+    description: "선사시대 유적지에서 인증 사진을 촬영합니다.",
+    landmarkGuide:
+      "암사동 유적의 입구 또는 대표적인 유적 시설이 화면에 보이게 해주세요.",
+    poseGuide:
+      "랜드마크 옆에서 한 손으로 유적지를 가리키는 포즈를 해주세요.",
+    latitude: 37.56056,
+    longitude: 127.13028,
+    radius: 250,
   },
   {
-    id: 2,
+    id: "gwangnaru-park",
     name: "광나루한강공원",
-    landmarkGuide: "한강 수평선을 중앙선에 맞춰주세요.",
-    poseGuide: "화면 왼쪽에서 양팔을 벌려주세요.",
+    description: "한강 풍경과 함께 인증 사진을 촬영합니다.",
+    landmarkGuide:
+      "한강과 공원의 풍경이 화면 뒤쪽에 충분히 보이게 해주세요.",
+    poseGuide:
+      "한강을 배경으로 양팔을 벌리는 포즈를 해주세요.",
+    latitude: 37.553988,
+    longitude: 127.12982,
+    radius: 300,
   },
   {
-    id: 3,
-    name: "광진교",
-    landmarkGuide: "다리가 촬영 프레임 안에 들어오게 맞춰주세요.",
-    poseGuide: "한 손으로 광진교를 가리켜주세요.",
+    id: "starbucks-amsa",
+    name: "스타벅스 암사역점",
+    description: "스타벅스 암사역점에서 테스트 인증을 진행합니다.",
+    landmarkGuide:
+      "스타벅스 매장 간판이나 로고가 화면 중앙에 보이게 해주세요.",
+    poseGuide:
+      "스타벅스 로고 옆에서 한 손으로 로고를 가리켜주세요.",
+    latitude: 37.55119212174066,
+    longitude: 127.12807877121352,
+    radius: 200,
   },
 ];
 
-type Screen = "home" | "quests" | "progress";
+function calculateDistance(
+  latitude1: number,
+  longitude1: number,
+  latitude2: number,
+  longitude2: number
+) {
+  const earthRadius = 6371000;
+
+  const toRadians = (degree: number) => {
+    return (degree * Math.PI) / 180;
+  };
+
+  const latitudeDifference = toRadians(latitude2 - latitude1);
+  const longitudeDifference = toRadians(longitude2 - longitude1);
+
+  const firstLatitude = toRadians(latitude1);
+  const secondLatitude = toRadians(latitude2);
+
+  const value =
+    Math.sin(latitudeDifference / 2) *
+      Math.sin(latitudeDifference / 2) +
+    Math.cos(firstLatitude) *
+      Math.cos(secondLatitude) *
+      Math.sin(longitudeDifference / 2) *
+      Math.sin(longitudeDifference / 2);
+
+  const angle =
+    2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+
+  return earthRadius * angle;
+}
 
 export default function Home() {
   const [screen, setScreen] = useState<Screen>("home");
 
-  const [selectedLandmark, setSelectedLandmark] = useState<
-    (typeof landmarks)[number] | null
-  >(null);
+  const [selectedLandmark, setSelectedLandmark] =
+    useState<Landmark | null>(null);
 
-  const [locationStatus, setLocationStatus] = useState<
-    "idle" | "checking" | "success" | "error"
-  >("idle");
+  const [locationStatus, setLocationStatus] =
+    useState<LocationStatus>("idle");
 
-  const [coordinates, setCoordinates] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
+  const [locationMessage, setLocationMessage] = useState("");
+  const [distance, setDistance] = useState<number | null>(null);
+  const [stampIssued, setStampIssued] = useState(false);
 
-  const [completedLandmarks, setCompletedLandmarks] = useState<number[]>([]);
-
-  const [verificationCompleted, setVerificationCompleted] =
-    useState(false);
+  const [completedLandmarks, setCompletedLandmarks] = useState<string[]>(
+    []
+  );
 
   useEffect(() => {
-    const savedRecords = localStorage.getItem(
-      "gangdong-completed-landmarks"
-    );
+    const savedStamps = localStorage.getItem("loqestCompletedLandmarks");
 
-    if (savedRecords) {
-      const records = JSON.parse(savedRecords);
+    if (!savedStamps) {
+      return;
+    }
 
-      setTimeout(() => {
-        setCompletedLandmarks(records);
-      }, 0);
+    try {
+      const parsedStamps: unknown = JSON.parse(savedStamps);
+
+      if (!Array.isArray(parsedStamps)) {
+        return;
+      }
+
+      const validIds = landmarks.map((landmark) => landmark.id);
+
+      const validSavedStamps = parsedStamps.filter(
+        (id): id is string =>
+          typeof id === "string" && validIds.includes(id)
+      );
+
+      setCompletedLandmarks(validSavedStamps);
+    } catch {
+      localStorage.removeItem("loqestCompletedLandmarks");
     }
   }, []);
 
-  function startTour() {
-    setScreen("quests");
+  function saveCompletedLandmarks(ids: string[]) {
+    setCompletedLandmarks(ids);
+
+    localStorage.setItem(
+      "loqestCompletedLandmarks",
+      JSON.stringify(ids)
+    );
+  }
+
+  function resetVerification() {
     setSelectedLandmark(null);
     setLocationStatus("idle");
-    setCoordinates(null);
-    setVerificationCompleted(false);
+    setLocationMessage("");
+    setDistance(null);
+    setStampIssued(false);
   }
 
   function goHome() {
+    resetVerification();
     setScreen("home");
-    setSelectedLandmark(null);
-    setLocationStatus("idle");
-    setCoordinates(null);
-    setVerificationCompleted(false);
   }
 
-  function openProgress() {
+  function goToQuestList() {
+    resetVerification();
+    setScreen("quests");
+  }
+
+  function goToProgress() {
+    resetVerification();
     setScreen("progress");
-    setSelectedLandmark(null);
   }
 
-  function selectLandmark(landmark: (typeof landmarks)[number]) {
-    if (completedLandmarks.includes(landmark.id)) {
-      return;
-    }
-
+  function selectLandmark(landmark: Landmark) {
     setSelectedLandmark(landmark);
     setLocationStatus("idle");
-    setCoordinates(null);
-    setVerificationCompleted(false);
-  }
-
-  function goBackToQuestList() {
-    setSelectedLandmark(null);
-    setLocationStatus("idle");
-    setCoordinates(null);
-    setVerificationCompleted(false);
+    setLocationMessage("");
+    setDistance(null);
+    setStampIssued(false);
+    setScreen("verification");
   }
 
   function checkLocation() {
-    setLocationStatus("checking");
-
-    if (!navigator.geolocation) {
-      setLocationStatus("error");
+    if (!selectedLandmark) {
       return;
     }
 
+    if (!navigator.geolocation) {
+      setLocationStatus("error");
+      setLocationMessage(
+        "이 기기에서는 위치 확인 기능을 지원하지 않습니다."
+      );
+      return;
+    }
+
+    setLocationStatus("checking");
+    setLocationMessage("현재 위치를 확인하고 있습니다.");
+    setDistance(null);
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setCoordinates({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
+        const currentLatitude = position.coords.latitude;
+        const currentLongitude = position.coords.longitude;
 
-        setLocationStatus("success");
+        const currentDistance = calculateDistance(
+          currentLatitude,
+          currentLongitude,
+          selectedLandmark.latitude,
+          selectedLandmark.longitude
+        );
+
+        setDistance(currentDistance);
+
+        if (currentDistance <= selectedLandmark.radius) {
+          setLocationStatus("inside");
+          setLocationMessage(
+            "인증 장소에 도착했습니다. 촬영을 진행해주세요."
+          );
+        } else {
+          setLocationStatus("outside");
+          setLocationMessage(
+            `현재 인증 지점에서 약 ${Math.round(
+              currentDistance
+            )}m 떨어져 있습니다.`
+          );
+        }
       },
       () => {
         setLocationStatus("error");
+        setLocationMessage(
+          "위치를 확인하지 못했습니다. 브라우저의 위치 권한을 허용해주세요."
+        );
       },
       {
         enableHighAccuracy: true,
         timeout: 10000,
+        maximumAge: 0,
       }
     );
   }
 
-  function issueStamp(landmarkId: number) {
-    setCompletedLandmarks((previousRecords) => {
-      if (previousRecords.includes(landmarkId)) {
-        return previousRecords;
-      }
+  function issueStamp() {
+    if (!selectedLandmark) {
+      return;
+    }
 
-      const newRecords = [...previousRecords, landmarkId];
+    setStampIssued(true);
 
-      localStorage.setItem(
-        "gangdong-completed-landmarks",
-        JSON.stringify(newRecords)
-      );
+    if (!completedLandmarks.includes(selectedLandmark.id)) {
+      const nextCompletedLandmarks = [
+        ...completedLandmarks,
+        selectedLandmark.id,
+      ];
 
-      return newRecords;
-    });
-
-    setVerificationCompleted(true);
+      saveCompletedLandmarks(nextCompletedLandmarks);
+    }
   }
 
-  const completedCount = completedLandmarks.length;
+  const completedCount = landmarks.filter((landmark) =>
+    completedLandmarks.includes(landmark.id)
+  ).length;
 
-  const progressPercentage = Math.round(
+  const progressPercent = Math.round(
     (completedCount / landmarks.length) * 100
   );
 
-  const isTourCompleted = completedCount === landmarks.length;
-
-  // 첫 화면
   if (screen === "home") {
     return (
-      <main>
-        <h1>강동구 테스트 투어</h1>
+      <main style={styles.main}>
+        <section style={styles.card}>
+          <p style={styles.badge}>모바일 테스트 투어</p>
 
-        <p>
-          강동구의 랜드마크를 방문하고
-          <br />
-          디지털 스탬프를 모아보세요.
-        </p>
+          <h1 style={styles.title}>강동구 랜드마크 투어</h1>
 
-        <button onClick={startTour}>
-          탐험 시작하기
-        </button>
+          <p style={styles.description}>
+            강동구의 랜드마크를 방문하고
+            <br />
+            디지털 스탬프를 모아보세요.
+          </p>
 
-        <button onClick={openProgress}>
-          내 탐험 진행률
-        </button>
+          <button
+            type="button"
+            style={styles.primaryButton}
+            onClick={goToQuestList}
+          >
+            탐험 시작하기
+          </button>
+
+          <button
+            type="button"
+            style={styles.secondaryButton}
+            onClick={goToProgress}
+          >
+            내 탐험 진행률
+          </button>
+        </section>
       </main>
     );
   }
 
-  // 탐험 진행률 화면
   if (screen === "progress") {
     return (
-      <main>
-        <button onClick={goHome}>
-          ← 홈으로 가기
-        </button>
+      <main style={styles.main}>
+        <section style={styles.card}>
+          <p style={styles.badge}>나의 스탬프</p>
 
-        <h1>내 탐험 진행률</h1>
+          <h1 style={styles.title}>내 탐험 진행률</h1>
 
-        <h2>
-          {completedCount} / {landmarks.length} 완료
-        </h2>
+          <div style={styles.progressSummary}>
+            <strong style={styles.progressNumber}>
+              {completedCount} / {landmarks.length}
+            </strong>
 
-        <p>진행률: {progressPercentage}%</p>
+            <span>개의 스탬프를 모았습니다.</span>
+          </div>
 
-        <div
-          style={{
-            width: "100%",
-            maxWidth: "480px",
-            height: "20px",
-            backgroundColor: "#dddddd",
-            borderRadius: "10px",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              width: `${progressPercentage}%`,
-              height: "100%",
-              backgroundColor: "green",
-              transition: "width 0.3s",
-            }}
-          />
-        </div>
-
-        {isTourCompleted && (
-          <section>
-            <h2>🎉 강동구 테스트 투어 완주!</h2>
-            <p>모든 디지털 스탬프를 모았습니다.</p>
-          </section>
-        )}
-
-        <h2>디지털 스탬프</h2>
-
-        {landmarks.map((landmark) => {
-          const isCompleted = completedLandmarks.includes(
-            landmark.id
-          );
-
-          return (
-            <section
-              key={landmark.id}
+          <div style={styles.progressBarBackground}>
+            <div
               style={{
-                marginTop: "15px",
-                padding: "15px",
-                border: isCompleted
-                  ? "3px solid green"
-                  : "1px solid gray",
-                borderRadius: "15px",
+                ...styles.progressBar,
+                width: `${progressPercent}%`,
               }}
-            >
-              <h3>{landmark.name}</h3>
+            />
+          </div>
 
-              {isCompleted ? (
-                <p>✅ 디지털 스탬프 획득 완료</p>
-              ) : (
-                <p>○ 아직 방문하지 않았습니다.</p>
-              )}
-            </section>
-          );
-        })}
+          <p style={styles.progressText}>
+            전체 코스의 {progressPercent}% 완료
+          </p>
+
+          <div style={styles.landmarkList}>
+            {landmarks.map((landmark) => {
+              const completed = completedLandmarks.includes(
+                landmark.id
+              );
+
+              return (
+                <div key={landmark.id} style={styles.progressItem}>
+                  <span style={styles.progressIcon}>
+                    {completed ? "✅" : "⬜"}
+                  </span>
+
+                  <div>
+                    <strong>{landmark.name}</strong>
+
+                    <p style={styles.smallText}>
+                      {completed
+                        ? "인증 완료"
+                        : "아직 인증하지 않았습니다."}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            style={styles.primaryButton}
+            onClick={goToQuestList}
+          >
+            탐험 계속하기
+          </button>
+
+          <button
+            type="button"
+            style={styles.secondaryButton}
+            onClick={goHome}
+          >
+            홈으로 가기
+          </button>
+        </section>
       </main>
     );
   }
 
-  // 랜드마크 촬영 화면
-  if (selectedLandmark) {
+  if (screen === "verification" && selectedLandmark) {
     return (
-      <main>
-        <button onClick={goBackToQuestList}>
-          ← 퀘스트 목록
-        </button>
+      <main style={styles.main}>
+        <section style={styles.card}>
+          {!stampIssued && (
+            <>
+              <p style={styles.badge}>랜드마크 인증</p>
 
-        <h1>{selectedLandmark.name}</h1>
-        <p>촬영 가이드를 확인해주세요.</p>
+              <h1 style={styles.title}>{selectedLandmark.name}</h1>
 
-        <h2>랜드마크 가이드</h2>
-        <p>{selectedLandmark.landmarkGuide}</p>
+              <p style={styles.description}>
+                {selectedLandmark.description}
+              </p>
 
-        <h2>포즈 가이드</h2>
-        <p>{selectedLandmark.poseGuide}</p>
+              <div style={styles.guideBox}>
+                <strong>촬영 안내</strong>
+                <p>{selectedLandmark.landmarkGuide}</p>
+                <p>{selectedLandmark.poseGuide}</p>
+              </div>
 
-        <button
-          onClick={checkLocation}
-          disabled={locationStatus === "checking"}
-        >
-          {locationStatus === "checking"
-            ? "현재 위치 확인 중..."
-            : "GPS 위치 확인하기"}
-        </button>
+              {locationStatus !== "inside" && (
+                <button
+                  type="button"
+                  style={{
+                    ...styles.primaryButton,
+                    opacity:
+                      locationStatus === "checking" ? 0.6 : 1,
+                  }}
+                  onClick={checkLocation}
+                  disabled={locationStatus === "checking"}
+                >
+                  {locationStatus === "checking"
+                    ? "위치 확인 중..."
+                    : "현재 위치 확인하기"}
+                </button>
+              )}
 
-        {locationStatus === "success" && coordinates && (
-          <section>
-            <p>✅ 현재 위치를 확인했습니다.</p>
+              {locationMessage && (
+                <div
+                  style={{
+                    ...styles.locationBox,
 
-            <CameraCapture
-              landmarkGuide={selectedLandmark.landmarkGuide}
-              poseGuide={selectedLandmark.poseGuide}
-              onStampIssued={() =>
-                issueStamp(selectedLandmark.id)
-              }
-            />
+                    backgroundColor:
+                      locationStatus === "inside"
+                        ? "#e8f7ee"
+                        : locationStatus === "outside"
+                        ? "#fff4dc"
+                        : locationStatus === "error"
+                        ? "#ffe9e9"
+                        : "#f3f3f3",
 
-            {verificationCompleted && (
+                    color:
+                      locationStatus === "error"
+                        ? "#9d2525"
+                        : "#333",
+                  }}
+                >
+                  <strong>{locationMessage}</strong>
+
+                  {distance !== null && (
+                    <p style={styles.locationDetail}>
+                      인증 지점까지 거리: 약{" "}
+                      {Math.round(distance)}m
+                      <br />
+                      인증 허용 반경: {selectedLandmark.radius}m
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {locationStatus === "outside" && (
+                <button
+                  type="button"
+                  style={styles.secondaryButton}
+                  onClick={checkLocation}
+                >
+                  위치 다시 확인하기
+                </button>
+              )}
+
+              {locationStatus === "inside" && (
+                <CameraCapture
+                  landmarkGuide={
+                    selectedLandmark.landmarkGuide
+                  }
+                  poseGuide={selectedLandmark.poseGuide}
+                  onVerified={issueStamp}
+                />
+              )}
+
               <button
+                type="button"
+                style={styles.secondaryButton}
+                onClick={goToQuestList}
+              >
+                목록으로 돌아가기
+              </button>
+            </>
+          )}
+
+          {stampIssued && (
+            <div style={styles.stampBox}>
+              <p style={styles.badge}>디지털 스탬프</p>
+
+              <div style={styles.stampCircle}>
+                <span>STAMP</span>
+              </div>
+
+              <h1 style={styles.title}>인증 완료!</h1>
+
+              <p style={styles.description}>
+                {selectedLandmark.name}
+                <br />
+                디지털 스탬프가 자동으로 발급되었습니다.
+              </p>
+
+              <button
+                type="button"
+                style={styles.primaryButton}
                 onClick={goHome}
-                style={{
-                  marginTop: "20px",
-                  padding: "15px",
-                  width: "100%",
-                  maxWidth: "480px",
-                }}
               >
                 홈으로 가기
               </button>
-            )}
-          </section>
-        )}
 
-        {locationStatus === "error" && (
-          <p>
-            ❌ 위치를 확인할 수 없습니다. 브라우저의 위치 권한을
-            허용해주세요.
-          </p>
-        )}
+              <button
+                type="button"
+                style={styles.secondaryButton}
+                onClick={goToProgress}
+              >
+                내 탐험 진행률 보기
+              </button>
+            </div>
+          )}
+        </section>
       </main>
     );
   }
 
-  // 랜드마크 퀘스트 목록
   return (
-    <main>
-      <button onClick={goHome}>
-        ← 홈으로 가기
-      </button>
+    <main style={styles.main}>
+      <section style={styles.card}>
+        <p style={styles.badge}>강동구 테스트 코스</p>
 
-      <h1>강동구 랜드마크 퀘스트</h1>
+        <h1 style={styles.title}>랜드마크 퀘스트</h1>
 
-      <p>
-        진행률: {completedCount} / {landmarks.length}
-      </p>
+        <p style={styles.description}>
+          촬영할 랜드마크를 선택해주세요.
+        </p>
 
-      {landmarks.map((landmark) => {
-        const isCompleted = completedLandmarks.includes(
-          landmark.id
-        );
+        <div style={styles.landmarkList}>
+          {landmarks.map((landmark) => {
+            const completed = completedLandmarks.includes(
+              landmark.id
+            );
 
-        return (
-          <button
-            key={landmark.id}
-            onClick={() => selectLandmark(landmark)}
-            disabled={isCompleted}
-          >
-            {isCompleted
-              ? `✅ ${landmark.name} 인증 완료`
-              : `${landmark.name} 촬영하기`}
-          </button>
-        );
-      })}
+            return (
+              <button
+                type="button"
+                key={landmark.id}
+                style={{
+                  ...styles.landmarkButton,
+                  ...(completed
+                    ? styles.completedLandmarkButton
+                    : {}),
+                }}
+                onClick={() => selectLandmark(landmark)}
+                disabled={completed}
+              >
+                <strong style={styles.landmarkName}>
+                  {landmark.name}
+                </strong>
+
+                <span style={styles.smallText}>
+                  {completed
+                    ? "✅ 인증 완료"
+                    : `인증 반경 ${landmark.radius}m`}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          style={styles.secondaryButton}
+          onClick={goToProgress}
+        >
+          내 탐험 진행률
+        </button>
+
+        <button
+          type="button"
+          style={styles.secondaryButton}
+          onClick={goHome}
+        >
+          홈으로 가기
+        </button>
+      </section>
     </main>
   );
 }
+
+const styles: Record<string, React.CSSProperties> = {
+  main: {
+    minHeight: "100vh",
+    padding: "24px 16px",
+    backgroundColor: "#f4f6f5",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    color: "#202020",
+  },
+
+  card: {
+    width: "100%",
+    maxWidth: "480px",
+    padding: "24px",
+    backgroundColor: "white",
+    borderRadius: "24px",
+    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.08)",
+  },
+
+  badge: {
+    display: "inline-block",
+    margin: "0 0 12px",
+    padding: "7px 12px",
+    backgroundColor: "#e3f3e9",
+    color: "#167245",
+    borderRadius: "999px",
+    fontSize: "13px",
+    fontWeight: 700,
+  },
+
+  title: {
+    margin: "0 0 14px",
+    fontSize: "30px",
+    lineHeight: 1.25,
+  },
+
+  description: {
+    marginBottom: "24px",
+    color: "#666",
+    lineHeight: 1.7,
+  },
+
+  primaryButton: {
+    width: "100%",
+    minHeight: "52px",
+    marginTop: "12px",
+    padding: "14px",
+    border: "none",
+    borderRadius: "14px",
+    backgroundColor: "#137c4b",
+    color: "white",
+    fontSize: "16px",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+
+  secondaryButton: {
+    width: "100%",
+    minHeight: "50px",
+    marginTop: "12px",
+    padding: "13px",
+    border: "1px solid #cbd2ce",
+    borderRadius: "14px",
+    backgroundColor: "white",
+    color: "#333",
+    fontSize: "15px",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+
+  landmarkList: {
+    display: "grid",
+    gap: "12px",
+  },
+
+  landmarkButton: {
+    width: "100%",
+    padding: "18px",
+    border: "1px solid #dce4df",
+    borderRadius: "16px",
+    backgroundColor: "#fafcfb",
+    color: "#222",
+    textAlign: "left",
+    display: "grid",
+    gap: "8px",
+    cursor: "pointer",
+  },
+
+  completedLandmarkButton: {
+    backgroundColor: "#edf5f0",
+    opacity: 0.7,
+    cursor: "default",
+  },
+
+  landmarkName: {
+    fontSize: "16px",
+  },
+
+  guideBox: {
+    marginBottom: "16px",
+    padding: "16px",
+    backgroundColor: "#f1f6f3",
+    borderRadius: "14px",
+    lineHeight: 1.6,
+  },
+
+  locationBox: {
+    marginTop: "14px",
+    padding: "14px",
+    borderRadius: "14px",
+    lineHeight: 1.5,
+  },
+
+  locationDetail: {
+    margin: "8px 0 0",
+    fontSize: "13px",
+    lineHeight: 1.6,
+  },
+
+  stampBox: {
+    padding: "16px 0 4px",
+    textAlign: "center",
+  },
+
+  stampCircle: {
+    width: "130px",
+    height: "130px",
+    margin: "10px auto 24px",
+    border: "8px double #137c4b",
+    borderRadius: "50%",
+    color: "#137c4b",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    fontSize: "19px",
+    fontWeight: 900,
+    transform: "rotate(-8deg)",
+  },
+
+  progressSummary: {
+    display: "grid",
+    gap: "6px",
+    marginBottom: "16px",
+  },
+
+  progressNumber: {
+    fontSize: "36px",
+    color: "#137c4b",
+  },
+
+  progressBarBackground: {
+    width: "100%",
+    height: "14px",
+    overflow: "hidden",
+    backgroundColor: "#e6e9e7",
+    borderRadius: "999px",
+  },
+
+  progressBar: {
+    height: "100%",
+    backgroundColor: "#137c4b",
+    borderRadius: "999px",
+    transition: "width 0.3s ease",
+  },
+
+  progressText: {
+    marginBottom: "20px",
+    color: "#666",
+    fontSize: "14px",
+  },
+
+  progressItem: {
+    padding: "14px",
+    border: "1px solid #e1e5e2",
+    borderRadius: "14px",
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+  },
+
+  progressIcon: {
+    fontSize: "21px",
+  },
+
+  smallText: {
+    margin: 0,
+    color: "#707070",
+    fontSize: "13px",
+  },
+};

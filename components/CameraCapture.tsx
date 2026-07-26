@@ -5,27 +5,48 @@ import { useEffect, useRef, useState } from "react";
 type CameraCaptureProps = {
   landmarkGuide: string;
   poseGuide: string;
-  onStampIssued: () => void;
+  onVerified: () => void;
 };
 
 export default function CameraCapture({
   landmarkGuide,
   poseGuide,
-  onStampIssued,
+  onVerified,
 }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [cameraOpen, setCameraOpen] = useState(false);
   const [photo, setPhoto] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState("");
 
-  const [analysisStatus, setAnalysisStatus] = useState<
-    "idle" | "analyzing" | "success" | "failure"
-  >("idle");
+  /*
+    카메라 화면이 생성된 다음,
+    MediaStream을 video 태그에 연결합니다.
+  */
+  useEffect(() => {
+    if (!cameraOpen || !videoRef.current || !streamRef.current) {
+      return;
+    }
+
+    const video = videoRef.current;
+
+    video.srcObject = streamRef.current;
+
+    video.play().catch(() => {
+      setError(
+        "카메라 영상을 재생하지 못했습니다. 페이지를 새로고침해주세요."
+      );
+    });
+  }, [cameraOpen]);
 
   function stopCamera() {
-    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current?.getTracks().forEach((track) => {
+      track.stop();
+    });
+
     streamRef.current = null;
     setCameraOpen(false);
   }
@@ -33,18 +54,26 @@ export default function CameraCapture({
   async function startCamera() {
     setError("");
     setPhoto(null);
-    setAnalysisStatus("idle");
+    setAnalyzing(false);
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      setError("이 브라우저에서는 카메라를 사용할 수 없습니다.");
+      setError("이 브라우저에서는 카메라 기능을 지원하지 않습니다.");
       return;
     }
+
+    stopCamera();
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: {
             ideal: "environment",
+          },
+          width: {
+            ideal: 1280,
+          },
+          height: {
+            ideal: 720,
           },
         },
         audio: false,
@@ -54,15 +83,20 @@ export default function CameraCapture({
       setCameraOpen(true);
     } catch (cameraError) {
       console.error(cameraError);
-      setError("카메라 권한을 허용해주세요.");
+
+      setError(
+        "카메라를 실행하지 못했습니다. 브라우저의 카메라 권한을 확인해주세요."
+      );
     }
   }
 
   function takePhoto() {
     const video = videoRef.current;
 
-    if (!video || video.videoWidth === 0) {
-      setError("카메라 화면을 불러오는 중입니다.");
+    if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
+      setError(
+        "카메라 영상이 아직 준비되지 않았습니다. 잠시 후 다시 촬영해주세요."
+      );
       return;
     }
 
@@ -74,283 +108,318 @@ export default function CameraCapture({
     const context = canvas.getContext("2d");
 
     if (!context) {
-      setError("사진을 촬영할 수 없습니다.");
+      setError("촬영한 사진을 처리하지 못했습니다.");
       return;
     }
 
-    context.drawImage(video, 0, 0);
+    context.drawImage(
+      video,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
 
     const capturedPhoto = canvas.toDataURL("image/jpeg", 0.9);
 
     setPhoto(capturedPhoto);
+    setAnalyzing(true);
     stopCamera();
-    setAnalysisStatus("analyzing");
 
-    // 현재 프로토타입에서는 2초 후 인식 성공으로 처리
-    setTimeout(() => {
-      setAnalysisStatus("success");
-      onStampIssued();
+    /*
+      현재는 프로토타입이므로
+      실제 AI 인식 대신 2초 후 인증 성공으로 처리합니다.
+    */
+    timerRef.current = setTimeout(() => {
+      onVerified();
     }, 2000);
   }
 
   useEffect(() => {
-    if (
-      cameraOpen &&
-      videoRef.current &&
-      streamRef.current
-    ) {
-      videoRef.current.srcObject = streamRef.current;
-
-      videoRef.current.play().catch((playError) => {
-        console.error(playError);
-        setError("카메라 영상을 재생할 수 없습니다.");
-      });
-    }
-  }, [cameraOpen]);
-
-  useEffect(() => {
     return () => {
-      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current?.getTracks().forEach((track) => {
+        track.stop();
+      });
+
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
     };
   }, []);
 
   return (
-    <section>
+    <section style={styles.section}>
       {!cameraOpen && !photo && (
-        <button onClick={startCamera}>
+        <button
+          type="button"
+          style={styles.cameraButton}
+          onClick={startCamera}
+        >
           카메라 실행하기
         </button>
       )}
 
       {cameraOpen && (
-        <div
-          style={{
-            position: "relative",
-            width: "100%",
-            maxWidth: "480px",
-            overflow: "hidden",
-            backgroundColor: "black",
-          }}
-        >
+        <div style={styles.cameraContainer}>
           <video
             ref={videoRef}
             autoPlay
             muted
             playsInline
-            style={{
-              width: "100%",
-              minHeight: "400px",
-              display: "block",
-              objectFit: "cover",
-            }}
+            style={styles.video}
           />
 
-          {/* 촬영 안내 문구 */}
-          <div
-            style={{
-              position: "absolute",
-              top: "10px",
-              left: "10px",
-              right: "10px",
-              padding: "10px",
-              color: "white",
-              backgroundColor: "rgba(0, 0, 0, 0.65)",
-              fontSize: "13px",
-              zIndex: 3,
-            }}
-          >
-            <p>📍 {landmarkGuide}</p>
-            <p>🙋 {poseGuide}</p>
+          <div style={styles.guideText}>
+            <strong>촬영 가이드</strong>
+            <p>{landmarkGuide}</p>
+            <p>{poseGuide}</p>
           </div>
 
-          {/* 랜드마크 촬영 프레임 */}
-          <div
-            style={{
-              position: "absolute",
-              top: "28%",
-              left: "6%",
-              width: "60%",
-              height: "42%",
-              border: "3px dashed #ffeb3b",
-              borderRadius: "12px",
-              zIndex: 2,
-            }}
-          >
-            <span
-              style={{
-                position: "absolute",
-                top: "-25px",
-                left: "0",
-                color: "#ffeb3b",
-                fontSize: "12px",
-                fontWeight: "bold",
-              }}
-            >
-              랜드마크 위치
+          <div style={styles.landmarkFrame}>
+            <span style={styles.frameText}>
+              랜드마크를 이 안에 맞춰주세요
             </span>
           </div>
 
-          {/* 사람 포즈 가이드 */}
-          <div
-            style={{
-              position: "absolute",
-              top: "34%",
-              right: "5%",
-              width: "80px",
-              height: "180px",
-              zIndex: 2,
-            }}
-          >
-            <span
-              style={{
-                position: "absolute",
-                top: "-24px",
-                color: "#00ffcc",
-                fontSize: "12px",
-                fontWeight: "bold",
-              }}
-            >
-              사람 위치
-            </span>
-
-            {/* 머리 */}
-            <div
-              style={{
-                position: "absolute",
-                top: "0",
-                left: "25px",
-                width: "30px",
-                height: "30px",
-                border: "3px solid #00ffcc",
-                borderRadius: "50%",
-              }}
-            />
-
-            {/* 몸 */}
-            <div
-              style={{
-                position: "absolute",
-                top: "33px",
-                left: "39px",
-                width: "3px",
-                height: "75px",
-                backgroundColor: "#00ffcc",
-              }}
-            />
-
-            {/* 팔 */}
-            <div
-              style={{
-                position: "absolute",
-                top: "48px",
-                left: "5px",
-                width: "70px",
-                height: "3px",
-                backgroundColor: "#00ffcc",
-                transform: "rotate(-15deg)",
-              }}
-            />
-
-            {/* 왼쪽 다리 */}
-            <div
-              style={{
-                position: "absolute",
-                top: "102px",
-                left: "23px",
-                width: "3px",
-                height: "65px",
-                backgroundColor: "#00ffcc",
-                transform: "rotate(15deg)",
-              }}
-            />
-
-            {/* 오른쪽 다리 */}
-            <div
-              style={{
-                position: "absolute",
-                top: "102px",
-                left: "55px",
-                width: "3px",
-                height: "65px",
-                backgroundColor: "#00ffcc",
-                transform: "rotate(-15deg)",
-              }}
-            />
+          <div style={styles.poseGuide}>
+            <div style={styles.head} />
+            <div style={styles.body} />
+            <div style={styles.leftArm} />
+            <div style={styles.rightArm} />
+            <div style={styles.leftLeg} />
+            <div style={styles.rightLeg} />
           </div>
 
-          {/* 촬영 버튼 */}
           <button
+            type="button"
+            style={styles.captureButton}
             onClick={takePhoto}
-            style={{
-              position: "absolute",
-              bottom: "20px",
-              left: "50%",
-              transform: "translateX(-50%)",
-              width: "65px",
-              height: "65px",
-              borderRadius: "50%",
-              border: "5px solid white",
-              backgroundColor: "rgba(255, 255, 255, 0.4)",
-              fontWeight: "bold",
-              cursor: "pointer",
-              zIndex: 4,
-            }}
           >
             촬영
           </button>
         </div>
       )}
 
-      {photo && (
-        <div>
+      {photo && analyzing && (
+        <div style={styles.resultContainer}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={photo}
             alt="실시간으로 촬영한 인증 사진"
-            style={{
-              width: "100%",
-              maxWidth: "480px",
-            }}
+            style={styles.photo}
           />
 
-          {analysisStatus === "analyzing" && (
-            <div>
-              <h2>사진 분석 중...</h2>
-              <p>랜드마크와 포즈를 확인하고 있습니다.</p>
-            </div>
-          )}
-
-          {analysisStatus === "success" && (
-            <div
-              style={{
-                marginTop: "20px",
-                padding: "20px",
-                textAlign: "center",
-                border: "3px solid green",
-                borderRadius: "50%",
-              }}
-            >
-              <h2>강동구</h2>
-              <h1>인증 완료</h1>
-              <p>디지털 스탬프가 자동 발급되었습니다.</p>
-            </div>
-          )}
-
-          {analysisStatus === "failure" && (
-            <div>
-              <p>
-                ❌ 랜드마크 또는 포즈를 인식하지 못했습니다.
-              </p>
-
-              <button onClick={startCamera}>
-                다시 촬영하기
-              </button>
-            </div>
-          )}
+          <div style={styles.analyzingBox}>
+            <div style={styles.spinner}>⏳</div>
+            <strong>랜드마크를 확인하고 있습니다.</strong>
+            <p style={styles.resultMessage}>
+              잠시만 기다려주세요.
+            </p>
+          </div>
         </div>
       )}
 
-      {error && <p>❌ {error}</p>}
+      {error && <p style={styles.error}>❌ {error}</p>}
     </section>
   );
 }
+
+const styles: Record<string, React.CSSProperties> = {
+  section: {
+    width: "100%",
+    marginTop: "16px",
+  },
+
+  cameraButton: {
+    width: "100%",
+    minHeight: "52px",
+    padding: "14px",
+    border: "none",
+    borderRadius: "14px",
+    backgroundColor: "#137c4b",
+    color: "white",
+    fontSize: "16px",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+
+  cameraContainer: {
+    position: "relative",
+    width: "100%",
+    height: "520px",
+    overflow: "hidden",
+    borderRadius: "18px",
+    backgroundColor: "#111",
+  },
+
+  video: {
+    width: "100%",
+    height: "100%",
+    display: "block",
+    objectFit: "cover",
+    backgroundColor: "#111",
+  },
+
+  guideText: {
+    position: "absolute",
+    top: "12px",
+    left: "12px",
+    right: "12px",
+    zIndex: 3,
+    padding: "12px",
+    color: "white",
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    borderRadius: "12px",
+    fontSize: "13px",
+    lineHeight: 1.4,
+  },
+
+  landmarkFrame: {
+    position: "absolute",
+    top: "170px",
+    left: "8%",
+    width: "84%",
+    height: "190px",
+    zIndex: 2,
+    boxSizing: "border-box",
+    border: "3px dashed white",
+    borderRadius: "18px",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    pointerEvents: "none",
+  },
+
+  frameText: {
+    marginTop: "10px",
+    padding: "5px 9px",
+    color: "white",
+    backgroundColor: "rgba(0, 0, 0, 0.55)",
+    borderRadius: "999px",
+    fontSize: "12px",
+  },
+
+  poseGuide: {
+    position: "absolute",
+    right: "34px",
+    bottom: "105px",
+    width: "75px",
+    height: "150px",
+    zIndex: 2,
+    opacity: 0.85,
+    pointerEvents: "none",
+  },
+
+  head: {
+    position: "absolute",
+    top: 0,
+    left: "24px",
+    width: "24px",
+    height: "24px",
+    border: "3px solid white",
+    borderRadius: "50%",
+  },
+
+  body: {
+    position: "absolute",
+    top: "28px",
+    left: "35px",
+    width: "3px",
+    height: "65px",
+    backgroundColor: "white",
+  },
+
+  leftArm: {
+    position: "absolute",
+    top: "42px",
+    left: "7px",
+    width: "32px",
+    height: "3px",
+    backgroundColor: "white",
+    transform: "rotate(-20deg)",
+  },
+
+  rightArm: {
+    position: "absolute",
+    top: "37px",
+    left: "36px",
+    width: "40px",
+    height: "3px",
+    backgroundColor: "white",
+    transform: "rotate(-35deg)",
+    transformOrigin: "left",
+  },
+
+  leftLeg: {
+    position: "absolute",
+    top: "88px",
+    left: "15px",
+    width: "32px",
+    height: "3px",
+    backgroundColor: "white",
+    transform: "rotate(-55deg)",
+  },
+
+  rightLeg: {
+    position: "absolute",
+    top: "88px",
+    left: "35px",
+    width: "38px",
+    height: "3px",
+    backgroundColor: "white",
+    transform: "rotate(55deg)",
+    transformOrigin: "left",
+  },
+
+  captureButton: {
+    position: "absolute",
+    bottom: "22px",
+    left: "50%",
+    zIndex: 4,
+    width: "74px",
+    height: "74px",
+    border: "7px solid rgba(255, 255, 255, 0.75)",
+    borderRadius: "50%",
+    backgroundColor: "white",
+    color: "#222",
+    fontWeight: 800,
+    transform: "translateX(-50%)",
+    cursor: "pointer",
+  },
+
+  resultContainer: {
+    width: "100%",
+  },
+
+  photo: {
+    width: "100%",
+    display: "block",
+    borderRadius: "16px",
+  },
+
+  analyzingBox: {
+    marginTop: "14px",
+    padding: "18px",
+    backgroundColor: "#eef5f1",
+    borderRadius: "14px",
+    textAlign: "center",
+  },
+
+  spinner: {
+    marginBottom: "8px",
+    fontSize: "28px",
+  },
+
+  resultMessage: {
+    margin: "8px 0 0",
+    color: "#666",
+  },
+
+  error: {
+    marginTop: "12px",
+    padding: "12px",
+    color: "#a71919",
+    backgroundColor: "#ffeaea",
+    borderRadius: "12px",
+  },
+};
