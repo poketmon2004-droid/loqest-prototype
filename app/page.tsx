@@ -132,6 +132,7 @@ export default function Home() {
           typeof id === "string" && validIds.includes(id)
       );
 
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCompletedLandmarks(validSavedStamps);
     } catch {
       localStorage.removeItem("loqestCompletedLandmarks");
