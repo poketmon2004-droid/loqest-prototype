@@ -126,6 +126,19 @@ export default function Home() {
     setScreen("progress");
   }
 
+  function resetProgress() {
+    const confirmed = window.confirm(
+      "발급된 스탬프와 진행률을 모두 초기화할까요?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setCompletedLandmarks([]);
+    localStorage.removeItem("loqestCompletedLandmarks");
+  }
+
   function selectLandmark(landmark: Landmark) {
     setSelectedLandmark(landmark);
     setStampIssued(false);
@@ -260,6 +273,13 @@ export default function Home() {
             onClick={goToQuestList}
           >
             탐험 계속하기
+          </button>
+          <button
+            type="button"
+            style={styles.resetButton}
+            onClick={resetProgress}
+          >
+            테스트 기록 초기화
           </button>
 
           <button
@@ -633,5 +653,19 @@ const styles: Record<string, React.CSSProperties> = {
     margin: 0,
     color: "#707070",
     fontSize: "13px",
+
   },
-};
+  resetButton: {
+    width: "100%",
+    minHeight: "46px",
+    marginTop: "20px",
+    padding: "12px",
+    border: "1px solid #e2b6b6",
+    borderRadius: "14px",
+    backgroundColor: "#fff5f5",
+    color: "#a12c2c",
+    fontSize: "14px",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+};  

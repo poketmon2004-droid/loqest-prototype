@@ -3,14 +3,77 @@
 import { useEffect, useRef, useState } from "react";
 
 type CameraCaptureProps = {
+  landmarkName: string;
   landmarkGuide: string;
   poseGuide: string;
+  landmarkLatitude: number;
+  landmarkLongitude: number;
+  allowedRadius: number;
   onVerified: () => void;
 };
 
+type CaptureInformation = {
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  distance: number;
+  capturedAt: string;
+};
+
+function calculateDistance(
+  latitude1: number,
+  longitude1: number,
+  latitude2: number,
+  longitude2: number
+) {
+  const earthRadius = 6371000;
+
+  const toRadians = (degree: number) => {
+    return (degree * Math.PI) / 180;
+  };
+
+  const latitudeDifference = toRadians(latitude2 - latitude1);
+  const longitudeDifference = toRadians(longitude2 - longitude1);
+
+  const firstLatitude = toRadians(latitude1);
+  const secondLatitude = toRadians(latitude2);
+
+  const value =
+    Math.sin(latitudeDifference / 2) *
+      Math.sin(latitudeDifference / 2) +
+    Math.cos(firstLatitude) *
+      Math.cos(secondLatitude) *
+      Math.sin(longitudeDifference / 2) *
+      Math.sin(longitudeDifference / 2);
+
+  const angle =
+    2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+
+  return earthRadius * angle;
+}
+
+function getCurrentLocation() {
+  return new Promise<GeolocationPosition>((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("위치 기능을 지원하지 않습니다."));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0,
+    });
+  });
+}
+
 export default function CameraCapture({
+  landmarkName,
   landmarkGuide,
   poseGuide,
+  landmarkLatitude,
+  landmarkLongitude,
+  allowedRadius,
   onVerified,
 }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -20,11 +83,16 @@ export default function CameraCapture({
   const [cameraOpen, setCameraOpen] = useState(false);
   const [photo, setPhoto] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [checkingLocation, setCheckingLocation] = useState(false);
+
+  const [captureInformation, setCaptureInformation] =
+    useState<CaptureInformation | null>(null);
+
   const [error, setError] = useState("");
 
   /*
-    카메라 화면이 생성된 다음,
-    MediaStream을 video 태그에 연결합니다.
+    카메라 화면이 만들어진 후
+    실제 카메라 영상을 video 태그에 연결합니다.
   */
   useEffect(() => {
     if (!cameraOpen || !videoRef.current || !streamRef.current) {
@@ -55,9 +123,13 @@ export default function CameraCapture({
     setError("");
     setPhoto(null);
     setAnalyzing(false);
+    setCheckingLocation(false);
+    setCaptureInformation(null);
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      setError("이 브라우저에서는 카메라 기능을 지원하지 않습니다.");
+      setError(
+        "이 브라우저에서는 실시간 카메라 기능을 지원하지 않습니다."
+      );
       return;
     }
 
@@ -90,49 +162,169 @@ export default function CameraCapture({
     }
   }
 
-  function takePhoto() {
-    const video = videoRef.current;
+  async function takePhoto() {
+    if (checkingLocation) {
+      return;
+    }
 
-    if (!video || video.videoWidth === 0 || video.videoHeight === 0) {
-      setError(
-        "카메라 영상이 아직 준비되지 않았습니다. 잠시 후 다시 촬영해주세요."
+    setError("");
+    setCheckingLocation(true);
+
+    try {
+      /*
+        촬영 버튼을 누른 순간의 위치를 새로 확인합니다.
+      */
+      const position = await getCurrentLocation();
+
+      const currentLatitude = position.coords.latitude;
+      const currentLongitude = position.coords.longitude;
+      const currentAccuracy = position.coords.accuracy;
+
+      const currentDistance = calculateDistance(
+        currentLatitude,
+        currentLongitude,
+        landmarkLatitude,
+        landmarkLongitude
       );
-      return;
+
+      /*
+        현재 위치가 인증 반경 밖이면 여기서 중단합니다.
+        onVerified 함수도 실행되지 않으므로 스탬프가 발급되지 않습니다.
+      */
+      if (currentDistance > allowedRadius) {
+        setCheckingLocation(false);
+
+        setError(
+          `인증 실패: 현재 위치가 ${landmarkName} 인증 범위를 벗어났습니다. 인증 지점에서 약 ${Math.round(
+            currentDistance
+          )}m 떨어져 있습니다.`
+        );
+
+        return;
+      }
+
+      const video = videoRef.current;
+
+      if (
+        !video ||
+        video.videoWidth === 0 ||
+        video.videoHeight === 0
+      ) {
+        setCheckingLocation(false);
+
+        setError(
+          "카메라 영상이 아직 준비되지 않았습니다. 잠시 후 다시 촬영해주세요."
+        );
+
+        return;
+      }
+
+      const canvas = document.createElement("canvas");
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        setCheckingLocation(false);
+        setError("촬영한 사진을 처리하지 못했습니다.");
+        return;
+      }
+
+      context.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      const capturedAt = new Date().toLocaleString("ko-KR");
+
+      /*
+        촬영 사진 아래쪽에 인증 정보를 표시합니다.
+      */
+      const informationHeight = Math.max(
+        100,
+        Math.round(canvas.height * 0.13)
+      );
+
+      context.fillStyle = "rgba(0, 0, 0, 0.72)";
+
+      context.fillRect(
+        0,
+        canvas.height - informationHeight,
+        canvas.width,
+        informationHeight
+      );
+
+      const titleFontSize = Math.max(
+        18,
+        Math.round(canvas.width * 0.027)
+      );
+
+      const detailFontSize = Math.max(
+        14,
+        titleFontSize - 5
+      );
+
+      context.fillStyle = "white";
+      context.font = `bold ${titleFontSize}px sans-serif`;
+
+      context.fillText(
+        landmarkName,
+        20,
+        canvas.height - informationHeight + titleFontSize + 10
+      );
+
+      context.font = `${detailFontSize}px sans-serif`;
+
+      context.fillText(
+        `${capturedAt} · 인증 지점에서 약 ${Math.round(
+          currentDistance
+        )}m`,
+        20,
+        canvas.height - 20
+      );
+
+      const capturedPhoto = canvas.toDataURL(
+        "image/jpeg",
+        0.9
+      );
+
+      setCaptureInformation({
+        latitude: currentLatitude,
+        longitude: currentLongitude,
+        accuracy: currentAccuracy,
+        distance: currentDistance,
+        capturedAt,
+      });
+
+      setPhoto(capturedPhoto);
+      setAnalyzing(true);
+      setCheckingLocation(false);
+
+      stopCamera();
+
+      /*
+        GPS 인증을 통과한 경우에만
+        2초 후 사진 인식 성공으로 처리합니다.
+
+        현재 사진 인식은 실제 AI가 아니라 시뮬레이션입니다.
+      */
+      timerRef.current = setTimeout(() => {
+        onVerified();
+      }, 2000);
+    } catch (locationError) {
+      console.error(locationError);
+
+      setCheckingLocation(false);
+
+      setError(
+        "촬영 순간의 위치를 확인하지 못했습니다. 휴대폰의 위치 서비스와 브라우저 위치 권한을 확인해주세요."
+      );
     }
-
-    const canvas = document.createElement("canvas");
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    const context = canvas.getContext("2d");
-
-    if (!context) {
-      setError("촬영한 사진을 처리하지 못했습니다.");
-      return;
-    }
-
-    context.drawImage(
-      video,
-      0,
-      0,
-      canvas.width,
-      canvas.height
-    );
-
-    const capturedPhoto = canvas.toDataURL("image/jpeg", 0.9);
-
-    setPhoto(capturedPhoto);
-    setAnalyzing(true);
-    stopCamera();
-
-    /*
-      현재는 프로토타입이므로
-      실제 AI 인식 대신 2초 후 인증 성공으로 처리합니다.
-    */
-    timerRef.current = setTimeout(() => {
-      onVerified();
-    }, 2000);
   }
 
   useEffect(() => {
@@ -171,8 +363,14 @@ export default function CameraCapture({
 
           <div style={styles.guideText}>
             <strong>촬영 가이드</strong>
-            <p>{landmarkGuide}</p>
-            <p>{poseGuide}</p>
+
+            <p style={styles.guideParagraph}>
+              {landmarkGuide}
+            </p>
+
+            <p style={styles.guideParagraph}>
+              {poseGuide}
+            </p>
           </div>
 
           <div style={styles.landmarkFrame}>
@@ -192,11 +390,21 @@ export default function CameraCapture({
 
           <button
             type="button"
-            style={styles.captureButton}
+            style={{
+              ...styles.captureButton,
+              opacity: checkingLocation ? 0.65 : 1,
+            }}
             onClick={takePhoto}
+            disabled={checkingLocation}
           >
-            촬영
+            {checkingLocation ? "GPS" : "촬영"}
           </button>
+
+          {checkingLocation && (
+            <div style={styles.locationChecking}>
+              촬영 위치를 확인하고 있습니다.
+            </div>
+          )}
         </div>
       )}
 
@@ -205,13 +413,37 @@ export default function CameraCapture({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={photo}
-            alt="실시간으로 촬영한 인증 사진"
+            alt="GPS 정보가 포함된 실시간 인증 사진"
             style={styles.photo}
           />
 
+          {captureInformation && (
+            <div style={styles.captureInformation}>
+              <strong>촬영 정보</strong>
+
+              <p style={styles.informationText}>
+                촬영 시각: {captureInformation.capturedAt}
+                <br />
+                위도: {captureInformation.latitude.toFixed(6)}
+                <br />
+                경도: {captureInformation.longitude.toFixed(6)}
+                <br />
+                GPS 오차 범위: 약{" "}
+                {Math.round(captureInformation.accuracy)}m
+                <br />
+                인증 지점까지 거리: 약{" "}
+                {Math.round(captureInformation.distance)}m
+              </p>
+            </div>
+          )}
+
           <div style={styles.analyzingBox}>
             <div style={styles.spinner}>⏳</div>
-            <strong>랜드마크를 확인하고 있습니다.</strong>
+
+            <strong>
+              사진과 위치 정보를 확인하고 있습니다.
+            </strong>
+
             <p style={styles.resultMessage}>
               잠시만 기다려주세요.
             </p>
@@ -272,6 +504,10 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: "12px",
     fontSize: "13px",
     lineHeight: 1.4,
+  },
+
+  guideParagraph: {
+    margin: "6px 0 0",
   },
 
   landmarkFrame: {
@@ -387,6 +623,18 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
   },
 
+  locationChecking: {
+    position: "absolute",
+    right: "12px",
+    bottom: "12px",
+    zIndex: 4,
+    padding: "8px 10px",
+    color: "white",
+    backgroundColor: "rgba(0, 0, 0, 0.72)",
+    borderRadius: "10px",
+    fontSize: "12px",
+  },
+
   resultContainer: {
     width: "100%",
   },
@@ -395,6 +643,19 @@ const styles: Record<string, React.CSSProperties> = {
     width: "100%",
     display: "block",
     borderRadius: "16px",
+  },
+
+  captureInformation: {
+    marginTop: "12px",
+    padding: "14px",
+    backgroundColor: "#f3f5f4",
+    borderRadius: "14px",
+    fontSize: "13px",
+    lineHeight: 1.6,
+  },
+
+  informationText: {
+    margin: "7px 0 0",
   },
 
   analyzingBox: {
@@ -421,5 +682,6 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#a71919",
     backgroundColor: "#ffeaea",
     borderRadius: "12px",
+    lineHeight: 1.6,
   },
 };
