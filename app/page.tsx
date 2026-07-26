@@ -16,13 +16,6 @@ type Landmark = {
 
 type Screen = "home" | "quests" | "progress" | "verification";
 
-type LocationStatus =
-  | "idle"
-  | "checking"
-  | "inside"
-  | "outside"
-  | "error";
-
 const landmarks: Landmark[] = [
   {
     id: "amsa-history",
@@ -62,49 +55,12 @@ const landmarks: Landmark[] = [
   },
 ];
 
-function calculateDistance(
-  latitude1: number,
-  longitude1: number,
-  latitude2: number,
-  longitude2: number
-) {
-  const earthRadius = 6371000;
-
-  const toRadians = (degree: number) => {
-    return (degree * Math.PI) / 180;
-  };
-
-  const latitudeDifference = toRadians(latitude2 - latitude1);
-  const longitudeDifference = toRadians(longitude2 - longitude1);
-
-  const firstLatitude = toRadians(latitude1);
-  const secondLatitude = toRadians(latitude2);
-
-  const value =
-    Math.sin(latitudeDifference / 2) *
-      Math.sin(latitudeDifference / 2) +
-    Math.cos(firstLatitude) *
-      Math.cos(secondLatitude) *
-      Math.sin(longitudeDifference / 2) *
-      Math.sin(longitudeDifference / 2);
-
-  const angle =
-    2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
-
-  return earthRadius * angle;
-}
-
 export default function Home() {
   const [screen, setScreen] = useState<Screen>("home");
 
   const [selectedLandmark, setSelectedLandmark] =
     useState<Landmark | null>(null);
 
-  const [locationStatus, setLocationStatus] =
-    useState<LocationStatus>("idle");
-
-  const [locationMessage, setLocationMessage] = useState("");
-  const [distance, setDistance] = useState<number | null>(null);
   const [stampIssued, setStampIssued] = useState(false);
 
   const [completedLandmarks, setCompletedLandmarks] = useState<string[]>(
@@ -112,7 +68,9 @@ export default function Home() {
   );
 
   useEffect(() => {
-    const savedStamps = localStorage.getItem("loqestCompletedLandmarks");
+    const savedStamps = localStorage.getItem(
+      "loqestCompletedLandmarks"
+    );
 
     if (!savedStamps) {
       return;
@@ -150,9 +108,6 @@ export default function Home() {
 
   function resetVerification() {
     setSelectedLandmark(null);
-    setLocationStatus("idle");
-    setLocationMessage("");
-    setDistance(null);
     setStampIssued(false);
   }
 
@@ -173,70 +128,8 @@ export default function Home() {
 
   function selectLandmark(landmark: Landmark) {
     setSelectedLandmark(landmark);
-    setLocationStatus("idle");
-    setLocationMessage("");
-    setDistance(null);
     setStampIssued(false);
     setScreen("verification");
-  }
-
-  function checkLocation() {
-    if (!selectedLandmark) {
-      return;
-    }
-
-    if (!navigator.geolocation) {
-      setLocationStatus("error");
-      setLocationMessage(
-        "이 기기에서는 위치 확인 기능을 지원하지 않습니다."
-      );
-      return;
-    }
-
-    setLocationStatus("checking");
-    setLocationMessage("현재 위치를 확인하고 있습니다.");
-    setDistance(null);
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const currentLatitude = position.coords.latitude;
-        const currentLongitude = position.coords.longitude;
-
-        const currentDistance = calculateDistance(
-          currentLatitude,
-          currentLongitude,
-          selectedLandmark.latitude,
-          selectedLandmark.longitude
-        );
-
-        setDistance(currentDistance);
-
-        if (currentDistance <= selectedLandmark.radius) {
-          setLocationStatus("inside");
-          setLocationMessage(
-            "인증 장소에 도착했습니다. 촬영을 진행해주세요."
-          );
-        } else {
-          setLocationStatus("outside");
-          setLocationMessage(
-            `현재 인증 지점에서 약 ${Math.round(
-              currentDistance
-            )}m 떨어져 있습니다.`
-          );
-        }
-      },
-      () => {
-        setLocationStatus("error");
-        setLocationMessage(
-          "위치를 확인하지 못했습니다. 브라우저의 위치 권한을 허용해주세요."
-        );
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0,
-      }
-    );
   }
 
   function issueStamp() {
@@ -277,6 +170,14 @@ export default function Home() {
             <br />
             디지털 스탬프를 모아보세요.
           </p>
+
+          <div style={styles.entryInfo}>
+            <strong>입장 인증 완료</strong>
+
+            <p style={styles.entryText}>
+              입장료 결제 후 전달된 전용 URL로 접속했습니다.
+            </p>
+          </div>
 
           <button
             type="button"
@@ -389,79 +290,30 @@ export default function Home() {
 
               <div style={styles.guideBox}>
                 <strong>촬영 안내</strong>
+
                 <p>{selectedLandmark.landmarkGuide}</p>
+
                 <p>{selectedLandmark.poseGuide}</p>
               </div>
 
-              {locationStatus !== "inside" && (
-                <button
-                  type="button"
-                  style={{
-                    ...styles.primaryButton,
-                    opacity:
-                      locationStatus === "checking" ? 0.6 : 1,
-                  }}
-                  onClick={checkLocation}
-                  disabled={locationStatus === "checking"}
-                >
-                  {locationStatus === "checking"
-                    ? "위치 확인 중..."
-                    : "현재 위치 확인하기"}
-                </button>
-              )}
+              <div style={styles.gpsNotice}>
+                <strong>GPS 자동 인증</strong>
 
-              {locationMessage && (
-                <div
-                  style={{
-                    ...styles.locationBox,
+                <p style={styles.gpsNoticeText}>
+                  촬영 버튼을 누르면 현재 위치를 자동으로 확인합니다.
+                  인증 반경 밖에서는 스탬프가 발급되지 않습니다.
+                </p>
+              </div>
 
-                    backgroundColor:
-                      locationStatus === "inside"
-                        ? "#e8f7ee"
-                        : locationStatus === "outside"
-                        ? "#fff4dc"
-                        : locationStatus === "error"
-                        ? "#ffe9e9"
-                        : "#f3f3f3",
-
-                    color:
-                      locationStatus === "error"
-                        ? "#9d2525"
-                        : "#333",
-                  }}
-                >
-                  <strong>{locationMessage}</strong>
-
-                  {distance !== null && (
-                    <p style={styles.locationDetail}>
-                      인증 지점까지 거리: 약{" "}
-                      {Math.round(distance)}m
-                      <br />
-                      인증 허용 반경: {selectedLandmark.radius}m
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {locationStatus === "outside" && (
-                <button
-                  type="button"
-                  style={styles.secondaryButton}
-                  onClick={checkLocation}
-                >
-                  위치 다시 확인하기
-                </button>
-              )}
-
-              {locationStatus === "inside" && (
-                <CameraCapture
-                  landmarkGuide={
-                    selectedLandmark.landmarkGuide
-                  }
-                  poseGuide={selectedLandmark.poseGuide}
-                  onVerified={issueStamp}
-                />
-              )}
+              <CameraCapture
+                landmarkName={selectedLandmark.name}
+                landmarkGuide={selectedLandmark.landmarkGuide}
+                poseGuide={selectedLandmark.poseGuide}
+                landmarkLatitude={selectedLandmark.latitude}
+                landmarkLongitude={selectedLandmark.longitude}
+                allowedRadius={selectedLandmark.radius}
+                onVerified={issueStamp}
+              />
 
               <button
                 type="button"
@@ -548,7 +400,7 @@ export default function Home() {
                 <span style={styles.smallText}>
                   {completed
                     ? "✅ 인증 완료"
-                    : `인증 반경 ${landmark.radius}m`}
+                    : `촬영 순간 GPS 인증 · 반경 ${landmark.radius}m`}
                 </span>
               </button>
             );
@@ -618,6 +470,22 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.7,
   },
 
+  entryInfo: {
+    marginBottom: "12px",
+    padding: "15px",
+    backgroundColor: "#eef7f1",
+    border: "1px solid #d7eadf",
+    borderRadius: "14px",
+    color: "#176c44",
+  },
+
+  entryText: {
+    margin: "6px 0 0",
+    color: "#547065",
+    fontSize: "13px",
+    lineHeight: 1.5,
+  },
+
   primaryButton: {
     width: "100%",
     minHeight: "52px",
@@ -675,22 +543,23 @@ const styles: Record<string, React.CSSProperties> = {
   },
 
   guideBox: {
-    marginBottom: "16px",
+    marginBottom: "12px",
     padding: "16px",
     backgroundColor: "#f1f6f3",
     borderRadius: "14px",
     lineHeight: 1.6,
   },
 
-  locationBox: {
-    marginTop: "14px",
+  gpsNotice: {
+    marginBottom: "16px",
     padding: "14px",
+    backgroundColor: "#fff5dd",
     borderRadius: "14px",
-    lineHeight: 1.5,
+    color: "#664c0c",
   },
 
-  locationDetail: {
-    margin: "8px 0 0",
+  gpsNoticeText: {
+    margin: "6px 0 0",
     fontSize: "13px",
     lineHeight: 1.6,
   },
