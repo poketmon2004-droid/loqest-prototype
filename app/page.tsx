@@ -63,9 +63,6 @@ export default function Home() {
 
   const [stampIssued, setStampIssued] = useState(false);
 
-  const [requestingLocation, setRequestingLocation] =
-    useState(false);
-
   const [completedLandmarks, setCompletedLandmarks] = useState<string[]>(
     []
   );
@@ -117,61 +114,6 @@ export default function Home() {
   function goHome() {
     resetVerification();
     setScreen("home");
-  }
-
-  function startExploration() {
-    if (!navigator.geolocation) {
-      window.alert(
-        "이 기기에서는 위치 확인 기능을 지원하지 않습니다."
-      );
-      return;
-    }
-
-    setRequestingLocation(true);
-
-    /*
-      탐험 시작 버튼을 누를 때 위치 권한을 최초 1회 요청합니다.
-      이 좌표는 인증에 사용하지 않고 권한 확인에만 사용합니다.
-    */
-    navigator.geolocation.getCurrentPosition(
-      () => {
-        setRequestingLocation(false);
-        setScreen("quests");
-      },
-      (locationError) => {
-        console.error(locationError);
-
-        setRequestingLocation(false);
-
-        if (locationError.code === 1) {
-          window.alert(
-            "랜드마크 인증을 위해 위치 권한이 필요합니다. 브라우저의 웹 사이트 설정에서 위치를 허용해주세요."
-          );
-          return;
-        }
-
-        if (locationError.code === 2) {
-          window.alert(
-            "현재 위치를 확인하지 못했습니다. 잠시 후 다시 시도해주세요."
-          );
-          return;
-        }
-
-        if (locationError.code === 3) {
-          window.alert(
-            "위치 확인 시간이 초과되었습니다. 잠시 후 다시 시도해주세요."
-          );
-          return;
-        }
-
-        window.alert("위치 권한을 확인하지 못했습니다.");
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0,
-      }
-    );
   }
 
   function goToQuestList() {
@@ -252,16 +194,10 @@ export default function Home() {
 
           <button
             type="button"
-            style={{
-              ...styles.primaryButton,
-              opacity: requestingLocation ? 0.65 : 1,
-            }}
-            onClick={startExploration}
-            disabled={requestingLocation}
+            style={styles.primaryButton}
+            onClick={goToQuestList}
           >
-            {requestingLocation
-              ? "위치 권한 확인 중..."
-              : "탐험 시작하기"}
+            탐험 시작하기
           </button>
 
           <button
