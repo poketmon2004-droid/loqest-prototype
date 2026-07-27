@@ -44,11 +44,11 @@ function calculateDistance(
 
   const value =
     Math.sin(latitudeDifference / 2) *
-      Math.sin(latitudeDifference / 2) +
+    Math.sin(latitudeDifference / 2) +
     Math.cos(firstLatitude) *
-      Math.cos(secondLatitude) *
-      Math.sin(longitudeDifference / 2) *
-      Math.sin(longitudeDifference / 2);
+    Math.cos(secondLatitude) *
+    Math.sin(longitudeDifference / 2) *
+    Math.sin(longitudeDifference / 2);
 
   const angle =
     2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
@@ -352,6 +352,18 @@ export default function CameraCapture({
     }
   }
 
+  function retryCapture() {
+    setError("");
+    setPhoto(null);
+    setAnalyzing(false);
+    setCheckingLocation(false);
+
+    thumbDetectedRef.current = false;
+    thumbStableSinceRef.current = null;
+
+    setThumbDetected(false);
+  }
+
   async function takePhoto() {
     if (checkingLocation) {
       return;
@@ -619,8 +631,8 @@ export default function CameraCapture({
               {checkingLocation
                 ? "✓ 엄지척 확인 완료"
                 : thumbDetected
-                ? "✓ 엄지척 포즈 확인"
-                : "👍 엄지척을 보여주세요"}
+                  ? "✓ 엄지척 포즈 확인"
+                  : "👍 엄지척을 보여주세요"}
             </span>
           </div>
 
@@ -637,12 +649,12 @@ export default function CameraCapture({
 
             <span>
               {checkingLocation
-                ? "엄지척 확인 완료 · 자세를 풀어도 됩니다"
+                ? "엄지척 확인 완료"
                 : !modelReady
-                ? "인식 모델 준비 중"
-                : thumbDetected
-                ? "엄지척 인식 성공"
-                : "손 전체가 보이게 엄지척해주세요"}
+                  ? "인식 모델 준비 중"
+                  : thumbDetected
+                    ? "엄지척 인식 성공"
+                    : "손 전체가 보이게 엄지척해주세요"}
             </span>
           </div>
 
@@ -659,13 +671,33 @@ export default function CameraCapture({
             {checkingLocation
               ? "GPS"
               : thumbDetected
-              ? "촬영"
-              : "대기"}
+                ? "촬영"
+                : "대기"}
           </button>
 
           {checkingLocation && (
             <div style={styles.locationChecking}>
               위치 확인 중 · 자세를 풀어도 됩니다.
+            </div>
+          )}
+
+          {error && (
+            <div style={styles.failureOverlay}>
+              <div style={styles.failureMessage}>
+                <span style={styles.failureIcon}>❌</span>
+
+                <strong>인증에 실패했습니다.</strong>
+
+                <p>{error}</p>
+
+                <button
+                  type="button"
+                  style={styles.overlayRetryButton}
+                  onClick={retryCapture}
+                >
+                  다시 촬영하기
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -710,7 +742,21 @@ export default function CameraCapture({
         </div>
       )}
 
-      {error && <p style={styles.error}>❌ {error}</p>}
+      {error && !cameraOpen && (
+        <div style={styles.errorContainer}>
+          <p style={styles.error}>❌ {error}</p>
+
+          {cameraOpen && (
+            <button
+              type="button"
+              style={styles.retryButton}
+              onClick={retryCapture}
+            >
+              다시 촬영하기
+            </button>
+          )}
+        </div>
+      )}
     </section>
   );
 }
@@ -834,14 +880,22 @@ const styles: Record<string, React.CSSProperties> = {
 
   locationChecking: {
     position: "absolute",
-    right: "12px",
-    bottom: "12px",
-    zIndex: 4,
-    padding: "8px 10px",
+    top: "50%",
+    left: "50%",
+    zIndex: 10,
+    width: "calc(100% - 48px)",
+    padding: "18px 16px",
     color: "white",
-    backgroundColor: "rgba(0, 0, 0, 0.72)",
-    borderRadius: "10px",
-    fontSize: "12px",
+    backgroundColor: "rgba(0, 0, 0, 0.78)",
+    border: "1px solid rgba(255, 255, 255, 0.25)",
+    borderRadius: "16px",
+    fontSize: "16px",
+    fontWeight: 800,
+    lineHeight: 1.5,
+    textAlign: "center",
+    transform: "translate(-50%, -50%)",
+    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.3)",
+    pointerEvents: "none",
   },
 
   resultContainer: {
@@ -884,13 +938,76 @@ const styles: Record<string, React.CSSProperties> = {
     margin: "8px 0 0",
     color: "#666",
   },
+  failureOverlay: {
+    position: "absolute",
+    inset: 0,
+    zIndex: 20,
+    padding: "24px",
+    backgroundColor: "rgba(100, 0, 0, 0.68)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  failureMessage: {
+    width: "100%",
+    padding: "22px 18px",
+    border: "1px solid rgba(255, 255, 255, 0.4)",
+    borderRadius: "18px",
+    backgroundColor: "rgba(145, 25, 25, 0.94)",
+    color: "white",
+    textAlign: "center",
+    lineHeight: 1.6,
+  },
+
+  failureIcon: {
+    display: "block",
+    marginBottom: "8px",
+    fontSize: "32px",
+  },
+
+  overlayRetryButton: {
+    width: "100%",
+    minHeight: "50px",
+    marginTop: "12px",
+    padding: "13px",
+    border: "none",
+    borderRadius: "14px",
+    backgroundColor: "white",
+    color: "#a71919",
+    fontSize: "15px",
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+
+  errorContainer: {
+    marginTop: "12px",
+  },
+  
+  errorContainer: {
+    marginTop: "12px",
+  },
 
   error: {
-    marginTop: "12px",
+    margin: 0,
     padding: "12px",
     color: "#a71919",
     backgroundColor: "#ffeaea",
     borderRadius: "12px",
     lineHeight: 1.6,
+  },
+
+  retryButton: {
+    width: "100%",
+    minHeight: "50px",
+    marginTop: "10px",
+    padding: "13px",
+    border: "none",
+    borderRadius: "14px",
+    backgroundColor: "#333",
+    color: "white",
+    fontSize: "15px",
+    fontWeight: 700,
+    cursor: "pointer",
   },
 };
