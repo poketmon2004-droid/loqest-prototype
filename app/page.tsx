@@ -37,8 +37,8 @@ const landmarks: Landmark[] = [
       "1. 가이드라인에 맞춰 랜드마크를 화면에 담아주세요.",
     poseGuide:
       "2. 화면에 제시된 포즈를 취한 상태로 촬영하세요.",
-    latitude: 37.56056,
-    longitude: 127.13028,
+    latitude: 37.55292,
+    longitude: 127.12555,
     radius: 250,
   },
   {
@@ -50,8 +50,8 @@ const landmarks: Landmark[] = [
       "1. 가이드라인에 맞춰 랜드마크를 화면에 담아주세요.",
     poseGuide:
       "2. 화면에 제시된 포즈를 취한 상태로 촬영하세요.",
-    latitude: 37.553988,
-    longitude: 127.12982,
+    latitude: 37.55292,
+    longitude: 127.12555,
     radius: 300,
   },
   {
@@ -63,8 +63,8 @@ const landmarks: Landmark[] = [
       "1. 가이드라인에 맞춰 랜드마크를 화면에 담아주세요.",
     poseGuide:
       "2. 화면에 제시된 포즈를 취한 상태로 촬영하세요.",
-    latitude: 37.55119212174066,
-    longitude: 127.12807877121352,
+    latitude: 37.55292,
+    longitude: 127.12555,
     radius: 200,
   },
 ];
@@ -93,6 +93,23 @@ export default function Home() {
 
   const [completedLandmarks, setCompletedLandmarks] =
     useState<string[]>([]);
+
+  const [hasUnreadBadge, setHasUnreadBadge] = useState(false);
+
+  useEffect(() => {
+    const badgeEarned = localStorage.getItem(
+      "loqestGangdongBadgeEarnedAt"
+    );
+
+    const badgeSeen = localStorage.getItem(
+      "loqestGangdongBadgeSeen"
+    );
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHasUnreadBadge(
+      Boolean(badgeEarned) && badgeSeen !== "true"
+    );
+  }, []);
 
   const [badgeEarnedAt, setBadgeEarnedAt] =
     useState<string | null>(null);
@@ -140,6 +157,7 @@ export default function Home() {
             GANGDONG_BADGE_DATE_KEY,
             earnedAt
           );
+
         }
 
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -148,6 +166,9 @@ export default function Home() {
     } catch {
       localStorage.removeItem(COMPLETED_LANDMARKS_KEY);
       localStorage.removeItem(GANGDONG_BADGE_DATE_KEY);
+      localStorage.removeItem("loqestGangdongBadgeSeen");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setHasUnreadBadge(false);
     }
   }, []);
 
@@ -167,6 +188,16 @@ export default function Home() {
 
   function goHome() {
     resetVerification();
+
+    if (screen === "badges") {
+      localStorage.setItem(
+        "loqestGangdongBadgeSeen",
+        "true"
+      );
+
+      setHasUnreadBadge(false);
+    }
+
     setScreen("home");
   }
 
@@ -181,7 +212,13 @@ export default function Home() {
   }
 
   function goToBadges() {
-    resetVerification();
+    setHasUnreadBadge(false);
+
+    localStorage.setItem(
+      "loqestGangdongBadgeSeen",
+      "true"
+    );
+
     setScreen("badges");
   }
 
@@ -196,9 +233,11 @@ export default function Home() {
 
     setCompletedLandmarks([]);
     setBadgeEarnedAt(null);
+    setHasUnreadBadge(false);
 
     localStorage.removeItem(COMPLETED_LANDMARKS_KEY);
     localStorage.removeItem(GANGDONG_BADGE_DATE_KEY);
+    localStorage.removeItem("loqestGangdongBadgeSeen");
   }
 
   function selectLandmark(landmark: Landmark) {
@@ -240,6 +279,9 @@ export default function Home() {
         GANGDONG_BADGE_DATE_KEY,
         earnedAt
       );
+
+      localStorage.removeItem("loqestGangdongBadgeSeen");
+      setHasUnreadBadge(true);
     }
   }
 
@@ -303,7 +345,7 @@ export default function Home() {
             <span>📖</span>
             <span>나의 여행 도감</span>
 
-            {tourCompleted && (
+            {hasUnreadBadge && (
               <span style={styles.newBadge}>NEW</span>
             )}
           </button>
