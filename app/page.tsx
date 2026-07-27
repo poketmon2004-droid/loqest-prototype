@@ -91,6 +91,9 @@ export default function Home() {
 
   const [stampIssued, setStampIssued] = useState(false);
 
+  const [verificationProcessing, setVerificationProcessing] =
+    useState(false);
+
   const [completedLandmarks, setCompletedLandmarks] =
     useState<string[]>([]);
 
@@ -184,20 +187,11 @@ export default function Home() {
   function resetVerification() {
     setSelectedLandmark(null);
     setStampIssued(false);
+    setVerificationProcessing(false);
   }
 
   function goHome() {
     resetVerification();
-
-    if (screen === "badges") {
-      localStorage.setItem(
-        "loqestGangdongBadgeSeen",
-        "true"
-      );
-
-      setHasUnreadBadge(false);
-    }
-
     setScreen("home");
   }
 
@@ -641,16 +635,19 @@ export default function Home() {
                   selectedLandmark.longitude
                 }
                 allowedRadius={selectedLandmark.radius}
+                onProcessingChange={setVerificationProcessing}
                 onVerified={issueStamp}
               />
 
-              <button
-                type="button"
-                style={styles.secondaryButton}
-                onClick={goToQuestList}
-              >
-                목록으로 돌아가기
-              </button>
+              {!verificationProcessing && (
+                <button
+                  type="button"
+                  style={styles.secondaryButton}
+                  onClick={goToQuestList}
+                >
+                  목록으로 돌아가기
+                </button>
+              )}
             </>
           )}
 

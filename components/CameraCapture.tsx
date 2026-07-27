@@ -13,6 +13,7 @@ type CameraCaptureProps = {
   landmarkLatitude: number;
   landmarkLongitude: number;
   allowedRadius: number;
+  onProcessingChange: (processing: boolean) => void;
   onVerified: () => void;
 };
 
@@ -102,6 +103,7 @@ export default function CameraCapture({
   landmarkLatitude,
   landmarkLongitude,
   allowedRadius,
+  onProcessingChange,
   onVerified,
 }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -433,6 +435,7 @@ export default function CameraCapture({
     }
 
     setError("");
+    onProcessingChange(true);
     setCheckingLocation(true);
 
     /*
@@ -448,6 +451,7 @@ export default function CameraCapture({
 
     if (!context) {
       setCheckingLocation(false);
+      onProcessingChange(false);
       setError("촬영한 사진을 처리하지 못했습니다.");
       return;
     }
