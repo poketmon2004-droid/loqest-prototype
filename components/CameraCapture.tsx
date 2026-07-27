@@ -16,6 +16,30 @@ type CameraCaptureProps = {
   onVerified: () => void;
 };
 
+const gestureOptions = {
+  Thumb_Up: {
+    name: "엄지척",
+    icon: "👍",
+    instruction: "손 전체가 보이게 엄지척해주세요.",
+  },
+  Victory: {
+    name: "브이",
+    icon: "✌️",
+    instruction: "손 전체가 보이게 브이 포즈를 취해주세요.",
+  },
+  Pointing_Up: {
+    name: "위 가리키기",
+    icon: "☝️",
+    instruction: "검지손가락으로 위를 가리켜주세요.",
+  },
+} as const;
+
+type GestureName = keyof typeof gestureOptions;
+
+const gestureNames = Object.keys(
+  gestureOptions
+) as GestureName[];
+
 type CaptureInformation = {
   latitude: number;
   longitude: number;
@@ -91,6 +115,8 @@ export default function CameraCapture({
   const lastDetectionTimeRef = useRef(0);
   const thumbDetectedRef = useRef(false);
   const thumbStableSinceRef = useRef<number | null>(null);
+  const targetGestureRef =
+    useRef<GestureName>("Thumb_Up");
 
   const [cameraOpen, setCameraOpen] = useState(false);
   const [openingCamera, setOpeningCamera] = useState(false);
@@ -99,6 +125,11 @@ export default function CameraCapture({
   const [analyzing, setAnalyzing] = useState(false);
   const [checkingLocation, setCheckingLocation] = useState(false);
   const [thumbDetected, setThumbDetected] = useState(false);
+  const [targetGesture, setTargetGesture] =
+    useState<GestureName>("Thumb_Up");
+
+  const targetGestureInformation =
+    gestureOptions[targetGesture];
 
   const [captureInformation, setCaptureInformation] =
     useState<CaptureInformation | null>(null);
@@ -216,11 +247,12 @@ export default function CameraCapture({
 
           const firstGesture = result.gestures[0]?.[0];
 
-          const isThumbUp =
-            firstGesture?.categoryName === "Thumb_Up" &&
+          const isRequiredGesture =
+            firstGesture?.categoryName ===
+              targetGestureRef.current &&
             firstGesture.score >= 0.6;
 
-          if (isThumbUp) {
+          if (isRequiredGesture) {
             if (thumbStableSinceRef.current === null) {
               thumbStableSinceRef.current = currentTime;
             }
@@ -287,6 +319,14 @@ export default function CameraCapture({
   }
 
   async function startCamera() {
+    const randomGesture =
+      gestureNames[
+        Math.floor(Math.random() * gestureNames.length)
+      ];
+
+    targetGestureRef.current = randomGesture;
+    setTargetGesture(randomGesture);
+
     setError("");
     setPhoto(null);
     setAnalyzing(false);
@@ -370,8 +410,11 @@ export default function CameraCapture({
     }
 
     if (!thumbDetectedRef.current) {
+      const requiredGesture =
+        gestureOptions[targetGestureRef.current];
+
       setError(
-        "엄지척 포즈가 확인되지 않았습니다. 손 전체가 화면에 보이도록 엄지척을 해주세요."
+        `${requiredGesture.name} 포즈가 확인되지 않았습니다. ${requiredGesture.instruction}`
       );
       return;
     }
@@ -629,10 +672,10 @@ export default function CameraCapture({
               }}
             >
               {checkingLocation
-                ? "✓ 엄지척 확인 완료"
+                ? `✓ ${targetGestureInformation.name} 확인 완료`
                 : thumbDetected
-                  ? "✓ 엄지척 포즈 확인"
-                  : "👍 엄지척을 보여주세요"}
+                  ? `✓ ${targetGestureInformation.name} 포즈 확인`
+                  : `${targetGestureInformation.icon} ${targetGestureInformation.instruction}`}
             </span>
           </div>
 
@@ -645,16 +688,18 @@ export default function CameraCapture({
                   : "rgba(0, 0, 0, 0.7)",
             }}
           >
-            <span style={styles.thumbIcon}>👍</span>
+            <span style={styles.thumbIcon}>
+              {targetGestureInformation.icon}
+            </span>
 
             <span>
               {checkingLocation
-                ? "엄지척 확인 완료"
+                ? `${targetGestureInformation.name} 확인 완료`
                 : !modelReady
                   ? "인식 모델 준비 중"
                   : thumbDetected
-                    ? "엄지척 인식 성공"
-                    : "손 전체가 보이게 엄지척해주세요"}
+                    ? `${targetGestureInformation.name} 인식 성공`
+                    : targetGestureInformation.instruction}
             </span>
           </div>
 
