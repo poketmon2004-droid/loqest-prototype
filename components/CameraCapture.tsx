@@ -983,10 +983,6 @@ const styles: Record<string, React.CSSProperties> = {
   errorContainer: {
     marginTop: "12px",
   },
-  
-  errorContainer: {
-    marginTop: "12px",
-  },
 
   error: {
     margin: 0,
