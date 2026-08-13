@@ -1,12 +1,16 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useEffect, useRef, useState } from "react";
+import cvReadyPromise from "@techstark/opencv-js";
 import {
   FilesetResolver,
   GestureRecognizer,
 } from "@mediapipe/tasks-vision";
 
 type CameraCaptureProps = {
+  recognitionKey: "character" | "inform" | "wish";
   landmarkName: string;
   landmarkGuide: string;
   poseGuide: string;
@@ -15,6 +19,68 @@ type CameraCaptureProps = {
   allowedRadius: number;
   onProcessingChange: (processing: boolean) => void;
   onVerified: () => void;
+};
+
+type RecognitionKey = CameraCaptureProps["recognitionKey"];
+
+type LandmarkRecognitionConfig = {
+  references: string[];
+  goodMatches: number;
+  matchRatio: number;
+};
+
+const landmarkRecognition: Record<
+  RecognitionKey,
+  LandmarkRecognitionConfig
+> = {
+  character: {
+    references: [
+      "/landmarks/character/reference/KakaoTalk_20260813_072216328.jpg",
+      "/landmarks/character/reference/KakaoTalk_20260813_072216328_01.jpg",
+      "/landmarks/character/reference/KakaoTalk_20260813_123330386_19.jpg",
+      "/landmarks/character/reference/KakaoTalk_20260813_123330386_21.jpg",
+      "/landmarks/character/reference/KakaoTalk_20260813_123330386_23.jpg",
+      "/landmarks/character/reference/KakaoTalk_20260813_123330386_25.jpg",
+      "/landmarks/character/reference/KakaoTalk_20260813_123330386_26.jpg",
+      "/landmarks/character/reference/KakaoTalk_20260813_123330386_27.jpg",
+      "/landmarks/character/reference/KakaoTalk_20260813_123331048.jpg",
+      "/landmarks/character/reference/KakaoTalk_20260813_123331048_01.jpg",
+    ],
+    goodMatches: 70,
+    matchRatio: 45,
+  },
+  inform: {
+    references: [
+      "/landmarks/inform/reference/KakaoTalk_20260813_072237513.jpg",
+      "/landmarks/inform/reference/KakaoTalk_20260813_072237513_01.jpg",
+      "/landmarks/inform/reference/KakaoTalk_20260813_072237513_03.jpg",
+      "/landmarks/inform/reference/KakaoTalk_20260813_072237513_05.jpg",
+      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_11.jpg",
+      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_13.jpg",
+      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_15.jpg",
+      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_16.jpg",
+      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_18.jpg",
+    ],
+    goodMatches: 55,
+    matchRatio: 40,
+  },
+  wish: {
+    references: [
+      "/landmarks/wish/reference/KakaoTalk_20260813_072216328_02.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_072216328_03.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_072216328_05.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_123330386.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_01.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_03.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_04.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_06.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_07.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_09.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_10.jpg",
+    ],
+    goodMatches: 70,
+    matchRatio: 45,
+  },
 };
 
 const gestureOptions = {
@@ -96,7 +162,174 @@ function getCurrentLocation() {
   });
 }
 
+function loadImage(source: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+
+    image.onload = () => resolve(image);
+    image.onerror = () =>
+      reject(
+        new Error(`기준 이미지를 불러오지 못했습니다: ${source}`)
+      );
+    image.src = source;
+  });
+}
+
+function cropLandmarkArea(sourceCanvas: HTMLCanvasElement) {
+  const croppedCanvas = document.createElement("canvas");
+  const cropX = Math.round(sourceCanvas.width * 0.06);
+  const cropY = Math.round(sourceCanvas.height * 0.16);
+  const cropWidth = Math.round(sourceCanvas.width * 0.88);
+  const cropHeight = Math.round(sourceCanvas.height * 0.58);
+
+  croppedCanvas.width = cropWidth;
+  croppedCanvas.height = cropHeight;
+
+  const context = croppedCanvas.getContext("2d");
+
+  if (!context) {
+    throw new Error("랜드마크 영역을 처리하지 못했습니다.");
+  }
+
+  context.drawImage(
+    sourceCanvas,
+    cropX,
+    cropY,
+    cropWidth,
+    cropHeight,
+    0,
+    0,
+    cropWidth,
+    cropHeight
+  );
+
+  return croppedCanvas;
+}
+
+function extractFeatures(
+  cv: any,
+  image: HTMLImageElement | HTMLCanvasElement
+) {
+  const source = cv.imread(image);
+  const resized = new cv.Mat();
+  const gray = new cv.Mat();
+  const mask = new cv.Mat();
+  const keypoints = new cv.KeyPointVector();
+  const descriptors = new cv.Mat();
+  const orb = new cv.ORB();
+
+  try {
+    const maxWidth = 900;
+    const scale = Math.min(1, maxWidth / source.cols);
+    const width = Math.round(source.cols * scale);
+    const height = Math.round(source.rows * scale);
+
+    cv.resize(
+      source,
+      resized,
+      new cv.Size(width, height),
+      0,
+      0,
+      cv.INTER_AREA
+    );
+    cv.cvtColor(resized, gray, cv.COLOR_RGBA2GRAY);
+    orb.detectAndCompute(gray, mask, keypoints, descriptors);
+
+    return descriptors.clone();
+  } finally {
+    source.delete();
+    resized.delete();
+    gray.delete();
+    mask.delete();
+    keypoints.delete();
+    descriptors.delete();
+    orb.delete();
+  }
+}
+
+function compareDescriptors(
+  cv: any,
+  testDescriptors: any,
+  referenceDescriptors: any
+) {
+  if (testDescriptors.empty() || referenceDescriptors.empty()) {
+    return { goodMatches: 0, matchRatio: 0 };
+  }
+
+  const matcher = new cv.BFMatcher(cv.NORM_HAMMING, true);
+  const matches = new cv.DMatchVector();
+
+  try {
+    matcher.match(testDescriptors, referenceDescriptors, matches);
+
+    let goodMatches = 0;
+
+    for (let index = 0; index < matches.size(); index += 1) {
+      if (matches.get(index).distance <= 55) {
+        goodMatches += 1;
+      }
+    }
+
+    return {
+      goodMatches,
+      matchRatio:
+        matches.size() === 0
+          ? 0
+          : (goodMatches / matches.size()) * 100,
+    };
+  } finally {
+    matcher.delete();
+    matches.delete();
+  }
+}
+
+async function recognizeLandmark(
+  sourceCanvas: HTMLCanvasElement,
+  recognitionKey: RecognitionKey
+) {
+  const cv = await cvReadyPromise;
+  const config = landmarkRecognition[recognitionKey];
+  const landmarkCanvas = cropLandmarkArea(sourceCanvas);
+  const testDescriptors = extractFeatures(cv, landmarkCanvas);
+
+  let bestGoodMatches = 0;
+  let bestMatchRatio = 0;
+
+  try {
+    for (const referencePath of config.references) {
+      const referenceImage = await loadImage(referencePath);
+      const referenceDescriptors = extractFeatures(cv, referenceImage);
+
+      try {
+        const comparison = compareDescriptors(
+          cv,
+          testDescriptors,
+          referenceDescriptors
+        );
+
+        if (comparison.goodMatches > bestGoodMatches) {
+          bestGoodMatches = comparison.goodMatches;
+          bestMatchRatio = comparison.matchRatio;
+        }
+      } finally {
+        referenceDescriptors.delete();
+      }
+    }
+  } finally {
+    testDescriptors.delete();
+  }
+
+  return {
+    passed:
+      bestGoodMatches >= config.goodMatches &&
+      bestMatchRatio >= config.matchRatio,
+    goodMatches: bestGoodMatches,
+    matchRatio: bestMatchRatio,
+  };
+}
+
 export default function CameraCapture({
+  recognitionKey,
   landmarkName,
   landmarkGuide,
   poseGuide,
@@ -108,7 +341,6 @@ export default function CameraCapture({
 }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const gestureRecognizerRef =
     useRef<GestureRecognizer | null>(null);
@@ -353,6 +585,7 @@ export default function CameraCapture({
         전체 대기시간을 줄입니다.
       */
       const modelPromise = initializeGestureRecognizer();
+      const landmarkModelPromise = cvReadyPromise;
 
       const cameraPromise =
         navigator.mediaDevices.getUserMedia({
@@ -370,8 +603,9 @@ export default function CameraCapture({
           audio: false,
         });
 
-      const [, stream] = await Promise.all([
+      const [, , stream] = await Promise.all([
         modelPromise,
+        landmarkModelPromise,
         cameraPromise,
       ]);
 
@@ -499,6 +733,34 @@ export default function CameraCapture({
 
       const capturedAt = new Date().toLocaleString("ko-KR");
 
+      setCaptureInformation({
+        latitude: currentLatitude,
+        longitude: currentLongitude,
+        accuracy: currentAccuracy,
+        distance: currentDistance,
+        capturedAt,
+      });
+
+      setPhoto(canvas.toDataURL("image/jpeg", 0.9));
+      setAnalyzing(true);
+      setCheckingLocation(false);
+      stopCamera();
+
+      const landmarkResult = await recognizeLandmark(
+        canvas,
+        recognitionKey
+      );
+
+      if (!landmarkResult.passed) {
+        setAnalyzing(false);
+        setPhoto(null);
+        onProcessingChange(false);
+        setError(
+          `랜드마크가 충분히 인식되지 않았습니다. 가이드라인 안에 ${landmarkName}이 크게 보이도록 다시 촬영해주세요. (특징점 ${landmarkResult.goodMatches}개 · 일치율 ${landmarkResult.matchRatio.toFixed(1)}%)`
+        );
+        return;
+      }
+
       const informationHeight = Math.max(
         100,
         Math.round(canvas.height * 0.13)
@@ -535,7 +797,7 @@ export default function CameraCapture({
       context.font = `${detailFontSize}px sans-serif`;
 
       context.fillText(
-        `${capturedAt} · 엄지척 확인 · 인증 지점에서 약 ${Math.round(
+        `${capturedAt} · 손 포즈 확인 · 인증 지점에서 약 ${Math.round(
           currentDistance
         )}m`,
         20,
@@ -547,31 +809,14 @@ export default function CameraCapture({
         0.9
       );
 
-      setCaptureInformation({
-        latitude: currentLatitude,
-        longitude: currentLongitude,
-        accuracy: currentAccuracy,
-        distance: currentDistance,
-        capturedAt,
-      });
-
       setPhoto(capturedPhoto);
-      setAnalyzing(true);
-      setCheckingLocation(false);
-
-      stopCamera();
-
-      /*
-        현재 랜드마크 사진 인식은 시뮬레이션입니다.
-        엄지척과 GPS를 통과한 경우에만 실행됩니다.
-      */
-      timerRef.current = setTimeout(() => {
-        onVerified();
-      }, 1500);
+      onVerified();
     } catch (locationError) {
       console.error(locationError);
 
       setCheckingLocation(false);
+      setAnalyzing(false);
+      onProcessingChange(false);
 
       const gpsError =
         locationError as GeolocationPositionError;
@@ -609,10 +854,6 @@ export default function CameraCapture({
 
       if (animationFrameRef.current !== null) {
         cancelAnimationFrame(animationFrameRef.current);
-      }
-
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
       }
 
       gestureRecognizerRef.current?.close();
@@ -658,29 +899,26 @@ export default function CameraCapture({
           </div>
 
           <div
+            style={styles.landmarkFrame}
+          >
+            <span style={styles.frameText}>
+              {landmarkName}을 이 안에 맞춰주세요
+            </span>
+          </div>
+
+          <div
             style={{
-              ...styles.landmarkFrame,
-              borderColor:
-                thumbDetected || checkingLocation
-                  ? "#35e789"
-                  : "white",
+              ...styles.handGuideFrame,
+              borderColor: thumbDetected ? "#35e789" : "white",
             }}
           >
-            <span
-              style={{
-                ...styles.frameText,
-                backgroundColor:
-                  thumbDetected || checkingLocation
-                    ? "rgba(13, 125, 70, 0.88)"
-                    : "rgba(0, 0, 0, 0.55)",
-              }}
-            >
-              {checkingLocation
-                ? `✓ ${targetGestureInformation.name} 확인 완료`
-                : thumbDetected
-                  ? `✓ ${targetGestureInformation.name} 포즈 확인`
-                  : `${targetGestureInformation.icon} ${targetGestureInformation.instruction}`}
+            <span style={styles.handGuideIcon}>
+              {targetGestureInformation.icon}
             </span>
+
+            <small>
+              {thumbDetected ? "포즈 확인" : "손을 여기에"}
+            </small>
           </div>
 
           <div
@@ -757,7 +995,7 @@ export default function CameraCapture({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={photo}
-            alt="엄지척과 GPS 정보가 포함된 인증 사진"
+            alt="손 포즈와 GPS 정보가 포함된 인증 사진"
             style={styles.photo}
           />
 
@@ -766,7 +1004,7 @@ export default function CameraCapture({
               <strong>인증 정보</strong>
 
               <p style={styles.informationText}>
-                엄지척 포즈: 확인 완료
+                {targetGestureInformation.name} 포즈: 확인 완료
                 <br />
                 촬영 시각: {captureInformation.capturedAt}
                 <br />
@@ -785,7 +1023,7 @@ export default function CameraCapture({
             <strong>랜드마크를 확인하고 있습니다.</strong>
 
             <p style={styles.resultMessage}>
-              엄지척과 GPS 인증은 완료되었습니다.
+              손 포즈와 GPS 인증은 완료되었습니다.
             </p>
           </div>
         </div>
@@ -795,15 +1033,13 @@ export default function CameraCapture({
         <div style={styles.errorContainer}>
           <p style={styles.error}>❌ {error}</p>
 
-          {cameraOpen && (
-            <button
-              type="button"
-              style={styles.retryButton}
-              onClick={retryCapture}
-            >
-              다시 촬영하기
-            </button>
-          )}
+          <button
+            type="button"
+            style={styles.retryButton}
+            onClick={retryCapture}
+          >
+            다시 촬영하기
+          </button>
         </div>
       )}
     </section>
@@ -822,7 +1058,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "14px",
     border: "none",
     borderRadius: "14px",
-    backgroundColor: "#137c4b",
+    background: "linear-gradient(135deg, #23445d, #315f78)",
     color: "white",
     fontSize: "16px",
     fontWeight: 700,
@@ -866,10 +1102,10 @@ const styles: Record<string, React.CSSProperties> = {
 
   landmarkFrame: {
     position: "absolute",
-    top: "170px",
-    left: "8%",
-    width: "84%",
-    height: "190px",
+    top: "128px",
+    left: "6%",
+    width: "88%",
+    height: "205px",
     zIndex: 2,
     boxSizing: "border-box",
     border: "3px dashed white",
@@ -884,15 +1120,40 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: "10px",
     padding: "6px 10px",
     color: "white",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     borderRadius: "999px",
     fontSize: "12px",
     fontWeight: 700,
   },
 
+  handGuideFrame: {
+    position: "absolute",
+    right: "16px",
+    bottom: "108px",
+    zIndex: 4,
+    width: "88px",
+    height: "88px",
+    border: "3px dashed white",
+    borderRadius: "18px",
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    color: "white",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "2px",
+    fontWeight: 800,
+    pointerEvents: "none",
+  },
+
+  handGuideIcon: {
+    fontSize: "30px",
+  },
+
   gestureStatus: {
     position: "absolute",
     left: "14px",
-    right: "14px",
+    right: "116px",
     bottom: "112px",
     zIndex: 3,
     padding: "10px 12px",

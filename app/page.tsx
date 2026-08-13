@@ -6,15 +6,23 @@ import CameraCapture from "../components/CameraCapture";
 type Landmark = {
   id: string;
   name: string;
+  icon: string;
+  mission: string;
+  recognitionKey: "character" | "inform" | "wish";
   description: string;
   landmarkGuide: string;
   poseGuide: string;
   latitude: number;
   longitude: number;
   radius: number;
+  mapPosition: {
+    x: number;
+    y: number;
+  };
 };
 
 type Screen =
+  | "main-home"
   | "home"
   | "quests"
   | "progress"
@@ -25,14 +33,17 @@ const COMPLETED_LANDMARKS_KEY =
   "loqestCompletedLandmarks";
 
 const GANGDONG_BADGE_DATE_KEY =
-  "loqestGangdongBadgeEarnedAt";
+  "loqestAmsaBadgeEarnedAt";
 
 const landmarks: Landmark[] = [
   {
-    id: "amsa-history",
-    name: "서울 암사동 유적",
+    id: "amsa-inform",
+    name: "선사유적지 안내판",
+    icon: "🗺️",
+    mission: "유적지 지도를 찾아보세요",
+    recognitionKey: "inform",
     description:
-      "선사시대 유적지에서 인증 사진을 촬영합니다.",
+      "선사유적지 안내판을 가이드에 맞춰 촬영합니다.",
     landmarkGuide:
       "1. 가이드라인에 맞춰 랜드마크를 화면에 담아주세요.",
     poseGuide:
@@ -40,32 +51,41 @@ const landmarks: Landmark[] = [
     latitude: 37.55292,
     longitude: 127.12555,
     radius: 250,
+    mapPosition: { x: 88, y: 108 },
   },
   {
-    id: "gwangnaru-park",
-    name: "광나루한강공원",
+    id: "amsa-character",
+    name: "선사유적지 캐릭터",
+    icon: "🎨",
+    mission: "움스프렌즈를 찾아보세요",
+    recognitionKey: "character",
     description:
-      "한강 풍경과 함께 인증 사진을 촬영합니다.",
+      "움스프렌즈 캐릭터와 함께 인증 사진을 촬영합니다.",
     landmarkGuide:
       "1. 가이드라인에 맞춰 랜드마크를 화면에 담아주세요.",
     poseGuide:
       "2. 화면에 제시된 포즈를 취한 상태로 촬영하세요.",
     latitude: 37.55292,
     longitude: 127.12555,
-    radius: 300,
+    radius: 250,
+    mapPosition: { x: 264, y: 250 },
   },
   {
-    id: "starbucks-amsa",
-    name: "스타벅스 암사역점",
+    id: "amsa-wish",
+    name: "소망움집",
+    icon: "🛖",
+    mission: "소망움집을 정면에서 담아보세요",
+    recognitionKey: "wish",
     description:
-      "스타벅스 암사역점에서 테스트 인증을 진행합니다.",
+      "소망움집을 정면 가이드에 맞춰 촬영합니다.",
     landmarkGuide:
       "1. 가이드라인에 맞춰 랜드마크를 화면에 담아주세요.",
     poseGuide:
       "2. 화면에 제시된 포즈를 취한 상태로 촬영하세요.",
     latitude: 37.55292,
     longitude: 127.12555,
-    radius: 200,
+    radius: 250,
+    mapPosition: { x: 96, y: 396 },
   },
 ];
 
@@ -84,7 +104,7 @@ function formatBadgeDate(dateValue: string | null) {
 }
 
 export default function Home() {
-  const [screen, setScreen] = useState<Screen>("home");
+  const [screen, setScreen] = useState<Screen>("main-home");
 
   const [selectedLandmark, setSelectedLandmark] =
     useState<Landmark | null>(null);
@@ -101,11 +121,11 @@ export default function Home() {
 
   useEffect(() => {
     const badgeEarned = localStorage.getItem(
-      "loqestGangdongBadgeEarnedAt"
+      GANGDONG_BADGE_DATE_KEY
     );
 
     const badgeSeen = localStorage.getItem(
-      "loqestGangdongBadgeSeen"
+      "loqestAmsaBadgeSeen"
     );
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -146,11 +166,15 @@ export default function Home() {
           typeof id === "string" && validIds.includes(id)
       );
 
+      const uniqueSavedStamps = [
+        ...new Set(validSavedStamps),
+      ];
+
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCompletedLandmarks(validSavedStamps);
+      setCompletedLandmarks(uniqueSavedStamps);
 
       if (
-        validSavedStamps.length === landmarks.length
+        uniqueSavedStamps.length === landmarks.length
       ) {
         const earnedAt =
           savedBadgeDate ?? new Date().toISOString();
@@ -163,14 +187,12 @@ export default function Home() {
 
         }
 
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setBadgeEarnedAt(earnedAt);
       }
     } catch {
       localStorage.removeItem(COMPLETED_LANDMARKS_KEY);
       localStorage.removeItem(GANGDONG_BADGE_DATE_KEY);
-      localStorage.removeItem("loqestGangdongBadgeSeen");
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      localStorage.removeItem("loqestAmsaBadgeSeen");
       setHasUnreadBadge(false);
     }
   }, []);
@@ -188,6 +210,11 @@ export default function Home() {
     setSelectedLandmark(null);
     setStampIssued(false);
     setVerificationProcessing(false);
+  }
+
+  function goToMainHome() {
+    resetVerification();
+    setScreen("main-home");
   }
 
   function goHome() {
@@ -209,7 +236,7 @@ export default function Home() {
     setHasUnreadBadge(false);
 
     localStorage.setItem(
-      "loqestGangdongBadgeSeen",
+      "loqestAmsaBadgeSeen",
       "true"
     );
 
@@ -231,7 +258,7 @@ export default function Home() {
 
     localStorage.removeItem(COMPLETED_LANDMARKS_KEY);
     localStorage.removeItem(GANGDONG_BADGE_DATE_KEY);
-    localStorage.removeItem("loqestGangdongBadgeSeen");
+    localStorage.removeItem("loqestAmsaBadgeSeen");
   }
 
   function selectLandmark(landmark: Landmark) {
@@ -274,7 +301,7 @@ export default function Home() {
         earnedAt
       );
 
-      localStorage.removeItem("loqestGangdongBadgeSeen");
+      localStorage.removeItem("loqestAmsaBadgeSeen");
       setHasUnreadBadge(true);
     }
   }
@@ -290,6 +317,67 @@ export default function Home() {
   const tourCompleted =
     completedCount === landmarks.length;
 
+  const visitedLandmarks = completedLandmarks
+    .map((id) =>
+      landmarks.find((landmark) => landmark.id === id)
+    )
+    .filter((landmark): landmark is Landmark =>
+      Boolean(landmark)
+    );
+
+  const visitedPath = visitedLandmarks
+    .map(
+      (landmark) =>
+        `${landmark.mapPosition.x},${landmark.mapPosition.y}`
+    )
+    .join(" ");
+
+  if (screen === "main-home") {
+    return (
+      <main style={styles.main}>
+        <section style={styles.card}>
+          <header style={styles.mainHomeHeader}>
+            <p style={styles.logo}>LOQEST</p>
+
+            <h1 style={styles.mainHomeTitle}>
+              당신만의 여행을 만들어가세요
+            </h1>
+
+            <p style={styles.mainHomeDescription}>
+              지역을 발견하고 퀘스트를 완료하며,
+              <br />
+              나만의 여행 기록을 쌓아보세요.
+            </p>
+          </header>
+
+          <h2 style={styles.destinationHeading}>여행지 목록</h2>
+
+          <article style={styles.destinationCard}>
+            <p style={styles.destinationLocation}>서울 · 강동구</p>
+
+            <h3 style={styles.destinationTitle}>
+              서울 암사동 유적 투어
+            </h3>
+
+            <p style={styles.destinationDescription}>
+              선사시대의 흔적을 따라
+              <br />
+              특별한 퀘스트를 만나보세요.
+            </p>
+
+            <button
+              type="button"
+              style={styles.primaryButton}
+              onClick={goHome}
+            >
+              선사유적지 탐험하기 →
+            </button>
+          </article>
+        </section>
+      </main>
+    );
+  }
+
   if (screen === "home") {
     return (
       <main style={styles.main}>
@@ -297,11 +385,11 @@ export default function Home() {
           <p style={styles.badge}>모바일 테스트 투어</p>
 
           <h1 style={styles.title}>
-            강동구 랜드마크 투어
+            서울 암사동 유적 투어
           </h1>
 
           <p style={styles.description}>
-            강동구의 랜드마크를 방문하고
+            선사유적지의 랜드마크를 발견하고
             <br />
             디지털 스탬프와 여행 뱃지를 모아보세요.
           </p>
@@ -343,6 +431,14 @@ export default function Home() {
               <span style={styles.newBadge}>NEW</span>
             )}
           </button>
+
+          <button
+            type="button"
+            style={styles.homeButton}
+            onClick={goToMainHome}
+          >
+            LOQEST 홈으로
+          </button>
         </section>
       </main>
     );
@@ -355,7 +451,7 @@ export default function Home() {
           <p style={styles.badge}>현재 탐험</p>
 
           <h1 style={styles.title}>
-            강동구 탐험 진행률
+            선사유적지 탐험 진행률
           </h1>
 
           <div style={styles.progressSummary}>
@@ -384,42 +480,84 @@ export default function Home() {
               <span style={styles.completionIcon}>🎉</span>
 
               <div>
-                <strong>강동구 탐험 완료!</strong>
+                <strong>선사유적지 탐험 완료!</strong>
 
                 <p style={styles.completionText}>
-                  ‘강동구 탐험가’ 뱃지가 자동으로
+                  ‘선사유적지 탐험가’ 뱃지가 자동으로
                   발급되었습니다.
                 </p>
               </div>
             </div>
           )}
 
-          <div style={styles.landmarkList}>
+          <div className="exploration-map">
+            <div className="map-decoration map-tree-one">♧</div>
+            <div className="map-decoration map-tree-two">♧</div>
+            <div className="map-decoration map-wave-one">≋</div>
+            <div className="map-decoration map-wave-two">≋</div>
+
+            <svg
+              className="map-route"
+              viewBox="0 0 360 520"
+              aria-hidden="true"
+            >
+              {visitedLandmarks.length >= 2 && (
+                <polyline
+                  className="map-route-visited"
+                  points={visitedPath}
+                />
+              )}
+            </svg>
+
             {landmarks.map((landmark) => {
-              const completed =
-                completedLandmarks.includes(landmark.id);
+              const visitIndex = completedLandmarks.indexOf(
+                landmark.id
+              );
+              const completed = visitIndex >= 0;
 
               return (
-                <div
+                <button
+                  type="button"
                   key={landmark.id}
-                  style={styles.progressItem}
+                  className={`map-place ${
+                    completed ? "map-place-completed" : ""
+                  }`}
+                  style={{
+                    left: `${(landmark.mapPosition.x / 360) * 100}%`,
+                    top: `${(landmark.mapPosition.y / 520) * 100}%`,
+                  }}
+                  onClick={() => {
+                    if (!completed) {
+                      selectLandmark(landmark);
+                    }
+                  }}
+                  aria-label={
+                    completed
+                      ? `${landmark.name}, ${visitIndex + 1}번째 인증 완료`
+                      : `${landmark.name}, 아직 인증하지 않음`
+                  }
                 >
-                  <span style={styles.progressIcon}>
-                    {completed ? "✅" : "⬜"}
+                  <span className="map-stamp">
+                    {completed ? visitIndex + 1 : "?"}
                   </span>
 
-                  <div>
+                  <span className="map-place-label">
                     <strong>{landmark.name}</strong>
-
-                    <p style={styles.smallText}>
+                    <small>
                       {completed
-                        ? "인증 완료"
-                        : "아직 인증하지 않았습니다."}
-                    </p>
-                  </div>
-                </div>
+                        ? `${visitIndex + 1}번째 탐험 완료`
+                        : "눌러서 인증하기"}
+                    </small>
+                  </span>
+                </button>
               );
             })}
+
+            {tourCompleted && (
+              <div className="map-finish-flag" aria-label="전체 탐험 완료">
+                ⚑ 완주
+              </div>
+            )}
           </div>
 
           {tourCompleted ? (
@@ -484,11 +622,11 @@ export default function Home() {
               </p>
 
               <h2 style={styles.badgeTitle}>
-                강동구 탐험가
+                선사유적지 탐험가
               </h2>
 
               <p style={styles.badgeDescription}>
-                강동구 랜드마크 3곳의 인증을
+                선사유적지 랜드마크 3곳의 인증을
                 모두 완료했습니다.
               </p>
 
@@ -530,11 +668,11 @@ export default function Home() {
               <div style={styles.lockedBadge}>🔒</div>
 
               <h2 style={styles.badgeTitle}>
-                강동구 탐험가
+                선사유적지 탐험가
               </h2>
 
               <p style={styles.badgeDescription}>
-                강동구 랜드마크를 모두 인증하면
+                선사유적지 랜드마크를 모두 인증하면
                 여행 뱃지가 자동으로 발급됩니다.
               </p>
 
@@ -623,6 +761,7 @@ export default function Home() {
               </div>
 
               <CameraCapture
+                recognitionKey={selectedLandmark.recognitionKey}
                 landmarkName={selectedLandmark.name}
                 landmarkGuide={
                   selectedLandmark.landmarkGuide
@@ -678,7 +817,7 @@ export default function Home() {
 
                   <div>
                     <strong>
-                      강동구 탐험가 뱃지 획득!
+                      선사유적지 탐험가 뱃지 획득!
                     </strong>
 
                     <p style={styles.completionText}>
@@ -724,7 +863,7 @@ export default function Home() {
     <main style={styles.main}>
       <section style={styles.card}>
         <p style={styles.badge}>
-          강동구 테스트 코스
+          서울 암사동 유적 코스
         </p>
 
         <h1 style={styles.title}>
@@ -755,14 +894,19 @@ export default function Home() {
                 }
                 disabled={completed}
               >
-                <strong style={styles.landmarkName}>
-                  {landmark.name}
-                </strong>
+                <span style={styles.questIcon}>
+                  {landmark.icon}
+                </span>
 
-                <span style={styles.smallText}>
-                  {completed
-                    ? "✅ 인증 완료"
-                    : `엄지척 + GPS 인증 · 반경 ${landmark.radius}m`}
+                <span style={styles.questContent}>
+                  <strong style={styles.landmarkName}>
+                    {completed ? "✓ " : ""}
+                    {landmark.name}
+                  </strong>
+
+                  <span style={styles.smallText}>
+                    {completed ? "인증 완료" : landmark.mission}
+                  </span>
                 </span>
               </button>
             );
@@ -771,18 +915,10 @@ export default function Home() {
 
         <button
           type="button"
-          style={styles.secondaryButton}
-          onClick={goToProgress}
-        >
-          현재 탐험 진행률
-        </button>
-
-        <button
-          type="button"
-          style={styles.secondaryButton}
+          style={styles.homeButton}
           onClick={goHome}
         >
-          홈으로 가기
+          뒤로가기
         </button>
       </section>
     </main>
@@ -793,58 +929,129 @@ const styles: Record<string, React.CSSProperties> = {
   main: {
     minHeight: "100vh",
     padding: "24px 16px",
-    backgroundColor: "#f4f6f5",
+    background:
+      "radial-gradient(circle at top right, rgba(76, 145, 168, 0.13), transparent 32%), linear-gradient(180deg, #fffaf2 0%, #f8f4eb 100%)",
     display: "flex",
     justifyContent: "center",
     alignItems: "flex-start",
-    color: "#202020",
+    color: "#263238",
   },
 
   card: {
     width: "100%",
     maxWidth: "480px",
-    padding: "24px",
-    backgroundColor: "white",
-    borderRadius: "24px",
+    padding: "26px 24px",
+    backgroundColor: "rgba(255, 255, 255, 0.96)",
+    border: "1px solid rgba(216, 174, 98, 0.22)",
+    borderRadius: "22px",
     boxShadow:
-      "0 10px 30px rgba(0, 0, 0, 0.08)",
+      "0 18px 50px rgba(35, 68, 93, 0.09)",
+  },
+
+  mainHomeHeader: {
+    padding: "18px 6px 28px",
+    textAlign: "center",
+  },
+
+  logo: {
+    margin: "0 0 14px",
+    color: "#23445d",
+    fontSize: "42px",
+    fontWeight: 900,
+    letterSpacing: "0.08em",
+  },
+
+  mainHomeTitle: {
+    margin: "0 0 12px",
+    color: "#23445d",
+    fontSize: "24px",
+    lineHeight: 1.35,
+    letterSpacing: "-0.04em",
+  },
+
+  mainHomeDescription: {
+    margin: 0,
+    color: "#6d767b",
+    fontSize: "14px",
+    lineHeight: 1.7,
+  },
+
+  destinationHeading: {
+    margin: "0 0 12px",
+    color: "#374f60",
+    fontSize: "17px",
+  },
+
+  destinationCard: {
+    padding: "22px",
+    border: "1px solid #d5e4e7",
+    borderRadius: "20px",
+    background:
+      "linear-gradient(145deg, #ffffff, #eef7f8)",
+    boxShadow: "0 10px 26px rgba(35, 68, 93, 0.08)",
+  },
+
+  destinationLocation: {
+    margin: "0 0 9px",
+    color: "#4c91a8",
+    fontSize: "12px",
+    fontWeight: 800,
+    letterSpacing: "0.04em",
+  },
+
+  destinationTitle: {
+    margin: "0 0 10px",
+    color: "#23445d",
+    fontSize: "22px",
+    letterSpacing: "-0.03em",
+  },
+
+  destinationDescription: {
+    margin: "0 0 8px",
+    color: "#6d767b",
+    fontSize: "14px",
+    lineHeight: 1.65,
   },
 
   badge: {
     display: "inline-block",
     margin: "0 0 12px",
     padding: "7px 12px",
-    backgroundColor: "#e3f3e9",
-    color: "#167245",
+    backgroundColor: "#eef6f7",
+    color: "#356f82",
+    border: "1px solid #d7e9ed",
     borderRadius: "999px",
     fontSize: "13px",
-    fontWeight: 700,
+    fontWeight: 800,
+    letterSpacing: "0.04em",
   },
 
   title: {
     margin: "0 0 14px",
+    color: "#23445d",
     fontSize: "30px",
     lineHeight: 1.25,
+    letterSpacing: "-0.04em",
   },
 
   description: {
     marginBottom: "24px",
-    color: "#666",
+    color: "#6d767b",
     lineHeight: 1.7,
   },
 
   entryInfo: {
     marginBottom: "12px",
     padding: "15px",
-    backgroundColor: "#eef7f1",
-    border: "1px solid #d7eadf",
+    backgroundColor: "#fff9ee",
+    border: "1px solid #ead9b8",
     borderRadius: "14px",
-    color: "#176c44",
+    color: "#7c6029",
   },
 
   entryText: {
     margin: "6px 0 0",
-    color: "#547065",
+    color: "#80745e",
     fontSize: "13px",
     lineHeight: 1.5,
   },
@@ -855,12 +1062,13 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: "12px",
     padding: "14px",
     border: "none",
-    borderRadius: "14px",
-    backgroundColor: "#137c4b",
+    borderRadius: "16px",
+    background: "linear-gradient(135deg, #23445d, #315f78)",
     color: "white",
     fontSize: "16px",
     fontWeight: 700,
     cursor: "pointer",
+    boxShadow: "0 9px 22px rgba(35, 68, 93, 0.2)",
   },
 
   secondaryButton: {
@@ -868,10 +1076,10 @@ const styles: Record<string, React.CSSProperties> = {
     minHeight: "50px",
     marginTop: "12px",
     padding: "13px",
-    border: "1px solid #cbd2ce",
-    borderRadius: "14px",
-    backgroundColor: "white",
-    color: "#333",
+    border: "1px solid #bdd6dd",
+    borderRadius: "16px",
+    backgroundColor: "#f4fafb",
+    color: "#2d6072",
     fontSize: "15px",
     fontWeight: 700,
     cursor: "pointer",
@@ -883,10 +1091,10 @@ const styles: Record<string, React.CSSProperties> = {
     minHeight: "50px",
     marginTop: "12px",
     padding: "13px",
-    border: "1px solid #dccb93",
-    borderRadius: "14px",
-    backgroundColor: "#fff9e8",
-    color: "#73590c",
+    border: "1px solid #e4c98f",
+    borderRadius: "16px",
+    background: "linear-gradient(135deg, #fffaf0, #fff4da)",
+    color: "#795b22",
     fontSize: "15px",
     fontWeight: 700,
     cursor: "pointer",
@@ -902,7 +1110,7 @@ const styles: Record<string, React.CSSProperties> = {
     right: "10px",
     padding: "4px 7px",
     borderRadius: "999px",
-    backgroundColor: "#e44a3c",
+    backgroundColor: "#e97861",
     color: "white",
     fontSize: "10px",
     fontWeight: 900,
@@ -916,19 +1124,21 @@ const styles: Record<string, React.CSSProperties> = {
   landmarkButton: {
     width: "100%",
     padding: "18px",
-    border: "1px solid #b9d8c5",
-    borderRadius: "16px",
-    backgroundColor: "#f0f8f3",
-    color: "#174d32",
+    border: "1px solid #d5e4e7",
+    borderLeft: "5px solid #4c91a8",
+    borderRadius: "18px",
+    background: "linear-gradient(145deg, #ffffff, #f3f9fa)",
+    color: "#23445d",
     textAlign: "left",
-    display: "grid",
-    gap: "8px",
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
     cursor: "pointer",
-    boxShadow: "0 4px 12px rgba(19, 124, 75, 0.06)",
+    boxShadow: "0 8px 20px rgba(35, 68, 93, 0.07)",
   },
 
   completedLandmarkButton: {
-    backgroundColor: "#edf5f0",
+    backgroundColor: "#f3f1ea",
     opacity: 0.7,
     cursor: "default",
   },
@@ -937,10 +1147,43 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "16px",
   },
 
+  questIcon: {
+    flexShrink: 0,
+    width: "44px",
+    height: "44px",
+    borderRadius: "14px",
+    backgroundColor: "#eaf4f6",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "23px",
+  },
+
+  questContent: {
+    minWidth: 0,
+    display: "grid",
+    gap: "6px",
+  },
+
+  homeButton: {
+    width: "100%",
+    minHeight: "46px",
+    marginTop: "10px",
+    padding: "11px",
+    border: "1px solid #d8dddf",
+    borderRadius: "14px",
+    backgroundColor: "transparent",
+    color: "#7a858a",
+    fontSize: "14px",
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+
   guideBox: {
     marginBottom: "12px",
     padding: "16px",
-    backgroundColor: "#f1f6f3",
+    backgroundColor: "#f2f7f8",
+    border: "1px solid #dbe8eb",
     borderRadius: "14px",
     lineHeight: 1.6,
   },
@@ -948,7 +1191,8 @@ const styles: Record<string, React.CSSProperties> = {
   gpsNotice: {
     marginBottom: "16px",
     padding: "14px",
-    backgroundColor: "#fff5dd",
+    backgroundColor: "#fff8e9",
+    border: "1px solid #ead8ae",
     borderRadius: "14px",
     color: "#664c0c",
   },
@@ -968,9 +1212,9 @@ const styles: Record<string, React.CSSProperties> = {
     width: "130px",
     height: "130px",
     margin: "10px auto 24px",
-    border: "8px double #137c4b",
+    border: "8px double #e97861",
     borderRadius: "50%",
-    color: "#137c4b",
+    color: "#d9614c",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
@@ -987,7 +1231,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   progressNumber: {
     fontSize: "36px",
-    color: "#137c4b",
+    color: "#23445d",
   },
 
   progressBarBackground: {
@@ -1000,7 +1244,7 @@ const styles: Record<string, React.CSSProperties> = {
 
   progressBar: {
     height: "100%",
-    backgroundColor: "#137c4b",
+    background: "linear-gradient(90deg, #4c91a8, #67a9b9)",
     borderRadius: "999px",
     transition: "width 0.3s ease",
   },
@@ -1033,9 +1277,9 @@ const styles: Record<string, React.CSSProperties> = {
   completionNotice: {
     marginBottom: "18px",
     padding: "15px",
-    border: "1px solid #eedc9f",
+    border: "1px solid #e7cc91",
     borderRadius: "15px",
-    backgroundColor: "#fff8dc",
+    backgroundColor: "#fff7e3",
     color: "#6a530d",
     display: "flex",
     alignItems: "center",
@@ -1142,8 +1386,8 @@ const styles: Record<string, React.CSSProperties> = {
   completedChip: {
     padding: "6px 9px",
     borderRadius: "999px",
-    backgroundColor: "#e7f3eb",
-    color: "#176c44",
+    backgroundColor: "#eaf4f6",
+    color: "#356f82",
     fontSize: "11px",
     fontWeight: 700,
   },
@@ -1152,7 +1396,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "28px 18px",
     border: "1px dashed #c9cecb",
     borderRadius: "22px",
-    backgroundColor: "#f8faf9",
+    backgroundColor: "#fbfaf6",
     textAlign: "center",
   },
 
@@ -1175,7 +1419,7 @@ const styles: Record<string, React.CSSProperties> = {
   miniProgress: {
     height: "100%",
     borderRadius: "999px",
-    backgroundColor: "#137c4b",
+    backgroundColor: "#4c91a8",
     transition: "width 0.3s ease",
   },
 };
