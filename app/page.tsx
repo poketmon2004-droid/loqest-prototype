@@ -48,8 +48,8 @@ const landmarks: Landmark[] = [
       "1. 가이드라인에 맞춰 랜드마크를 화면에 담아주세요.",
     poseGuide:
       "2. 화면에 제시된 포즈를 취한 상태로 촬영하세요.",
-    latitude: 37.552888,
-    longitude: 127.125493,
+    latitude: 37.559771,
+    longitude: 127.130753,
     radius: 250,
     mapPosition: { x: 88, y: 108 },
   },
