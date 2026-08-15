@@ -1467,11 +1467,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 800,
   },
 
-  badgeMenuIcon: {
-    justifySelf: "start",
-    fontSize: "20px",
-  },
-
   newBadge: {
     position: "absolute",
     top: "-7px",
