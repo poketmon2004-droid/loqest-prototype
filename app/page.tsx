@@ -469,9 +469,9 @@ export default function Home() {
             </h3>
 
             <p style={styles.destinationDescription}>
-              노트북 키보드 퀘스트로
+              LOQEST의 스탬프 투어를
               <br />
-              전체 촬영 과정을 테스트해보세요.
+              테스트 모드로 진행 해보세요.
             </p>
 
             <button
