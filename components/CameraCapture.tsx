@@ -396,34 +396,44 @@ export default function CameraCapture({
       );
 
       let recognizer: GestureRecognizer;
+      const isAndroid = /Android/i.test(navigator.userAgent);
 
-      try {
-        recognizer =
-          await GestureRecognizer.createFromOptions(vision, {
-            baseOptions: {
-              modelAssetPath:
-                "/models/gesture_recognizer.task",
-              delegate: "GPU",
-            },
-            runningMode: "VIDEO",
-            numHands: 1,
-            minHandDetectionConfidence: 0.5,
-            minHandPresenceConfidence: 0.5,
-            minTrackingConfidence: 0.5,
-          });
-      } catch {
-        recognizer =
-          await GestureRecognizer.createFromOptions(vision, {
-            baseOptions: {
-              modelAssetPath:
-                "/models/gesture_recognizer.task",
-            },
-            runningMode: "VIDEO",
-            numHands: 1,
-            minHandDetectionConfidence: 0.5,
-            minHandPresenceConfidence: 0.5,
-            minTrackingConfidence: 0.5,
-          });
+      const createCpuRecognizer = () =>
+        GestureRecognizer.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: "/models/gesture_recognizer.task",
+          },
+          runningMode: "VIDEO",
+          numHands: 1,
+          minHandDetectionConfidence: 0.5,
+          minHandPresenceConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        });
+
+      if (isAndroid) {
+        /*
+          일부 갤럭시 기기에서는 GPU 모델 생성은 성공하지만
+          실제 영상 인식 단계가 멈출 수 있어 CPU로 바로 실행합니다.
+        */
+        recognizer = await createCpuRecognizer();
+      } else {
+        try {
+          recognizer =
+            await GestureRecognizer.createFromOptions(vision, {
+              baseOptions: {
+                modelAssetPath:
+                  "/models/gesture_recognizer.task",
+                delegate: "GPU",
+              },
+              runningMode: "VIDEO",
+              numHands: 1,
+              minHandDetectionConfidence: 0.5,
+              minHandPresenceConfidence: 0.5,
+              minTrackingConfidence: 0.5,
+            });
+        } catch {
+          recognizer = await createCpuRecognizer();
+        }
       }
 
       gestureRecognizerRef.current = recognizer;
@@ -651,6 +661,8 @@ export default function CameraCapture({
         ? Promise.resolve()
         : cvReadyPromise;
 
+      const isAndroid = /Android/i.test(navigator.userAgent);
+
       const cameraPromise =
         navigator.mediaDevices.getUserMedia({
           video: {
@@ -658,10 +670,10 @@ export default function CameraCapture({
               ideal: "environment",
             },
             width: {
-              ideal: 1280,
+              ideal: isAndroid ? 640 : 1280,
             },
             height: {
-              ideal: 720,
+              ideal: isAndroid ? 480 : 720,
             },
           },
           audio: false,
