@@ -670,10 +670,10 @@ export default function CameraCapture({
               ideal: "environment",
             },
             width: {
-              ideal: isAndroid ? 640 : 1280,
+              ideal: 1280,
             },
             height: {
-              ideal: isAndroid ? 480 : 720,
+              ideal: 720,
             },
           },
           audio: false,
