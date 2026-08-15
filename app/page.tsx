@@ -596,7 +596,7 @@ export default function Home() {
           <h1 style={styles.title}>집에서 하는 LOQEST 체험</h1>
 
           <p style={styles.description}>
-            노트북 키보드를 이용해 손 포즈 인증부터 스탬프 발급까지 확인해보세요.
+            손 포즈 인증부터 스탬프 발급까지 테스트해보세요.
           </p>
 
           <div style={styles.testNotice}>
