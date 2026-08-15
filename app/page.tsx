@@ -101,9 +101,9 @@ const landmarks: Landmark[] = [
 const testLandmarks: Landmark[] = [
   {
     id: "home-keyboard",
-    name: "노트북 키보드",
-    icon: "⌨️",
-    mission: "노트북 키보드를 화면에 담아보세요",
+    name: "사진 촬영 테스트",
+    icon: "🏡",
+    mission: "어떤 것이든 촬영 해보세요",
     recognitionKey: "home",
     requiresGps: false,
     description:

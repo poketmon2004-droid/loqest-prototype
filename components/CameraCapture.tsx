@@ -647,7 +647,9 @@ export default function CameraCapture({
         전체 대기시간을 줄입니다.
       */
       const modelPromise = initializeGestureRecognizer();
-      const landmarkModelPromise = cvReadyPromise;
+      const landmarkModelPromise = skipLocationVerification
+        ? Promise.resolve()
+        : cvReadyPromise;
 
       const cameraPromise =
         navigator.mediaDevices.getUserMedia({
@@ -832,19 +834,25 @@ export default function CameraCapture({
       setCheckingLocation(false);
       stopCamera();
 
-      const landmarkResult = await recognizeLandmark(
-        canvas,
-        recognitionKey
-      );
-
-      if (!landmarkResult.passed) {
-        setAnalyzing(false);
-        setPhoto(null);
-        onProcessingChange(false);
-        setError(
-          `랜드마크가 충분히 인식되지 않았습니다. 가이드라인 안에 ${landmarkName}이 크게 보이도록 다시 촬영해 주세요. (특징점 ${landmarkResult.goodMatches}개 · 일치율 ${landmarkResult.matchRatio.toFixed(1)}%)`
+      /*
+        테스트 퀘스트에서는 전체 체험 흐름만 확인할 수 있도록
+        GPS와 랜드마크 이미지 비교를 모두 생략합니다.
+      */
+      if (!skipLocationVerification) {
+        const landmarkResult = await recognizeLandmark(
+          canvas,
+          recognitionKey
         );
-        return;
+
+        if (!landmarkResult.passed) {
+          setAnalyzing(false);
+          setPhoto(null);
+          onProcessingChange(false);
+          setError(
+            `랜드마크가 충분히 인식되지 않았습니다. 가이드라인 안에 ${landmarkName}이 크게 보이도록 다시 촬영해 주세요. (특징점 ${landmarkResult.goodMatches}개 · 일치율 ${landmarkResult.matchRatio.toFixed(1)}%)`
+          );
+          return;
+        }
       }
 
       const informationHeight = Math.max(
@@ -965,7 +973,9 @@ export default function CameraCapture({
             </div>
 
             <strong style={styles.processingTitle}>
-              랜드마크를 확인하고 있어요
+              {skipLocationVerification
+                ? "인증을 처리하고 있어요"
+                : "랜드마크를 확인하고 있어요"}
             </strong>
 
             <p style={styles.processingMessage}>
