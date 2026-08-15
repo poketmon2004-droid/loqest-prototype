@@ -8,7 +8,8 @@ type Landmark = {
   name: string;
   icon: string;
   mission: string;
-  recognitionKey: "character" | "inform" | "wish";
+  recognitionKey: "character" | "inform" | "wish" | "home";
+  requiresGps: boolean;
   description: string;
   landmarkGuide: string;
   poseGuide: string;
@@ -25,8 +26,10 @@ type Screen =
   | "main-home"
   | "home"
   | "quests"
-  | "progress"
   | "badges"
+  | "guide"
+  | "test-home"
+  | "test-quests"
   | "verification";
 
 const COMPLETED_LANDMARKS_KEY =
@@ -35,6 +38,9 @@ const COMPLETED_LANDMARKS_KEY =
 const GANGDONG_BADGE_DATE_KEY =
   "loqestAmsaBadgeEarnedAt";
 
+const COMPLETED_TEST_LANDMARKS_KEY =
+  "loqestCompletedTestLandmarks";
+
 const landmarks: Landmark[] = [
   {
     id: "amsa-inform",
@@ -42,12 +48,13 @@ const landmarks: Landmark[] = [
     icon: "🗺️",
     mission: "유적지 지도를 찾아보세요",
     recognitionKey: "inform",
+    requiresGps: true,
     description:
       "선사유적지 안내판을 가이드에 맞춰 촬영합니다.",
-    landmarkGuide:
-      "1. 가이드라인에 맞춰 랜드마크를 화면에 담아주세요.",
     poseGuide:
-      "2. 화면에 제시된 포즈를 취한 상태로 촬영하세요.",
+      "1. 화면에 제시된 손동작을 따라 하면 촬영 버튼이 활성화됩니다.",
+    landmarkGuide:
+      "2. 손을 내리고, 1분 안에 랜드마크를 가이드라인에 맞춰 촬영해 주세요.",
     latitude: 37.559771,
     longitude: 127.130753,
     radius: 250,
@@ -59,12 +66,13 @@ const landmarks: Landmark[] = [
     icon: "🎨",
     mission: "움스프렌즈를 찾아보세요",
     recognitionKey: "character",
+    requiresGps: true,
     description:
       "움스프렌즈 캐릭터와 함께 인증 사진을 촬영합니다.",
-    landmarkGuide:
-      "1. 가이드라인에 맞춰 랜드마크를 화면에 담아주세요.",
     poseGuide:
-      "2. 화면에 제시된 포즈를 취한 상태로 촬영하세요.",
+      "1. 화면에 제시된 손동작을 따라 하면 촬영 버튼이 활성화됩니다.",
+    landmarkGuide:
+      "2. 손을 내리고, 1분 안에 랜드마크를 가이드라인에 맞춰 촬영해 주세요.",
     latitude: 37.559771,
     longitude: 127.130753,
     radius: 250,
@@ -76,16 +84,38 @@ const landmarks: Landmark[] = [
     icon: "🛖",
     mission: "소망움집을 정면에서 담아보세요",
     recognitionKey: "wish",
+    requiresGps: true,
     description:
       "소망움집을 정면 가이드에 맞춰 촬영합니다.",
-    landmarkGuide:
-      "1. 가이드라인에 맞춰 랜드마크를 화면에 담아주세요.",
     poseGuide:
-      "2. 화면에 제시된 포즈를 취한 상태로 촬영하세요.",
+      "1. 화면에 제시된 손동작을 따라 하면 촬영 버튼이 활성화됩니다.",
+    landmarkGuide:
+      "2. 손을 내리고, 1분 안에 랜드마크를 가이드라인에 맞춰 촬영해 주세요.",
     latitude: 37.559771,
     longitude: 127.130753,
     radius: 250,
     mapPosition: { x: 96, y: 396 },
+  },
+];
+
+const testLandmarks: Landmark[] = [
+  {
+    id: "home-keyboard",
+    name: "노트북 키보드",
+    icon: "⌨️",
+    mission: "노트북 키보드를 화면에 담아보세요",
+    recognitionKey: "home",
+    requiresGps: false,
+    description:
+      "집에서 손 포즈와 랜드마크 인증 과정을 테스트합니다.",
+    poseGuide:
+      "1. 화면에 제시된 손동작을 따라 하면 촬영 버튼이 활성화됩니다.",
+    landmarkGuide:
+      "2. 손을 내리고, 1분 안에 랜드마크를 가이드라인에 맞춰 촬영해 주세요.",
+    latitude: 0,
+    longitude: 0,
+    radius: 0,
+    mapPosition: { x: 180, y: 260 },
   },
 ];
 
@@ -117,6 +147,9 @@ export default function Home() {
   const [completedLandmarks, setCompletedLandmarks] =
     useState<string[]>([]);
 
+  const [completedTestLandmarks, setCompletedTestLandmarks] =
+    useState<string[]>([]);
+
   const [hasUnreadBadge, setHasUnreadBadge] = useState(false);
 
   useEffect(() => {
@@ -138,6 +171,28 @@ export default function Home() {
     useState<string | null>(null);
 
   useEffect(() => {
+    const savedTestStamps = localStorage.getItem(
+      COMPLETED_TEST_LANDMARKS_KEY
+    );
+
+    if (savedTestStamps) {
+      try {
+        const parsed: unknown = JSON.parse(savedTestStamps);
+
+        if (Array.isArray(parsed)) {
+          const validIds = testLandmarks.map((landmark) => landmark.id);
+          setCompletedTestLandmarks(
+            parsed.filter(
+              (id): id is string =>
+                typeof id === "string" && validIds.includes(id)
+            )
+          );
+        }
+      } catch {
+        localStorage.removeItem(COMPLETED_TEST_LANDMARKS_KEY);
+      }
+    }
+
     const savedStamps = localStorage.getItem(
       COMPLETED_LANDMARKS_KEY
     );
@@ -227,11 +282,6 @@ export default function Home() {
     setScreen("quests");
   }
 
-  function goToProgress() {
-    resetVerification();
-    setScreen("progress");
-  }
-
   function goToBadges() {
     setHasUnreadBadge(false);
 
@@ -241,6 +291,21 @@ export default function Home() {
     );
 
     setScreen("badges");
+  }
+
+  function goToGuide() {
+    resetVerification();
+    setScreen("guide");
+  }
+
+  function goToTestHome() {
+    resetVerification();
+    setScreen("test-home");
+  }
+
+  function goToTestQuestList() {
+    resetVerification();
+    setScreen("test-quests");
   }
 
   function resetProgress() {
@@ -273,6 +338,23 @@ export default function Home() {
     }
 
     setStampIssued(true);
+
+    if (!selectedLandmark.requiresGps) {
+      if (!completedTestLandmarks.includes(selectedLandmark.id)) {
+        const next = [
+          ...completedTestLandmarks,
+          selectedLandmark.id,
+        ];
+
+        setCompletedTestLandmarks(next);
+        localStorage.setItem(
+          COMPLETED_TEST_LANDMARKS_KEY,
+          JSON.stringify(next)
+        );
+      }
+
+      return;
+    }
 
     if (completedLandmarks.includes(selectedLandmark.id)) {
       return;
@@ -373,6 +455,172 @@ export default function Home() {
               선사유적지 탐험하기 →
             </button>
           </article>
+
+          <article
+            style={{
+              ...styles.destinationCard,
+              marginTop: "14px",
+            }}
+          >
+            <p style={styles.destinationLocation}>테스트 모드 · GPS 생략</p>
+
+            <h3 style={styles.destinationTitle}>
+              집에서 하는 LOQEST 체험
+            </h3>
+
+            <p style={styles.destinationDescription}>
+              노트북 키보드 퀘스트로
+              <br />
+              전체 촬영 과정을 테스트해보세요.
+            </p>
+
+            <button
+              type="button"
+              style={styles.primaryButton}
+              onClick={goToTestHome}
+            >
+              테스트 관광지 입장하기 →
+            </button>
+          </article>
+
+          <button
+            type="button"
+            style={styles.badgeButton}
+            onClick={goToBadges}
+          >
+            <span style={styles.badgeMenuIcon}>📖</span>
+            <span>나의 여행 도감</span>
+            <span style={styles.badgeMenuArrow}>→</span>
+
+            {hasUnreadBadge && (
+              <span style={styles.newBadge}>NEW</span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            style={styles.guideButton}
+            onClick={goToGuide}
+          >
+            <span style={styles.guideButtonIcon}>?</span>
+            <span>
+              <strong>촬영 가이드</strong>
+              <small style={styles.guideButtonText}>
+                인증 순서와 손동작 인식 방법 보기
+              </small>
+            </span>
+          </button>
+        </section>
+      </main>
+    );
+  }
+
+  if (screen === "guide") {
+    return (
+      <main style={styles.main}>
+        <section style={styles.card}>
+          <p style={styles.badge}>이용 안내</p>
+
+          <h1 style={styles.title}>촬영 가이드</h1>
+
+          <p style={styles.description}>
+            손 포즈를 먼저 인증한 뒤 랜드마크를 선명하게 촬영해 주세요.
+          </p>
+
+          <div style={styles.guideStepList}>
+            <div style={styles.guideStep}>
+              <span style={styles.guideStepNumber}>1</span>
+              <div>
+                <strong>손 포즈 인증</strong>
+                <p style={styles.guideStepText}>
+                  화면에 무작위로 제시되는 손동작을 카메라 앞에서 따라해주세요.
+                </p>
+              </div>
+            </div>
+
+            <div style={styles.guideStep}>
+              <span style={styles.guideStepNumber}>2</span>
+              <div>
+                <strong>촬영 버튼 활성화</strong>
+                <p style={styles.guideStepText}>
+                  포즈가 인식되면 촬영 버튼이 활성화되고 1분의 제한시간이 시작됩니다.
+                </p>
+              </div>
+            </div>
+
+            <div style={styles.guideStep}>
+              <span style={styles.guideStepNumber}>3</span>
+              <div>
+                <strong>랜드마크 촬영</strong>
+                <p style={styles.guideStepText}>
+                  손을 내린 뒤 랜드마크에 초점을 맞추고 1분 안에 촬영해 주세요.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div style={styles.poseTipBox}>
+            <h2 style={styles.poseTipTitle}>손동작이 인식되지 않나요?</h2>
+
+            <p style={styles.poseTipText}>
+              ✌️ 브이 포즈는 엄지가 보이는 손바닥 방향을 카메라에 보여주세요.
+            </p>
+
+            <p style={styles.poseTipText}>
+              ☝️ 가리키기 포즈도 엄지가 보이는 방향으로 손을 보여주세요.
+            </p>
+
+            <p style={styles.poseTipText}>
+              손 전체가 화면 안에 들어오도록 하고 밝은 곳에서 인식해주세요.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            style={styles.homeButton}
+            onClick={goToMainHome}
+          >
+            뒤로가기
+          </button>
+        </section>
+      </main>
+    );
+  }
+
+  if (screen === "test-home") {
+    return (
+      <main style={styles.main}>
+        <section style={styles.card}>
+          <p style={styles.badge}>GPS 없는 테스트 모드</p>
+
+          <h1 style={styles.title}>집에서 하는 LOQEST 체험</h1>
+
+          <p style={styles.description}>
+            노트북 키보드를 이용해 손 포즈 인증부터 스탬프 발급까지 확인해보세요.
+          </p>
+
+          <div style={styles.testNotice}>
+            <strong>위치 인증을 사용하지 않습니다.</strong>
+            <p style={styles.entryText}>
+              손 포즈와 랜드마크 이미지 인식은 실제 퀘스트와 동일하게 진행됩니다.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            style={styles.primaryButton}
+            onClick={goToTestQuestList}
+          >
+            테스트 시작하기
+          </button>
+
+          <button
+            type="button"
+            style={styles.homeButton}
+            onClick={goToMainHome}
+          >
+            뒤로가기
+          </button>
         </section>
       </main>
     );
@@ -394,65 +642,9 @@ export default function Home() {
             디지털 스탬프와 여행 뱃지를 모아보세요.
           </p>
 
-          <div style={styles.entryInfo}>
-            <strong>입장 인증 완료</strong>
-
-            <p style={styles.entryText}>
-              입장료 결제 후 전달된 전용 URL로
-              접속했습니다.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            style={styles.primaryButton}
-            onClick={goToQuestList}
-          >
-            탐험 시작하기
-          </button>
-
-          <button
-            type="button"
-            style={styles.secondaryButton}
-            onClick={goToProgress}
-          >
+          <h2 style={styles.progressSectionTitle}>
             현재 탐험 진행률
-          </button>
-
-          <button
-            type="button"
-            style={styles.badgeButton}
-            onClick={goToBadges}
-          >
-            <span>📖</span>
-            <span>나의 여행 도감</span>
-
-            {hasUnreadBadge && (
-              <span style={styles.newBadge}>NEW</span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            style={styles.homeButton}
-            onClick={goToMainHome}
-          >
-            LOQEST 홈으로
-          </button>
-        </section>
-      </main>
-    );
-  }
-
-  if (screen === "progress") {
-    return (
-      <main style={styles.main}>
-        <section style={styles.card}>
-          <p style={styles.badge}>현재 탐험</p>
-
-          <h1 style={styles.title}>
-            선사유적지 탐험 진행률
-          </h1>
+          </h2>
 
           <div style={styles.progressSummary}>
             <strong style={styles.progressNumber}>
@@ -490,7 +682,10 @@ export default function Home() {
             </div>
           )}
 
-          <div className="exploration-map">
+          <div
+            className="exploration-map"
+            style={{ height: "430px" }}
+          >
             <div className="map-decoration map-tree-one">♧</div>
             <div className="map-decoration map-tree-two">♧</div>
             <div className="map-decoration map-wave-one">≋</div>
@@ -519,9 +714,8 @@ export default function Home() {
                 <button
                   type="button"
                   key={landmark.id}
-                  className={`map-place ${
-                    completed ? "map-place-completed" : ""
-                  }`}
+                  className={`map-place ${completed ? "map-place-completed" : ""
+                    }`}
                   style={{
                     left: `${(landmark.mapPosition.x / 360) * 100}%`,
                     top: `${(landmark.mapPosition.y / 520) * 100}%`,
@@ -560,23 +754,17 @@ export default function Home() {
             )}
           </div>
 
-          {tourCompleted ? (
-            <button
-              type="button"
-              style={styles.primaryButton}
-              onClick={goToBadges}
-            >
-              발급된 여행 뱃지 보기
-            </button>
-          ) : (
-            <button
-              type="button"
-              style={styles.primaryButton}
-              onClick={goToQuestList}
-            >
-              탐험 계속하기
-            </button>
-          )}
+          <button
+            type="button"
+            style={styles.primaryButton}
+            onClick={goToQuestList}
+          >
+            {tourCompleted
+              ? "완료한 퀘스트 보기"
+              : completedCount > 0
+                ? "탐험 계속하기"
+                : "탐험 시작하기"}
+          </button>
 
           <button
             type="button"
@@ -588,10 +776,10 @@ export default function Home() {
 
           <button
             type="button"
-            style={styles.secondaryButton}
-            onClick={goHome}
+            style={styles.homeButton}
+            onClick={goToMainHome}
           >
-            홈으로 가기
+            홈으로
           </button>
         </section>
       </main>
@@ -702,15 +890,15 @@ export default function Home() {
           <button
             type="button"
             style={styles.secondaryButton}
-            onClick={goToProgress}
+            onClick={goHome}
           >
-            현재 탐험 진행률
+            서울 암사동 유적 투어 보기
           </button>
 
           <button
             type="button"
             style={styles.secondaryButton}
-            onClick={goHome}
+            onClick={goToMainHome}
           >
             홈으로 가기
           </button>
@@ -743,22 +931,31 @@ export default function Home() {
               <div style={styles.guideBox}>
                 <strong>촬영 안내</strong>
 
+                <p>{selectedLandmark.poseGuide}</p>
+
                 <p>
                   {selectedLandmark.landmarkGuide}
                 </p>
-
-                <p>{selectedLandmark.poseGuide}</p>
               </div>
 
-              <div style={styles.gpsNotice}>
-                <strong>위치 권한 안내</strong>
+              {selectedLandmark.requiresGps ? (
+                <div style={styles.gpsNotice}>
+                  <strong>위치 권한 안내</strong>
 
-                <p style={styles.gpsNoticeText}>
-                  촬영 버튼을 누르면 현재 위치를
-                  자동으로 확인합니다. 인증 반경 밖에서는
-                  스탬프가 발급되지 않습니다.
-                </p>
-              </div>
+                  <p style={styles.gpsNoticeText}>
+                    촬영 시 위치를 확인하며, 인증 장소에서만 스탬프가
+                    발급됩니다.
+                  </p>
+                </div>
+              ) : (
+                <div style={styles.testNotice}>
+                  <strong>GPS 인증 생략</strong>
+
+                  <p style={styles.gpsNoticeText}>
+                    테스트 퀘스트에서는 위치를 확인하지 않습니다.
+                  </p>
+                </div>
+              )}
 
               <CameraCapture
                 recognitionKey={selectedLandmark.recognitionKey}
@@ -774,6 +971,7 @@ export default function Home() {
                   selectedLandmark.longitude
                 }
                 allowedRadius={selectedLandmark.radius}
+                skipLocationVerification={!selectedLandmark.requiresGps}
                 onProcessingChange={setVerificationProcessing}
                 onVerified={issueStamp}
               />
@@ -782,9 +980,13 @@ export default function Home() {
                 <button
                   type="button"
                   style={styles.secondaryButton}
-                  onClick={goToQuestList}
+                  onClick={
+                    selectedLandmark.requiresGps
+                      ? goToQuestList
+                      : goToTestQuestList
+                  }
                 >
-                  목록으로 돌아가기
+                  뒤로가기
                 </button>
               )}
             </>
@@ -809,7 +1011,7 @@ export default function Home() {
                 발급되었습니다.
               </p>
 
-              {tourCompleted && (
+              {selectedLandmark.requiresGps && tourCompleted && (
                 <div style={styles.completionNotice}>
                   <span style={styles.completionIcon}>
                     🏅
@@ -830,30 +1032,77 @@ export default function Home() {
               <button
                 type="button"
                 style={styles.primaryButton}
-                onClick={goHome}
+                onClick={
+                  selectedLandmark.requiresGps
+                    ? goHome
+                    : goToTestHome
+                }
               >
-                홈으로 가기
+                {selectedLandmark.requiresGps
+                  ? "투어 홈으로 가기"
+                  : "테스트 홈으로 가기"}
               </button>
 
-              <button
-                type="button"
-                style={styles.secondaryButton}
-                onClick={goToProgress}
-              >
-                현재 탐험 진행률
-              </button>
-
-              {tourCompleted && (
-                <button
-                  type="button"
-                  style={styles.badgeButton}
-                  onClick={goToBadges}
-                >
-                  나의 여행 도감 보기
-                </button>
-              )}
             </div>
           )}
+        </section>
+      </main>
+    );
+  }
+
+  if (screen === "test-quests") {
+    return (
+      <main style={styles.main}>
+        <section style={styles.card}>
+          <p style={styles.badge}>집에서 하는 LOQEST 체험</p>
+
+          <h1 style={styles.title}>테스트 퀘스트</h1>
+
+          <p style={styles.description}>
+            GPS 인증 없이 전체 촬영 흐름을 확인합니다.
+          </p>
+
+          <div style={styles.landmarkList}>
+            {testLandmarks.map((landmark) => {
+              const completed =
+                completedTestLandmarks.includes(landmark.id);
+
+              return (
+                <button
+                  type="button"
+                  key={landmark.id}
+                  style={{
+                    ...styles.landmarkButton,
+                    ...(completed
+                      ? styles.completedLandmarkButton
+                      : {}),
+                  }}
+                  onClick={() => selectLandmark(landmark)}
+                >
+                  <span style={styles.questIcon}>{landmark.icon}</span>
+
+                  <span style={styles.questContent}>
+                    <strong style={styles.landmarkName}>
+                      {completed ? "✓ " : ""}
+                      {landmark.name}
+                    </strong>
+
+                    <span style={styles.smallText}>
+                      {completed ? "인증 완료 · 다시 테스트 가능" : landmark.mission}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            type="button"
+            style={styles.homeButton}
+            onClick={goToTestHome}
+          >
+            뒤로가기
+          </button>
         </section>
       </main>
     );
@@ -1013,6 +1262,107 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.65,
   },
 
+  guideButton: {
+    width: "100%",
+    marginTop: "16px",
+    padding: "16px",
+    border: "1px solid #d8dddf",
+    borderRadius: "16px",
+    backgroundColor: "#ffffff",
+    color: "#345366",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "11px",
+    fontSize: "15px",
+    textAlign: "left",
+    cursor: "pointer",
+  },
+
+  guideButtonIcon: {
+    width: "32px",
+    height: "32px",
+    borderRadius: "50%",
+    backgroundColor: "#eaf4f6",
+    color: "#356f82",
+    display: "grid",
+    placeItems: "center",
+    fontWeight: 900,
+  },
+
+  guideButtonText: {
+    display: "block",
+    marginTop: "3px",
+    color: "#7a858a",
+    fontSize: "11px",
+    fontWeight: 500,
+  },
+
+  guideStepList: {
+    display: "grid",
+    gap: "12px",
+    marginBottom: "18px",
+  },
+
+  guideStep: {
+    padding: "15px",
+    border: "1px solid #dbe8eb",
+    borderRadius: "16px",
+    backgroundColor: "#f4fafb",
+    display: "flex",
+    alignItems: "flex-start",
+    gap: "12px",
+  },
+
+  guideStepNumber: {
+    flexShrink: 0,
+    width: "29px",
+    height: "29px",
+    borderRadius: "50%",
+    backgroundColor: "#315f78",
+    color: "white",
+    display: "grid",
+    placeItems: "center",
+    fontSize: "13px",
+    fontWeight: 900,
+  },
+
+  guideStepText: {
+    margin: "5px 0 0",
+    color: "#6d767b",
+    fontSize: "13px",
+    lineHeight: 1.55,
+  },
+
+  poseTipBox: {
+    padding: "17px",
+    border: "1px solid #ead8ae",
+    borderRadius: "16px",
+    backgroundColor: "#fff8e9",
+  },
+
+  poseTipTitle: {
+    margin: "0 0 10px",
+    color: "#664c0c",
+    fontSize: "16px",
+  },
+
+  poseTipText: {
+    margin: "7px 0 0",
+    color: "#74613a",
+    fontSize: "13px",
+    lineHeight: 1.55,
+  },
+
+  testNotice: {
+    marginBottom: "16px",
+    padding: "14px",
+    border: "1px solid #cfe5dd",
+    borderRadius: "14px",
+    backgroundColor: "#f0faf6",
+    color: "#27644f",
+  },
+
   badge: {
     display: "inline-block",
     margin: "0 0 12px",
@@ -1040,13 +1390,11 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.7,
   },
 
-  entryInfo: {
-    marginBottom: "12px",
-    padding: "15px",
-    backgroundColor: "#fff9ee",
-    border: "1px solid #ead9b8",
-    borderRadius: "14px",
-    color: "#7c6029",
+  progressSectionTitle: {
+    margin: "0 0 12px",
+    color: "#23445d",
+    fontSize: "19px",
+    lineHeight: 1.4,
   },
 
   entryText: {
@@ -1088,20 +1436,40 @@ const styles: Record<string, React.CSSProperties> = {
   badgeButton: {
     position: "relative",
     width: "100%",
-    minHeight: "50px",
-    marginTop: "12px",
-    padding: "13px",
-    border: "1px solid #e4c98f",
-    borderRadius: "16px",
-    background: "linear-gradient(135deg, #fffaf0, #fff4da)",
-    color: "#795b22",
-    fontSize: "15px",
-    fontWeight: 700,
-    cursor: "pointer",
+    minHeight: "54px",
+    marginTop: "18px",
+    padding: "14px 18px",
+    border: "1px solid #d8cfc3",
+    borderRadius: "18px",
+    background: "linear-gradient(135deg, #f0ebe4, #e2d9ce)",
+    color: "#2f4653",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    gap: "7px",
+    gap: "10px",
+    textAlign: "center",
+    fontSize: "16px",
+    fontWeight: 800,
+    letterSpacing: "-0.01em",
+    cursor: "pointer",
+    boxShadow: "0 6px 16px rgba(91, 77, 64, 0.09)",
+  },
+
+  badgeMenuIcon: {
+    justifySelf: "start",
+    fontSize: "20px",
+  },
+
+  badgeMenuArrow: {
+    justifySelf: "end",
+    color: "#667881",
+    fontSize: "18px",
+    fontWeight: 800,
+  },
+
+  badgeMenuIcon: {
+    justifySelf: "start",
+    fontSize: "20px",
   },
 
   newBadge: {

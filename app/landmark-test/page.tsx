@@ -3,77 +3,17 @@
 import { ChangeEvent, useEffect, useState } from "react";
 import cvReadyPromise from "@techstark/opencv-js";
 
-type LandmarkKey = "character" | "inform" | "wish";
+const LANDMARK_NAME = "노트북 키보드";
 
-type LandmarkConfig = {
-  name: string;
-  referenceImages: string[];
-  threshold: {
-    goodMatches: number;
-    matchRatio: number;
-  } | null;
-};
+const REFERENCE_IMAGES = [
+  "/landmarks/home/reference/KakaoTalk_20260815_155103197_01.jpg",
+  "/landmarks/home/reference/KakaoTalk_20260815_155103197_02.jpg",
+  "/landmarks/home/reference/KakaoTalk_20260815_155103197_03.jpg",
+];
 
-const landmarks: Record<LandmarkKey, LandmarkConfig> = {
-  character: {
-    name: "캐릭터",
-    referenceImages: [
-      "/landmarks/character/reference/KakaoTalk_20260813_072216328.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_072216328_01.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123330386_19.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123330386_21.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123330386_23.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123330386_25.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123330386_26.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123330386_27.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123331048.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123331048_01.jpg",
-    ],
-    threshold: {
-      goodMatches: 70,
-      matchRatio: 45,
-    },
-  },
-
-  inform: {
-    name: "안내판",
-    referenceImages: [
-      "/landmarks/inform/reference/KakaoTalk_20260813_072237513.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_072237513_01.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_072237513_03.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_072237513_05.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_11.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_13.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_15.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_16.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_18.jpg",
-    ],
-    threshold: {
-      goodMatches: 55,
-      matchRatio: 40,
-    },
-  },
-
-  wish: {
-    name: "소망움집",
-    referenceImages: [
-      "/landmarks/wish/reference/KakaoTalk_20260813_072216328_02.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_072216328_03.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_072216328_05.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_01.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_03.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_04.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_06.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_07.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_09.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_10.jpg",
-    ],
-    threshold: {
-      goodMatches: 70,
-      matchRatio: 45,
-    },
-  },
+const THRESHOLD = {
+  goodMatches: 45,
+  matchRatio: 30,
 };
 
 type ComparisonResult = {
@@ -193,16 +133,12 @@ function compareDescriptors(
 }
 
 export default function LandmarkTestPage() {
-  const [selectedLandmark, setSelectedLandmark] =
-    useState<LandmarkKey>("wish");
   const [opencvReady, setOpencvReady] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [status, setStatus] = useState("OpenCV를 불러오는 중입니다.");
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<ComparisonResult[]>([]);
-  const currentLandmark = landmarks[selectedLandmark];
-  const referenceImages = currentLandmark.referenceImages;
 
   useEffect(() => {
     let active = true;
@@ -230,19 +166,6 @@ export default function LandmarkTestPage() {
       active = false;
     };
   }, []);
-
-  function handleLandmarkChange(landmark: LandmarkKey) {
-    setSelectedLandmark(landmark);
-    setSelectedFile(null);
-
-    if (selectedImage) {
-      URL.revokeObjectURL(selectedImage);
-    }
-
-    setSelectedImage(null);
-    setResults([]);
-    setStatus(`${landmarks[landmark].name} 테스트 사진을 선택해 주세요.`);
-  }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -275,7 +198,9 @@ export default function LandmarkTestPage() {
 
     setAnalyzing(true);
     setResults([]);
-    setStatus("기준 사진 10장과 특징점을 비교하고 있습니다.");
+    setStatus(
+      `키보드 기준 사진 ${REFERENCE_IMAGES.length}장과 특징점을 비교하고 있습니다.`
+    );
 
     const cv = await cvReadyPromise;
     let testDescriptors: any = null;
@@ -286,7 +211,7 @@ export default function LandmarkTestPage() {
 
       const comparisonResults: ComparisonResult[] = [];
 
-      for (const referencePath of referenceImages) {
+      for (const referencePath of REFERENCE_IMAGES) {
         const referenceImage = await loadImage(referencePath);
         const referenceDescriptors = extractFeatures(cv, referenceImage);
 
@@ -330,19 +255,19 @@ export default function LandmarkTestPage() {
 
   const landmarkPassed =
     bestResult !== undefined &&
-    bestResult.goodMatches >= 70 &&
-    bestResult.matchRatio >= 45;
+    bestResult.goodMatches >= THRESHOLD.goodMatches &&
+    bestResult.matchRatio >= THRESHOLD.matchRatio;
 
   return (
     <main style={styles.page}>
       <section style={styles.card}>
         <p style={styles.eyebrow}>LANDMARK TEST</p>
 
-        <h1 style={styles.title}>캐릭터 랜드마크 인식 실험</h1>
+        <h1 style={styles.title}>{LANDMARK_NAME} 랜드마크 인식 실험</h1>
 
         <p style={styles.description}>
-          테스트 사진과 기준 사진 10장의 ORB 특징점을 비교합니다.
-          아직 성공 기준은 적용하지 않고 원래 측정값을 확인합니다.
+          테스트 사진과 키보드 기준 사진 {REFERENCE_IMAGES.length}장의 ORB
+          특징점을 비교합니다.
         </p>
 
         <div style={styles.statusBox}>
@@ -398,8 +323,8 @@ export default function LandmarkTestPage() {
               }}
             >
               {landmarkPassed
-                ? "✓ 캐릭터 랜드마크 인증 성공"
-                : "✕ 캐릭터 랜드마크 인증 실패"}
+                ? `✓ ${LANDMARK_NAME} 인증 성공`
+                : `✕ ${LANDMARK_NAME} 인증 실패`}
             </p>
 
             <strong style={styles.resultNumber}>
@@ -412,7 +337,8 @@ export default function LandmarkTestPage() {
             </p>
 
             <p style={styles.thresholdText}>
-              인증 기준: 특징점 70개 이상 · 일치 비율 45% 이상
+              인증 기준: 특징점 {THRESHOLD.goodMatches}개 이상 · 일치 비율{" "}
+              {THRESHOLD.matchRatio}% 이상
             </p>
 
             <p style={styles.fileName}>

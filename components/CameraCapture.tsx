@@ -10,13 +10,14 @@ import {
 } from "@mediapipe/tasks-vision";
 
 type CameraCaptureProps = {
-  recognitionKey: "character" | "inform" | "wish";
+  recognitionKey: "character" | "inform" | "wish" | "home";
   landmarkName: string;
   landmarkGuide: string;
   poseGuide: string;
   landmarkLatitude: number;
   landmarkLongitude: number;
   allowedRadius: number;
+  skipLocationVerification?: boolean;
   onProcessingChange: (processing: boolean) => void;
   onVerified: () => void;
 };
@@ -81,23 +82,32 @@ const landmarkRecognition: Record<
     goodMatches: 70,
     matchRatio: 45,
   },
+  home: {
+    references: [
+      "/landmarks/home/reference/KakaoTalk_20260815_155103197_01.jpg",
+      "/landmarks/home/reference/KakaoTalk_20260815_155103197_02.jpg",
+      "/landmarks/home/reference/KakaoTalk_20260815_155103197_03.jpg",
+    ],
+    goodMatches: 45,
+    matchRatio: 30,
+  },
 };
 
 const gestureOptions = {
   Thumb_Up: {
     name: "엄지척",
     icon: "👍",
-    instruction: "손 전체가 보이게 엄지척해주세요.",
+    instruction: "손 전체가 보이게 엄지척해 주세요.",
   },
   Victory: {
     name: "브이",
     icon: "✌️",
-    instruction: "손 전체가 보이게 브이 포즈를 취해주세요.",
+    instruction: "손 전체가 보이게 브이 포즈를 취해 주세요.",
   },
   Pointing_Up: {
     name: "위 가리키기",
     icon: "☝️",
-    instruction: "검지손가락으로 위를 가리켜주세요.",
+    instruction: "검지손가락으로 위를 가리켜 주세요.",
   },
 } as const;
 
@@ -108,10 +118,10 @@ const gestureNames = Object.keys(
 ) as GestureName[];
 
 type CaptureInformation = {
-  latitude: number;
-  longitude: number;
-  accuracy: number;
-  distance: number;
+  latitude: number | null;
+  longitude: number | null;
+  accuracy: number | null;
+  distance: number | null;
   capturedAt: string;
 };
 
@@ -331,11 +341,10 @@ async function recognizeLandmark(
 export default function CameraCapture({
   recognitionKey,
   landmarkName,
-  landmarkGuide,
-  poseGuide,
   landmarkLatitude,
   landmarkLongitude,
   allowedRadius,
+  skipLocationVerification = false,
   onProcessingChange,
   onVerified,
 }: CameraCaptureProps) {
@@ -348,9 +357,12 @@ export default function CameraCapture({
   const animationFrameRef = useRef<number | null>(null);
   const lastDetectionTimeRef = useRef(0);
   const thumbDetectedRef = useRef(false);
+  const poseVerifiedRef = useRef(false);
+  const poseExpiresAtRef = useRef<number | null>(null);
   const thumbStableSinceRef = useRef<number | null>(null);
   const targetGestureRef =
     useRef<GestureName>("Thumb_Up");
+  const autoStartAttemptedRef = useRef(false);
 
   const [cameraOpen, setCameraOpen] = useState(false);
   const [openingCamera, setOpeningCamera] = useState(false);
@@ -358,14 +370,16 @@ export default function CameraCapture({
   const [photo, setPhoto] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [checkingLocation, setCheckingLocation] = useState(false);
-  const [thumbDetected, setThumbDetected] = useState(false);
+  const [, setThumbDetected] = useState(false);
+  const [poseVerified, setPoseVerified] = useState(false);
+  const [secondsRemaining, setSecondsRemaining] = useState(60);
   const [targetGesture, setTargetGesture] =
     useState<GestureName>("Thumb_Up");
 
   const targetGestureInformation =
     gestureOptions[targetGesture];
 
-  const [captureInformation, setCaptureInformation] =
+  const [, setCaptureInformation] =
     useState<CaptureInformation | null>(null);
 
   const [error, setError] = useState("");
@@ -418,7 +432,7 @@ export default function CameraCapture({
       console.error(modelError);
 
       setError(
-        "엄지척 인식 모델을 불러오지 못했습니다. 페이지를 새로고침해주세요."
+        "손동작 인식 모델을 불러오지 못했습니다. 페이지를 새로고침해 주세요."
       );
 
       throw modelError;
@@ -436,17 +450,19 @@ export default function CameraCapture({
 
     video.play().catch(() => {
       setError(
-        "카메라 영상을 재생하지 못했습니다. 페이지를 새로고침해주세요."
+        "카메라 영상을 재생하지 못했습니다. 페이지를 새로고침해 주세요."
       );
     });
   }, [cameraOpen]);
 
-  /*
-    GPS 확인 중에는 실시간 엄지척 감지를 중지합니다.
-    촬영 버튼을 누른 뒤에는 자세를 풀어도 됩니다.
-  */
+  /* 포즈가 한 번 인증되면 손을 내려도 1분 동안 촬영할 수 있습니다. */
   useEffect(() => {
-    if (!cameraOpen || !modelReady || checkingLocation) {
+    if (
+      !cameraOpen ||
+      !modelReady ||
+      checkingLocation ||
+      poseVerified
+    ) {
       return;
     }
 
@@ -483,7 +499,7 @@ export default function CameraCapture({
 
           const isRequiredGesture =
             firstGesture?.categoryName ===
-              targetGestureRef.current &&
+            targetGestureRef.current &&
             firstGesture.score >= 0.6;
 
           if (isRequiredGesture) {
@@ -495,20 +511,27 @@ export default function CameraCapture({
               currentTime - thumbStableSinceRef.current;
 
             /*
-              엄지척이 0.5초 이상 유지되면
+              제시된 손동작이 0.5초 이상 유지되면
               포즈 인증 성공으로 처리합니다.
             */
             if (
               stableDuration >= 500 &&
-              !thumbDetectedRef.current
+              !poseVerifiedRef.current
             ) {
               thumbDetectedRef.current = true;
+              poseVerifiedRef.current = true;
+              poseExpiresAtRef.current = Date.now() + 60_000;
               setThumbDetected(true);
+              setPoseVerified(true);
+              setSecondsRemaining(60);
             }
           } else {
             thumbStableSinceRef.current = null;
 
-            if (thumbDetectedRef.current) {
+            if (
+              thumbDetectedRef.current &&
+              !poseVerifiedRef.current
+            ) {
               thumbDetectedRef.current = false;
               setThumbDetected(false);
             }
@@ -532,7 +555,38 @@ export default function CameraCapture({
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [cameraOpen, modelReady, checkingLocation]);
+  }, [cameraOpen, modelReady, checkingLocation, poseVerified]);
+
+  useEffect(() => {
+    if (!poseVerified || poseExpiresAtRef.current === null) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      const remaining = Math.max(
+        0,
+        Math.ceil(
+          (poseExpiresAtRef.current! - Date.now()) / 1000
+        )
+      );
+
+      setSecondsRemaining(remaining);
+
+      if (remaining === 0) {
+        poseVerifiedRef.current = false;
+        poseExpiresAtRef.current = null;
+        thumbDetectedRef.current = false;
+        thumbStableSinceRef.current = null;
+        setPoseVerified(false);
+        setThumbDetected(false);
+        setError(
+          "촬영 가능 시간이 지났습니다. 손동작을 다시 인증해 주세요."
+        );
+      }
+    }, 250);
+
+    return () => window.clearInterval(timer);
+  }, [poseVerified]);
 
   function stopCamera() {
     if (animationFrameRef.current !== null) {
@@ -546,16 +600,20 @@ export default function CameraCapture({
 
     streamRef.current = null;
     thumbDetectedRef.current = false;
+    poseVerifiedRef.current = false;
+    poseExpiresAtRef.current = null;
     thumbStableSinceRef.current = null;
 
     setThumbDetected(false);
+    setPoseVerified(false);
+    setSecondsRemaining(60);
     setCameraOpen(false);
   }
 
   async function startCamera() {
     const randomGesture =
       gestureNames[
-        Math.floor(Math.random() * gestureNames.length)
+      Math.floor(Math.random() * gestureNames.length)
       ];
 
     targetGestureRef.current = randomGesture;
@@ -566,6 +624,10 @@ export default function CameraCapture({
     setAnalyzing(false);
     setCheckingLocation(false);
     setCaptureInformation(null);
+    setPoseVerified(false);
+    setSecondsRemaining(60);
+    poseVerifiedRef.current = false;
+    poseExpiresAtRef.current = null;
     setOpeningCamera(true);
 
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -621,12 +683,24 @@ export default function CameraCapture({
       streamRef.current = null;
 
       setError(
-        "카메라 또는 엄지척 인식 기능을 실행하지 못했습니다. 권한을 확인한 뒤 다시 시도해주세요."
+        "카메라 또는 손동작 인식 기능을 실행하지 못했습니다. 권한을 확인한 뒤 다시 시도해 주세요."
       );
     } finally {
       setOpeningCamera(false);
     }
   }
+
+  useEffect(() => {
+    if (autoStartAttemptedRef.current) {
+      return;
+    }
+
+    autoStartAttemptedRef.current = true;
+    void startCamera();
+
+    // 퀘스트 화면이 처음 열릴 때 한 번만 카메라를 자동 실행합니다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function retryCapture() {
     setError("");
@@ -635,9 +709,13 @@ export default function CameraCapture({
     setCheckingLocation(false);
 
     thumbDetectedRef.current = false;
+    poseVerifiedRef.current = false;
+    poseExpiresAtRef.current = null;
     thumbStableSinceRef.current = null;
 
     setThumbDetected(false);
+    setPoseVerified(false);
+    setSecondsRemaining(60);
   }
 
   async function takePhoto() {
@@ -645,7 +723,7 @@ export default function CameraCapture({
       return;
     }
 
-    if (!thumbDetectedRef.current) {
+    if (!poseVerifiedRef.current) {
       const requiredGesture =
         gestureOptions[targetGestureRef.current];
 
@@ -663,7 +741,7 @@ export default function CameraCapture({
       video.videoHeight === 0
     ) {
       setError(
-        "카메라 영상이 아직 준비되지 않았습니다. 잠시 후 다시 촬영해주세요."
+        "카메라 영상이 아직 준비되지 않았습니다. 잠시 후 다시 촬영해 주세요."
       );
       return;
     }
@@ -673,8 +751,8 @@ export default function CameraCapture({
     setCheckingLocation(true);
 
     /*
-      엄지척이 확인된 순간 사진을 먼저 촬영합니다.
-      이후 GPS 확인 중에는 자세를 유지할 필요가 없습니다.
+      촬영 버튼을 누른 순간 사진을 먼저 저장합니다.
+      이후 위치와 랜드마크를 순서대로 확인합니다.
     */
     const canvas = document.createElement("canvas");
 
@@ -699,28 +777,36 @@ export default function CameraCapture({
     );
 
     try {
-      /*
-        사진을 찍은 뒤 촬영 순간의 GPS를 확인합니다.
-      */
-      const position = await getCurrentLocation();
+      let currentLatitude: number | null = null;
+      let currentLongitude: number | null = null;
+      let currentAccuracy: number | null = null;
+      let currentDistance: number | null = null;
 
-      const currentLatitude = position.coords.latitude;
-      const currentLongitude = position.coords.longitude;
-      const currentAccuracy = position.coords.accuracy;
+      if (!skipLocationVerification) {
+        const position = await getCurrentLocation();
 
-      const currentDistance = calculateDistance(
-        currentLatitude,
-        currentLongitude,
-        landmarkLatitude,
-        landmarkLongitude
-      );
+        currentLatitude = position.coords.latitude;
+        currentLongitude = position.coords.longitude;
+        currentAccuracy = position.coords.accuracy;
+
+        currentDistance = calculateDistance(
+          currentLatitude,
+          currentLongitude,
+          landmarkLatitude,
+          landmarkLongitude
+        );
+      }
 
       /*
         GPS 인증 반경 밖이면 스탬프 발급을 중단합니다.
-        엄지척 감지는 다시 시작됩니다.
+        손동작 감지는 다시 시작됩니다.
       */
-      if (currentDistance > allowedRadius) {
+      if (
+        currentDistance !== null &&
+        currentDistance > allowedRadius
+      ) {
         setCheckingLocation(false);
+        onProcessingChange(false);
 
         setError(
           `인증 실패: 현재 위치가 ${landmarkName} 인증 범위를 벗어났습니다. 인증 지점에서 약 ${Math.round(
@@ -756,7 +842,7 @@ export default function CameraCapture({
         setPhoto(null);
         onProcessingChange(false);
         setError(
-          `랜드마크가 충분히 인식되지 않았습니다. 가이드라인 안에 ${landmarkName}이 크게 보이도록 다시 촬영해주세요. (특징점 ${landmarkResult.goodMatches}개 · 일치율 ${landmarkResult.matchRatio.toFixed(1)}%)`
+          `랜드마크가 충분히 인식되지 않았습니다. 가이드라인 안에 ${landmarkName}이 크게 보이도록 다시 촬영해 주세요. (특징점 ${landmarkResult.goodMatches}개 · 일치율 ${landmarkResult.matchRatio.toFixed(1)}%)`
         );
         return;
       }
@@ -796,10 +882,14 @@ export default function CameraCapture({
 
       context.font = `${detailFontSize}px sans-serif`;
 
+      const verificationText = skipLocationVerification
+        ? `${capturedAt} · 손 포즈 확인 · 테스트 모드`
+        : `${capturedAt} · 손 포즈 확인 · 인증 지점에서 약 ${Math.round(
+          currentDistance ?? 0
+        )}m`;
+
       context.fillText(
-        `${capturedAt} · 손 포즈 확인 · 인증 지점에서 약 ${Math.round(
-          currentDistance
-        )}m`,
+        verificationText,
         20,
         canvas.height - 20
       );
@@ -811,15 +901,15 @@ export default function CameraCapture({
 
       setPhoto(capturedPhoto);
       onVerified();
-    } catch (locationError) {
-      console.error(locationError);
+    } catch (verificationError) {
+      console.error(verificationError);
 
       setCheckingLocation(false);
       setAnalyzing(false);
       onProcessingChange(false);
 
       const gpsError =
-        locationError as GeolocationPositionError;
+        verificationError as GeolocationPositionError;
 
       if (gpsError.code === 1) {
         setError(
@@ -862,20 +952,42 @@ export default function CameraCapture({
 
   return (
     <section style={styles.section}>
-      {!cameraOpen && !photo && (
-        <button
-          type="button"
-          style={{
-            ...styles.cameraButton,
-            opacity: openingCamera ? 0.65 : 1,
-          }}
-          onClick={startCamera}
-          disabled={openingCamera}
+      {(checkingLocation || analyzing) && (
+        <div
+          style={styles.processingScreen}
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
         >
-          {openingCamera
-            ? "카메라와 인식 모델 준비 중..."
-            : "카메라 실행하기"}
-        </button>
+          <div style={styles.processingContent}>
+            <div style={styles.processingIcon} aria-hidden="true">
+              🔍
+            </div>
+
+            <strong style={styles.processingTitle}>
+              랜드마크를 확인하고 있어요
+            </strong>
+
+            <p style={styles.processingMessage}>
+              잠시만 기다려 주세요.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {!cameraOpen && !photo && !error && (
+        <div
+          style={styles.cameraPreparing}
+          role="status"
+          aria-live="polite"
+        >
+          <span style={styles.cameraPreparingIcon}>📷</span>
+          <strong>
+            {openingCamera
+              ? "카메라를 준비하고 있어요."
+              : "카메라를 불러오고 있어요."}
+          </strong>
+        </div>
       )}
 
       {cameraOpen && (
@@ -888,44 +1000,27 @@ export default function CameraCapture({
             style={styles.video}
           />
 
-          <div style={styles.guideText}>
-            <strong>촬영 가이드</strong>
+          {poseVerified ? (
+            <div style={styles.landmarkFrame}>
+              <span style={styles.frameText}>
+                {landmarkName}을 이 안에 맞춰 주세요
+              </span>
+            </div>
+          ) : (
+            <div style={styles.handGuideFrame}>
+              <span style={styles.handGuideIcon}>
+                {targetGestureInformation.icon}
+              </span>
 
-            <p style={styles.guideParagraph}>
-              {landmarkGuide}
-            </p>
-
-            <p style={styles.guideParagraph}>{poseGuide}</p>
-          </div>
-
-          <div
-            style={styles.landmarkFrame}
-          >
-            <span style={styles.frameText}>
-              {landmarkName}을 이 안에 맞춰주세요
-            </span>
-          </div>
-
-          <div
-            style={{
-              ...styles.handGuideFrame,
-              borderColor: thumbDetected ? "#35e789" : "white",
-            }}
-          >
-            <span style={styles.handGuideIcon}>
-              {targetGestureInformation.icon}
-            </span>
-
-            <small>
-              {thumbDetected ? "포즈 확인" : "손을 여기에"}
-            </small>
-          </div>
+              <small>손동작을 이 안에 맞춰 주세요</small>
+            </div>
+          )}
 
           <div
             style={{
               ...styles.gestureStatus,
               backgroundColor:
-                thumbDetected || checkingLocation
+                poseVerified || checkingLocation
                   ? "rgba(16, 126, 72, 0.9)"
                   : "rgba(0, 0, 0, 0.7)",
             }}
@@ -939,8 +1034,8 @@ export default function CameraCapture({
                 ? `${targetGestureInformation.name} 확인 완료`
                 : !modelReady
                   ? "인식 모델 준비 중"
-                  : thumbDetected
-                    ? `${targetGestureInformation.name} 인식 성공`
+                  : poseVerified
+                    ? `${targetGestureInformation.name} 인증 완료 · 손을 내리고 촬영해 주세요 (${secondsRemaining}초)`
                     : targetGestureInformation.instruction}
             </span>
           </div>
@@ -950,21 +1045,25 @@ export default function CameraCapture({
             style={{
               ...styles.captureButton,
               opacity:
-                thumbDetected && !checkingLocation ? 1 : 0.55,
+                poseVerified && !checkingLocation ? 1 : 0.55,
             }}
             onClick={takePhoto}
-            disabled={!thumbDetected || checkingLocation}
+            disabled={!poseVerified || checkingLocation}
           >
             {checkingLocation
-              ? "GPS"
-              : thumbDetected
+              ? skipLocationVerification
+                ? "처리 중"
+                : "GPS"
+              : poseVerified
                 ? "촬영"
-                : "대기"}
+                : "포즈 인증 대기"}
           </button>
 
           {checkingLocation && (
             <div style={styles.locationChecking}>
-              위치 확인 중 · 자세를 풀어도 됩니다.
+              {skipLocationVerification
+                ? "사진을 준비하고 있습니다."
+                : "위치를 확인하고 있습니다."}
             </div>
           )}
 
@@ -990,45 +1089,6 @@ export default function CameraCapture({
         </div>
       )}
 
-      {photo && analyzing && (
-        <div style={styles.resultContainer}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={photo}
-            alt="손 포즈와 GPS 정보가 포함된 인증 사진"
-            style={styles.photo}
-          />
-
-          {captureInformation && (
-            <div style={styles.captureInformation}>
-              <strong>인증 정보</strong>
-
-              <p style={styles.informationText}>
-                {targetGestureInformation.name} 포즈: 확인 완료
-                <br />
-                촬영 시각: {captureInformation.capturedAt}
-                <br />
-                GPS 오차: 약{" "}
-                {Math.round(captureInformation.accuracy)}m
-                <br />
-                인증 지점까지 거리: 약{" "}
-                {Math.round(captureInformation.distance)}m
-              </p>
-            </div>
-          )}
-
-          <div style={styles.analyzingBox}>
-            <div style={styles.spinner}>⏳</div>
-
-            <strong>랜드마크를 확인하고 있습니다.</strong>
-
-            <p style={styles.resultMessage}>
-              손 포즈와 GPS 인증은 완료되었습니다.
-            </p>
-          </div>
-        </div>
-      )}
-
       {error && !cameraOpen && (
         <div style={styles.errorContainer}>
           <p style={styles.error}>❌ {error}</p>
@@ -1036,9 +1096,9 @@ export default function CameraCapture({
           <button
             type="button"
             style={styles.retryButton}
-            onClick={retryCapture}
+            onClick={startCamera}
           >
-            다시 촬영하기
+            카메라 다시 실행하기
           </button>
         </div>
       )}
@@ -1052,17 +1112,72 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: "16px",
   },
 
-  cameraButton: {
+  processingScreen: {
+    position: "fixed",
+    inset: 0,
+    zIndex: 9999,
+    minHeight: "100dvh",
+    padding: "24px",
+    background: "linear-gradient(180deg, #fffdf8 0%, #f6f1e8 100%)",
+    color: "#20384a",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  processingContent: {
     width: "100%",
-    minHeight: "52px",
-    padding: "14px",
-    border: "none",
-    borderRadius: "14px",
-    background: "linear-gradient(135deg, #23445d, #315f78)",
-    color: "white",
-    fontSize: "16px",
+    maxWidth: "320px",
+    textAlign: "center",
+  },
+
+  processingIcon: {
+    width: "76px",
+    height: "76px",
+    margin: "0 auto 22px",
+    border: "1px solid #d9e4df",
+    borderRadius: "50%",
+    backgroundColor: "#eef5f1",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "34px",
+    boxShadow: "0 10px 28px rgba(32, 56, 74, 0.08)",
+  },
+
+  processingTitle: {
+    display: "block",
+    fontSize: "20px",
+    lineHeight: 1.45,
+  },
+
+  processingMessage: {
+    margin: "10px 0 0",
+    color: "#6f777b",
+    fontSize: "14px",
+    lineHeight: 1.6,
+  },
+
+  cameraPreparing: {
+    width: "100%",
+    minHeight: "120px",
+    padding: "24px",
+    border: "1px solid #d8e3e6",
+    borderRadius: "18px",
+    backgroundColor: "#f7faf9",
+    color: "#345366",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "10px",
+    fontSize: "15px",
     fontWeight: 700,
-    cursor: "pointer",
+    textAlign: "center",
+  },
+
+  cameraPreparingIcon: {
+    fontSize: "28px",
   },
 
   cameraContainer: {
@@ -1082,30 +1197,12 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: "#111",
   },
 
-  guideText: {
-    position: "absolute",
-    top: "12px",
-    left: "12px",
-    right: "12px",
-    zIndex: 3,
-    padding: "12px",
-    color: "white",
-    backgroundColor: "rgba(0, 0, 0, 0.65)",
-    borderRadius: "12px",
-    fontSize: "13px",
-    lineHeight: 1.4,
-  },
-
-  guideParagraph: {
-    margin: "6px 0 0",
-  },
-
   landmarkFrame: {
     position: "absolute",
-    top: "128px",
+    top: "28px",
     left: "6%",
     width: "88%",
-    height: "205px",
+    height: "300px",
     zIndex: 2,
     boxSizing: "border-box",
     border: "3px dashed white",
@@ -1128,32 +1225,35 @@ const styles: Record<string, React.CSSProperties> = {
 
   handGuideFrame: {
     position: "absolute",
-    right: "16px",
-    bottom: "108px",
+    top: "46%",
+    left: "50%",
     zIndex: 4,
-    width: "88px",
-    height: "88px",
+    width: "150px",
+    height: "150px",
     border: "3px dashed white",
-    borderRadius: "18px",
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    borderRadius: "24px",
+    backgroundColor: "rgba(0, 0, 0, 0.42)",
     color: "white",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: "2px",
+    gap: "8px",
+    padding: "14px",
+    textAlign: "center",
     fontWeight: 800,
+    transform: "translate(-50%, -50%)",
     pointerEvents: "none",
   },
 
   handGuideIcon: {
-    fontSize: "30px",
+    fontSize: "48px",
   },
 
   gestureStatus: {
     position: "absolute",
     left: "14px",
-    right: "116px",
+    right: "14px",
     bottom: "112px",
     zIndex: 3,
     padding: "10px 12px",
@@ -1208,46 +1308,6 @@ const styles: Record<string, React.CSSProperties> = {
     pointerEvents: "none",
   },
 
-  resultContainer: {
-    width: "100%",
-  },
-
-  photo: {
-    width: "100%",
-    display: "block",
-    borderRadius: "16px",
-  },
-
-  captureInformation: {
-    marginTop: "12px",
-    padding: "14px",
-    backgroundColor: "#f3f5f4",
-    borderRadius: "14px",
-    fontSize: "13px",
-    lineHeight: 1.6,
-  },
-
-  informationText: {
-    margin: "7px 0 0",
-  },
-
-  analyzingBox: {
-    marginTop: "14px",
-    padding: "18px",
-    backgroundColor: "#eef5f1",
-    borderRadius: "14px",
-    textAlign: "center",
-  },
-
-  spinner: {
-    marginBottom: "8px",
-    fontSize: "28px",
-  },
-
-  resultMessage: {
-    margin: "8px 0 0",
-    color: "#666",
-  },
   failureOverlay: {
     position: "absolute",
     inset: 0,
