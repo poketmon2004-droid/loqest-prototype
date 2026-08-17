@@ -125,6 +125,30 @@ type CaptureInformation = {
   capturedAt: string;
 };
 
+type CaptureRecord = {
+  id: string;
+  sessionId: string;
+  visitorId: string;
+  tourId: string;
+  attractionId: number;
+  recognitionKey: RecognitionKey;
+  landmarkName: string;
+  result: "success" | "failure";
+  stage: "location" | "landmark" | "completed" | "system";
+  attemptNumber: number;
+  distance: number | null;
+  goodMatches: number | null;
+  matchRatio: number | null;
+  capturedAt: string;
+};
+
+const attractionIdByRecognitionKey: Record<RecognitionKey, number> = {
+  inform: 1,
+  character: 2,
+  wish: 3,
+  home: 4,
+};
+
 function calculateDistance(
   latitude1: number,
   longitude1: number,
@@ -363,6 +387,8 @@ export default function CameraCapture({
   const targetGestureRef =
     useRef<GestureName>("Thumb_Up");
   const autoStartAttemptedRef = useRef(false);
+  const captureAttemptRef = useRef(0);
+  const captureSessionIdRef = useRef("");
 
   const [cameraOpen, setCameraOpen] = useState(false);
   const [openingCamera, setOpeningCamera] = useState(false);
@@ -383,6 +409,83 @@ export default function CameraCapture({
     useState<CaptureInformation | null>(null);
 
   const [error, setError] = useState("");
+
+  async function saveCaptureRecord({
+    result,
+    stage,
+    attemptNumber,
+    distance = null,
+    goodMatches = null,
+    matchRatio = null,
+  }: {
+    result: CaptureRecord["result"];
+    stage: CaptureRecord["stage"];
+    attemptNumber: number;
+    distance?: number | null;
+    goodMatches?: number | null;
+    matchRatio?: number | null;
+  }) {
+    // 관리자 테스트 촬영은 실제 관광객 통계에 포함하지 않습니다.
+    if (skipLocationVerification || typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      let visitorId = localStorage.getItem("loqest_visitor_id");
+
+      if (!visitorId) {
+        visitorId = `visitor-${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2, 9)}`;
+
+        localStorage.setItem("loqest_visitor_id", visitorId);
+      }
+
+      if (!captureSessionIdRef.current) {
+        captureSessionIdRef.current = `session-${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2, 9)}`;
+      }
+
+      const newRecord: CaptureRecord = {
+        id: `capture-${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2, 9)}`,
+        sessionId: captureSessionIdRef.current,
+        visitorId,
+        tourId: "amsa",
+        attractionId: attractionIdByRecognitionKey[recognitionKey],
+        recognitionKey,
+        landmarkName,
+        result,
+        stage,
+        attemptNumber,
+        distance,
+        goodMatches,
+        matchRatio,
+        capturedAt: new Date().toISOString(),
+      };
+
+      const response = await fetch("/api/capture-records", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newRecord),
+      });
+
+      if (!response.ok) {
+        const responseBody = await response.json().catch(() => null);
+        throw new Error(
+          responseBody?.message ?? "촬영 기록 API 저장에 실패했습니다."
+        );
+      }
+
+      console.log("LOQEST Supabase 촬영 기록 저장:", newRecord);
+    } catch (storageError) {
+      console.error("Supabase에 촬영 기록을 저장하지 못했습니다.", storageError);
+    }
+  }
 
   async function initializeGestureRecognizer() {
     if (gestureRecognizerRef.current) {
@@ -790,6 +893,9 @@ export default function CameraCapture({
       canvas.height
     );
 
+    captureAttemptRef.current += 1;
+    const currentAttemptNumber = captureAttemptRef.current;
+
     try {
       let currentLatitude: number | null = null;
       let currentLongitude: number | null = null;
@@ -819,6 +925,13 @@ export default function CameraCapture({
         currentDistance !== null &&
         currentDistance > allowedRadius
       ) {
+        await saveCaptureRecord({
+          result: "failure",
+          stage: "location",
+          attemptNumber: currentAttemptNumber,
+          distance: currentDistance,
+        });
+
         setCheckingLocation(false);
         onProcessingChange(false);
 
@@ -857,6 +970,15 @@ export default function CameraCapture({
         );
 
         if (!landmarkResult.passed) {
+          await saveCaptureRecord({
+            result: "failure",
+            stage: "landmark",
+            attemptNumber: currentAttemptNumber,
+            distance: currentDistance,
+            goodMatches: landmarkResult.goodMatches,
+            matchRatio: landmarkResult.matchRatio,
+          });
+
           setAnalyzing(false);
           setPhoto(null);
           onProcessingChange(false);
@@ -920,6 +1042,14 @@ export default function CameraCapture({
       );
 
       setPhoto(capturedPhoto);
+
+      await saveCaptureRecord({
+        result: "success",
+        stage: "completed",
+        attemptNumber: currentAttemptNumber,
+        distance: currentDistance,
+      });
+
       onVerified();
     } catch (verificationError) {
       console.error(verificationError);

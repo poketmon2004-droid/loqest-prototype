@@ -1,11 +1,12 @@
 "use client";
 
 import { ChangeEvent, useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import cvReadyPromise from "@techstark/opencv-js";
 
-const LANDMARK_NAME = "노트북 키보드";
+const FALLBACK_LANDMARK_NAME = "노트북 키보드";
 
-const REFERENCE_IMAGES = [
+const FALLBACK_REFERENCE_IMAGES = [
   "/landmarks/home/reference/KakaoTalk_20260815_155103197_01.jpg",
   "/landmarks/home/reference/KakaoTalk_20260815_155103197_02.jpg",
   "/landmarks/home/reference/KakaoTalk_20260815_155103197_03.jpg",
@@ -16,11 +17,96 @@ const THRESHOLD = {
   matchRatio: 30,
 };
 
+const DEFAULT_ATTRACTION_TESTS: Record<
+  string,
+  {
+    name: string;
+    referenceImages: string[];
+    goodMatches: number;
+    matchRatio: number;
+  }
+> = {
+  "1": {
+    name: "안내판",
+    referenceImages: [
+      "/landmarks/inform/reference/KakaoTalk_20260813_072237513.jpg",
+      "/landmarks/inform/reference/KakaoTalk_20260813_072237513_01.jpg",
+      "/landmarks/inform/reference/KakaoTalk_20260813_072237513_03.jpg",
+      "/landmarks/inform/reference/KakaoTalk_20260813_072237513_05.jpg",
+      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_11.jpg",
+      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_13.jpg",
+      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_15.jpg",
+      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_16.jpg",
+      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_18.jpg",
+    ],
+    goodMatches: 55,
+    matchRatio: 40,
+  },
+  "2": {
+    name: "캐릭터",
+    referenceImages: [
+      "/landmarks/character/reference/KakaoTalk_20260813_072216328.jpg",
+      "/landmarks/character/reference/KakaoTalk_20260813_072216328_01.jpg",
+      "/landmarks/character/reference/KakaoTalk_20260813_123330386_19.jpg",
+      "/landmarks/character/reference/KakaoTalk_20260813_123330386_21.jpg",
+      "/landmarks/character/reference/KakaoTalk_20260813_123330386_23.jpg",
+      "/landmarks/character/reference/KakaoTalk_20260813_123330386_25.jpg",
+      "/landmarks/character/reference/KakaoTalk_20260813_123330386_26.jpg",
+      "/landmarks/character/reference/KakaoTalk_20260813_123330386_27.jpg",
+      "/landmarks/character/reference/KakaoTalk_20260813_123331048.jpg",
+      "/landmarks/character/reference/KakaoTalk_20260813_123331048_01.jpg",
+    ],
+    goodMatches: 70,
+    matchRatio: 45,
+  },
+  "3": {
+    name: "소망움집",
+    referenceImages: [
+      "/landmarks/wish/reference/KakaoTalk_20260813_072216328_02.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_072216328_03.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_072216328_05.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_123330386.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_01.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_03.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_04.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_06.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_07.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_09.jpg",
+      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_10.jpg",
+    ],
+    goodMatches: 70,
+    matchRatio: 45,
+  },
+};
+
+type StoredReferenceImage = {
+  id: string;
+  name: string;
+  dataUrl: string;
+};
+
+type StoredAttraction = {
+  id: number;
+  name: string;
+  landmarkThreshold?: number;
+  referenceImageData?: StoredReferenceImage[];
+};
+
 type ComparisonResult = {
   referenceName: string;
   goodMatches: number;
   totalMatches: number;
   matchRatio: number;
+};
+
+type RecognitionTestRecord = {
+  totalTests: number;
+  successfulTests: number;
+  failedTests: number;
+  recentResults: boolean[];
+  lastResult: "통과" | "실패";
+  lastTestedAt: string;
+  quality: "정상" | "확인 필요" | "기준 이미지 개선";
 };
 
 function loadImage(source: string): Promise<HTMLImageElement> {
@@ -133,12 +219,117 @@ function compareDescriptors(
 }
 
 export default function LandmarkTestPage() {
+  const [activeAttractionId, setActiveAttractionId] = useState<string | null>(
+    null
+  );
+  const [landmarkName, setLandmarkName] = useState(FALLBACK_LANDMARK_NAME);
+  const [referenceImages, setReferenceImages] = useState<string[]>(
+    FALLBACK_REFERENCE_IMAGES
+  );
+  const [matchRatioThreshold, setMatchRatioThreshold] = useState(
+    THRESHOLD.matchRatio
+  );
+  const [goodMatchesThreshold, setGoodMatchesThreshold] = useState(
+    THRESHOLD.goodMatches
+  );
+  const [attractionError, setAttractionError] = useState("");
   const [opencvReady, setOpencvReady] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [status, setStatus] = useState("OpenCV를 불러오는 중입니다.");
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<ComparisonResult[]>([]);
+  const [savedTestMessage, setSavedTestMessage] = useState("");
+
+  useEffect(() => {
+    try {
+      const attractionId = new URLSearchParams(window.location.search).get(
+        "attractionId"
+      );
+
+      // ID 없이 직접 접속하면 기존 키보드 테스트를 유지한다.
+      if (!attractionId) {
+        return;
+      }
+
+      setActiveAttractionId(attractionId);
+
+      const storedAttractions = JSON.parse(
+        localStorage.getItem("loqest_attractions") || "[]"
+      ) as StoredAttraction[];
+
+      const attractionEdits = JSON.parse(
+        localStorage.getItem("loqest_attraction_edits") || "{}"
+      ) as Record<string, Partial<StoredAttraction>>;
+
+      const storedAttraction = storedAttractions.find(
+        (attraction) => String(attraction.id) === attractionId
+      );
+
+      const defaultTest = DEFAULT_ATTRACTION_TESTS[attractionId];
+
+      if (!storedAttraction && !defaultTest) {
+        setReferenceImages([]);
+        setAttractionError("등록된 관광지 정보를 찾지 못했습니다.");
+        return;
+      }
+
+      const editedAttraction = attractionEdits[attractionId] ?? {};
+
+      if (storedAttraction) {
+        const selectedAttraction = {
+          ...storedAttraction,
+          ...editedAttraction,
+        };
+
+        const savedReferenceImages =
+          selectedAttraction.referenceImageData?.filter(
+            (image) => image.dataUrl
+          ) ?? [];
+
+        setLandmarkName(selectedAttraction.name);
+        setGoodMatchesThreshold(THRESHOLD.goodMatches);
+        setMatchRatioThreshold(
+          Number(selectedAttraction.landmarkThreshold) || THRESHOLD.matchRatio
+        );
+
+        if (savedReferenceImages.length === 0) {
+          setReferenceImages([]);
+          setAttractionError(
+            "이 관광지에는 실제 기준 이미지가 저장되어 있지 않습니다."
+          );
+          return;
+        }
+
+        setReferenceImages(savedReferenceImages.map((image) => image.dataUrl));
+        setAttractionError("");
+        return;
+      }
+
+      if (defaultTest) {
+        const editedReferenceImages =
+          editedAttraction.referenceImageData?.filter(
+          (image) => image.dataUrl
+        ) ?? [];
+
+        setLandmarkName(editedAttraction.name ?? defaultTest.name);
+        setGoodMatchesThreshold(defaultTest.goodMatches);
+        setMatchRatioThreshold(
+          Number(editedAttraction.landmarkThreshold) || defaultTest.matchRatio
+        );
+        setReferenceImages(
+          editedReferenceImages.length > 0
+            ? editedReferenceImages.map((image) => image.dataUrl)
+            : defaultTest.referenceImages
+        );
+        setAttractionError("");
+      }
+    } catch (error) {
+      console.error(error);
+      setReferenceImages([]);
+      setAttractionError("관광지 기준 이미지를 불러오지 못했습니다.");
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -188,7 +379,58 @@ export default function LandmarkTestPage() {
     setSelectedFile(file);
     setSelectedImage(previewUrl);
     setResults([]);
+    setSavedTestMessage("");
     setStatus("사진을 선택했습니다. 분석 버튼을 눌러 주세요.");
+  }
+
+  function saveRecognitionTestResult(passed: boolean) {
+    if (!activeAttractionId) {
+      return;
+    }
+
+    const savedRecords = JSON.parse(
+      localStorage.getItem("loqest_recognition_test_records") || "{}"
+    ) as Record<string, RecognitionTestRecord>;
+
+    const previousRecord = savedRecords[activeAttractionId];
+    const recentResults = [
+      ...(previousRecord?.recentResults ?? []),
+      passed,
+    ].slice(-3);
+
+    const recentFailureCount = recentResults.filter(
+      (result) => !result
+    ).length;
+
+    let quality: RecognitionTestRecord["quality"] = "정상";
+
+    if (recentFailureCount >= 2) {
+      quality = "기준 이미지 개선";
+    } else if (!passed) {
+      quality = "확인 필요";
+    }
+
+    const nextRecord: RecognitionTestRecord = {
+      totalTests: (previousRecord?.totalTests ?? 0) + 1,
+      successfulTests:
+        (previousRecord?.successfulTests ?? 0) + (passed ? 1 : 0),
+      failedTests: (previousRecord?.failedTests ?? 0) + (passed ? 0 : 1),
+      recentResults,
+      lastResult: passed ? "통과" : "실패",
+      lastTestedAt: new Date().toISOString(),
+      quality,
+    };
+
+    savedRecords[activeAttractionId] = nextRecord;
+
+    localStorage.setItem(
+      "loqest_recognition_test_records",
+      JSON.stringify(savedRecords)
+    );
+
+    setSavedTestMessage(
+      `테스트 결과가 저장되었습니다. 총 ${nextRecord.totalTests}회 테스트`
+    );
   }
 
   async function analyzeImage() {
@@ -199,7 +441,7 @@ export default function LandmarkTestPage() {
     setAnalyzing(true);
     setResults([]);
     setStatus(
-      `키보드 기준 사진 ${REFERENCE_IMAGES.length}장과 특징점을 비교하고 있습니다.`
+      `${landmarkName} 기준 사진 ${referenceImages.length}장과 특징점을 비교하고 있습니다.`
     );
 
     const cv = await cvReadyPromise;
@@ -211,7 +453,7 @@ export default function LandmarkTestPage() {
 
       const comparisonResults: ComparisonResult[] = [];
 
-      for (const referencePath of REFERENCE_IMAGES) {
+      for (const referencePath of referenceImages) {
         const referenceImage = await loadImage(referencePath);
         const referenceDescriptors = extractFeatures(cv, referenceImage);
 
@@ -236,6 +478,13 @@ export default function LandmarkTestPage() {
       );
 
       setResults(comparisonResults);
+      const currentBestResult = comparisonResults[0];
+      const currentPassed =
+        currentBestResult !== undefined &&
+        currentBestResult.goodMatches >= goodMatchesThreshold &&
+        currentBestResult.matchRatio >= matchRatioThreshold;
+
+      saveRecognitionTestResult(currentPassed);
       setStatus("분석이 완료되었습니다.");
     } catch (error) {
       console.error(error);
@@ -255,20 +504,24 @@ export default function LandmarkTestPage() {
 
   const landmarkPassed =
     bestResult !== undefined &&
-    bestResult.goodMatches >= THRESHOLD.goodMatches &&
-    bestResult.matchRatio >= THRESHOLD.matchRatio;
+    bestResult.goodMatches >= goodMatchesThreshold &&
+    bestResult.matchRatio >= matchRatioThreshold;
 
   return (
     <main style={styles.page}>
       <section style={styles.card}>
         <p style={styles.eyebrow}>LANDMARK TEST</p>
 
-        <h1 style={styles.title}>{LANDMARK_NAME} 랜드마크 인식 실험</h1>
+        <h1 style={styles.title}>{landmarkName} 랜드마크 인식 실험</h1>
 
         <p style={styles.description}>
-          테스트 사진과 키보드 기준 사진 {REFERENCE_IMAGES.length}장의 ORB
-          특징점을 비교합니다.
+          테스트 사진과 {landmarkName} 기준 사진 {referenceImages.length}장의
+          ORB 특징점을 비교합니다.
         </p>
+
+        {attractionError && (
+          <div style={styles.errorBox}>{attractionError}</div>
+        )}
 
         <div style={styles.statusBox}>
           <strong>{opencvReady ? "✓ 시스템 준비" : "⏳ 준비 중"}</strong>
@@ -298,11 +551,21 @@ export default function LandmarkTestPage() {
         <button
           type="button"
           onClick={analyzeImage}
-          disabled={!opencvReady || !selectedFile || analyzing}
+          disabled={
+            !opencvReady ||
+            !selectedFile ||
+            analyzing ||
+            referenceImages.length === 0
+          }
           style={{
             ...styles.analyzeButton,
             opacity:
-              !opencvReady || !selectedFile || analyzing ? 0.5 : 1,
+              !opencvReady ||
+              !selectedFile ||
+              analyzing ||
+              referenceImages.length === 0
+                ? 0.5
+                : 1,
           }}
         >
           {analyzing ? "분석 중..." : "랜드마크 분석하기"}
@@ -323,8 +586,8 @@ export default function LandmarkTestPage() {
               }}
             >
               {landmarkPassed
-                ? `✓ ${LANDMARK_NAME} 인증 성공`
-                : `✕ ${LANDMARK_NAME} 인증 실패`}
+                ? `✓ ${landmarkName} 인증 성공`
+                : `✕ ${landmarkName} 인증 실패`}
             </p>
 
             <strong style={styles.resultNumber}>
@@ -337,14 +600,18 @@ export default function LandmarkTestPage() {
             </p>
 
             <p style={styles.thresholdText}>
-              인증 기준: 특징점 {THRESHOLD.goodMatches}개 이상 · 일치 비율{" "}
-              {THRESHOLD.matchRatio}% 이상
+              인증 기준: 특징점 {goodMatchesThreshold}개 이상 · 일치 비율{" "}
+              {matchRatioThreshold}% 이상
             </p>
 
             <p style={styles.fileName}>
               가장 유사한 기준 사진: {bestResult.referenceName}
             </p>
           </section>
+        )}
+
+        {savedTestMessage && (
+          <p style={styles.savedMessage}>{savedTestMessage}</p>
         )}
 
         {results.length > 0 && (
@@ -380,7 +647,7 @@ export default function LandmarkTestPage() {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, CSSProperties> = {
   page: {
     minHeight: "100vh",
     padding: "24px 16px 60px",
@@ -425,6 +692,28 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: "14px",
     background: "#edf4f6",
     color: "#315d70",
+  },
+
+  errorBox: {
+    marginBottom: "18px",
+    padding: "13px 14px",
+    border: "1px solid #efcaca",
+    borderRadius: "12px",
+    background: "#fff0f0",
+    color: "#a84a4a",
+    fontSize: "13px",
+    fontWeight: 700,
+  },
+
+  savedMessage: {
+    margin: "12px 0 0",
+    padding: "11px 13px",
+    borderRadius: "10px",
+    background: "#e8edf8",
+    color: "#203a8f",
+    fontSize: "12px",
+    fontWeight: 700,
+    textAlign: "center",
   },
 
   statusText: {
