@@ -3,11 +3,12 @@
 import { ChangeEvent, FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { clearAdminApiKey, getAdminApiKey } from "@/lib/adminApiKey";
 import styles from "./AttractionForm.module.css";
 
 type Step = 1 | 2 | 3 | 4;
 
-type FormData = {
+type AttractionFormData = {
   name: string;
   category: string;
   address: string;
@@ -25,9 +26,10 @@ type ReferenceImage = {
   id: string;
   name: string;
   dataUrl: string;
+  file: File;
 };
 
-const initialForm: FormData = {
+const initialForm: AttractionFormData = {
   name: "",
   category: "역사·문화",
   address: "",
@@ -84,12 +86,12 @@ const resizeImage = (file: File): Promise<string> =>
 export default function NewAttractionPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
-  const [form, setForm] = useState<FormData>(initialForm);
+  const [form, setForm] = useState<AttractionFormData>(initialForm);
   const [referenceImages, setReferenceImages] = useState<ReferenceImage[]>([]);
   const [imageError, setImageError] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const updateForm = (field: keyof FormData, value: string) => {
+  const updateForm = (field: keyof AttractionFormData, value: string) => {
     setForm((previous) => ({ ...previous, [field]: value }));
   };
 
@@ -108,6 +110,7 @@ export default function NewAttractionPage() {
           id: `${Date.now()}-${index}-${file.name}`,
           name: file.name,
           dataUrl: await resizeImage(file),
+          file,
         }))
       );
 
@@ -134,7 +137,7 @@ export default function NewAttractionPage() {
     if (step > 1) setStep((step - 1) as Step);
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (referenceImages.length === 0) {
@@ -144,7 +147,7 @@ export default function NewAttractionPage() {
     }
 
     const newAttraction = {
-      id: Date.now(),
+      tourId: "amsa",
       name: form.name || "이름 없는 관광지",
       category: form.category,
       address: form.address,
@@ -155,29 +158,43 @@ export default function NewAttractionPage() {
       availableTime: form.availableTime,
       landmarkThreshold: Number(form.landmarkThreshold),
       guideMessage: form.guideMessage,
-      referenceImages: referenceImages.length,
-      referenceImageData: referenceImages,
-      firstSuccess: null,
       status: form.status,
-      quality: "운영 전",
     };
 
     try {
-      const savedAttractions = JSON.parse(
-        localStorage.getItem("loqest_attractions") || "[]"
-      );
+      const adminKey = getAdminApiKey();
+      if (!adminKey) {
+        throw new Error(
+          "관리자 API 키가 없습니다. 새로고침 후 다시 입력해주세요."
+        );
+      }
 
-      localStorage.setItem(
-        "loqest_attractions",
-        JSON.stringify([...savedAttractions, newAttraction])
-      );
+      setImageError("");
+      setIsProcessing(true);
+      const requestBody = new window.FormData();
+      requestBody.append("attraction", JSON.stringify(newAttraction));
+      referenceImages.forEach((image) => requestBody.append("images", image.file));
 
+      const response = await fetch("/api/attractions", {
+        method: "POST",
+        headers: { "x-admin-api-key": adminKey },
+        body: requestBody,
+      });
+
+      const result = await response.json();
+      if (response.status === 401) {
+        clearAdminApiKey();
+        throw new Error("관리자 API 키가 올바르지 않습니다. 다시 등록해주세요.");
+      }
+      if (!response.ok) throw new Error(result.message || "관광지를 저장하지 못했습니다.");
+
+      router.refresh();
       router.push("/admin/attractions");
-    } catch {
-      setImageError(
-        "브라우저 저장 공간이 부족합니다. 이미지 수를 줄이거나 용량이 작은 사진을 사용해주세요."
-      );
+    } catch (error) {
+      setImageError(error instanceof Error ? error.message : "관광지를 저장하지 못했습니다.");
       setStep(3);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -515,8 +532,12 @@ export default function NewAttractionPage() {
                 다음 단계
               </button>
             ) : (
-              <button type="submit" className={styles.primaryButton}>
-                관광지 저장
+              <button
+                type="submit"
+                className={styles.primaryButton}
+                disabled={isProcessing}
+              >
+                {isProcessing ? "저장 중..." : "관광지 저장"}
               </button>
             )}
           </div>

@@ -2,7 +2,12 @@
 
 import { ChangeEvent, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
+import Link from "next/link";
 import cvReadyPromise from "@techstark/opencv-js";
+import {
+  clearAdminApiKey,
+  getAdminApiKey,
+} from "@/lib/adminApiKey";
 
 const FALLBACK_LANDMARK_NAME = "노트북 키보드";
 
@@ -17,79 +22,16 @@ const THRESHOLD = {
   matchRatio: 30,
 };
 
-const DEFAULT_ATTRACTION_TESTS: Record<
-  string,
-  {
-    name: string;
-    referenceImages: string[];
-    goodMatches: number;
-    matchRatio: number;
-  }
-> = {
-  "1": {
-    name: "안내판",
-    referenceImages: [
-      "/landmarks/inform/reference/KakaoTalk_20260813_072237513.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_072237513_01.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_072237513_03.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_072237513_05.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_11.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_13.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_15.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_16.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_18.jpg",
-    ],
-    goodMatches: 55,
-    matchRatio: 40,
-  },
-  "2": {
-    name: "캐릭터",
-    referenceImages: [
-      "/landmarks/character/reference/KakaoTalk_20260813_072216328.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_072216328_01.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123330386_19.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123330386_21.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123330386_23.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123330386_25.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123330386_26.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123330386_27.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123331048.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123331048_01.jpg",
-    ],
-    goodMatches: 70,
-    matchRatio: 45,
-  },
-  "3": {
-    name: "소망움집",
-    referenceImages: [
-      "/landmarks/wish/reference/KakaoTalk_20260813_072216328_02.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_072216328_03.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_072216328_05.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_01.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_03.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_04.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_06.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_07.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_09.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_10.jpg",
-    ],
-    goodMatches: 70,
-    matchRatio: 45,
-  },
+type ApiReferenceImage = {
+  dataUrl?: string;
+  url?: string;
 };
 
-type StoredReferenceImage = {
-  id: string;
-  name: string;
-  dataUrl: string;
-};
-
-type StoredAttraction = {
+type ApiAttraction = {
   id: number;
   name: string;
-  landmarkThreshold?: number;
-  referenceImageData?: StoredReferenceImage[];
+  landmark_threshold?: number;
+  referenceImages?: ApiReferenceImage[];
 };
 
 type ComparisonResult = {
@@ -112,6 +54,10 @@ type RecognitionTestRecord = {
 function loadImage(source: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
+
+    if (source.startsWith("http")) {
+      image.crossOrigin = "anonymous";
+    }
 
     image.onload = () => resolve(image);
     image.onerror = () => reject(new Error(`이미지를 불러오지 못했습니다: ${source}`));
@@ -222,10 +168,8 @@ export default function LandmarkTestPage() {
   const [activeAttractionId, setActiveAttractionId] = useState<string | null>(
     null
   );
-  const [landmarkName, setLandmarkName] = useState(FALLBACK_LANDMARK_NAME);
-  const [referenceImages, setReferenceImages] = useState<string[]>(
-    FALLBACK_REFERENCE_IMAGES
-  );
+  const [landmarkName, setLandmarkName] = useState("관광지");
+  const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const [matchRatioThreshold, setMatchRatioThreshold] = useState(
     THRESHOLD.matchRatio
   );
@@ -242,58 +186,72 @@ export default function LandmarkTestPage() {
   const [savedTestMessage, setSavedTestMessage] = useState("");
 
   useEffect(() => {
-    try {
+    let active = true;
+
+    const loadAttraction = async () => {
       const attractionId = new URLSearchParams(window.location.search).get(
         "attractionId"
       );
 
-      // ID 없이 직접 접속하면 기존 키보드 테스트를 유지한다.
       if (!attractionId) {
+        setLandmarkName(FALLBACK_LANDMARK_NAME);
+        setReferenceImages(FALLBACK_REFERENCE_IMAGES);
+        setAttractionError("");
         return;
       }
 
       setActiveAttractionId(attractionId);
+      setReferenceImages([]);
+      setAttractionError("");
 
-      const storedAttractions = JSON.parse(
-        localStorage.getItem("loqest_attractions") || "[]"
-      ) as StoredAttraction[];
+      try {
+        const adminKey = getAdminApiKey();
 
-      const attractionEdits = JSON.parse(
-        localStorage.getItem("loqest_attraction_edits") || "{}"
-      ) as Record<string, Partial<StoredAttraction>>;
+        if (!adminKey) {
+          throw new Error(
+            "관리자 API 키가 없습니다. 관리자 화면을 새로고침한 후 다시 시도해주세요."
+          );
+        }
 
-      const storedAttraction = storedAttractions.find(
-        (attraction) => String(attraction.id) === attractionId
-      );
+        const response = await fetch(`/api/attractions/${attractionId}`, {
+          headers: { "x-admin-api-key": adminKey },
+          cache: "no-store",
+        });
 
-      const defaultTest = DEFAULT_ATTRACTION_TESTS[attractionId];
+        if (response.status === 401) {
+          clearAdminApiKey();
+          throw new Error(
+            "관리자 API 키가 올바르지 않습니다. 새로고침 후 다시 입력해주세요."
+          );
+        }
 
-      if (!storedAttraction && !defaultTest) {
-        setReferenceImages([]);
-        setAttractionError("등록된 관광지 정보를 찾지 못했습니다.");
-        return;
-      }
-
-      const editedAttraction = attractionEdits[attractionId] ?? {};
-
-      if (storedAttraction) {
-        const selectedAttraction = {
-          ...storedAttraction,
-          ...editedAttraction,
+        const result = (await response.json()) as {
+          attraction?: ApiAttraction;
+          message?: string;
         };
 
-        const savedReferenceImages =
-          selectedAttraction.referenceImageData?.filter(
-            (image) => image.dataUrl
-          ) ?? [];
+        if (!response.ok || !result.attraction) {
+          throw new Error(
+            result.message ?? "등록된 관광지 정보를 찾지 못했습니다."
+          );
+        }
 
-        setLandmarkName(selectedAttraction.name);
+        const attraction = result.attraction;
+        const imageUrls = (attraction.referenceImages ?? [])
+          .map((image) => image.dataUrl ?? image.url ?? "")
+          .filter((source): source is string => Boolean(source));
+
+        if (!active) {
+          return;
+        }
+
+        setLandmarkName(attraction.name);
         setGoodMatchesThreshold(THRESHOLD.goodMatches);
         setMatchRatioThreshold(
-          Number(selectedAttraction.landmarkThreshold) || THRESHOLD.matchRatio
+          Number(attraction.landmark_threshold) || THRESHOLD.matchRatio
         );
 
-        if (savedReferenceImages.length === 0) {
+        if (imageUrls.length === 0) {
           setReferenceImages([]);
           setAttractionError(
             "이 관광지에는 실제 기준 이미지가 저장되어 있지 않습니다."
@@ -301,34 +259,27 @@ export default function LandmarkTestPage() {
           return;
         }
 
-        setReferenceImages(savedReferenceImages.map((image) => image.dataUrl));
+        setReferenceImages(imageUrls);
         setAttractionError("");
-        return;
-      }
+      } catch (error) {
+        console.error(error);
 
-      if (defaultTest) {
-        const editedReferenceImages =
-          editedAttraction.referenceImageData?.filter(
-          (image) => image.dataUrl
-        ) ?? [];
-
-        setLandmarkName(editedAttraction.name ?? defaultTest.name);
-        setGoodMatchesThreshold(defaultTest.goodMatches);
-        setMatchRatioThreshold(
-          Number(editedAttraction.landmarkThreshold) || defaultTest.matchRatio
-        );
-        setReferenceImages(
-          editedReferenceImages.length > 0
-            ? editedReferenceImages.map((image) => image.dataUrl)
-            : defaultTest.referenceImages
-        );
-        setAttractionError("");
+        if (active) {
+          setReferenceImages([]);
+          setAttractionError(
+            error instanceof Error
+              ? error.message
+              : "관광지 기준 이미지를 불러오지 못했습니다."
+          );
+        }
       }
-    } catch (error) {
-      console.error(error);
-      setReferenceImages([]);
-      setAttractionError("관광지 기준 이미지를 불러오지 못했습니다.");
-    }
+    };
+
+    void loadAttraction();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -642,6 +593,23 @@ export default function LandmarkTestPage() {
             </div>
           </section>
         )}
+
+        {activeAttractionId ? (
+          <Link
+            href={`/admin/attractions/${activeAttractionId}`}
+            style={styles.backButton}
+          >
+            ← 관광지 상세로 돌아가기
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={() => window.history.back()}
+            style={styles.backButton}
+          >
+            ← 뒤로가기
+          </button>
+        )}
       </section>
     </main>
   );
@@ -762,6 +730,23 @@ const styles: Record<string, CSSProperties> = {
     color: "#ffffff",
     fontSize: "15px",
     fontWeight: 900,
+    cursor: "pointer",
+  },
+
+  backButton: {
+    display: "flex",
+    width: "100%",
+    minHeight: "48px",
+    marginTop: "16px",
+    alignItems: "center",
+    justifyContent: "center",
+    border: "1px solid #8da8b5",
+    borderRadius: "14px",
+    background: "#ffffff",
+    color: "#315d70",
+    fontSize: "14px",
+    fontWeight: 800,
+    textDecoration: "none",
     cursor: "pointer",
   },
 

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { clearAdminApiKey, getAdminApiKey } from "@/lib/adminApiKey";
 import styles from "./AttractionList.module.css";
 
 type Attraction = {
@@ -26,41 +27,40 @@ type RecognitionTestRecord = {
   quality: "정상" | "확인 필요" | "기준 이미지 개선";
 };
 
-const defaultAttractions: Attraction[] = [
-  { id: 1, name: "안내판", category: "역사·문화", radius: 50, referenceImages: 12, firstSuccess: 76, status: "공개", quality: "정상" },
-  { id: 2, name: "캐릭터", category: "포토 미션", radius: 50, referenceImages: 15, firstSuccess: 68, status: "공개", quality: "확인 필요" },
-  { id: 3, name: "소망움집", category: "역사·문화", radius: 70, referenceImages: 11, firstSuccess: 31, status: "공개", quality: "기준 이미지 개선" },
-];
-
 export default function AttractionListPage() {
-  const [attractions, setAttractions] = useState<Attraction[]>(defaultAttractions);
+  const [attractions, setAttractions] = useState<Attraction[]>([]);
 
   useEffect(() => {
-    try {
-      const storedAttractions = JSON.parse(localStorage.getItem("loqest_attractions") || "[]") as Attraction[];
-      const attractionEdits = JSON.parse(localStorage.getItem("loqest_attraction_edits") || "{}") as Record<string, Partial<Attraction>>;
-      const savedStatuses = JSON.parse(localStorage.getItem("loqest_attraction_statuses") || "{}") as Record<string, string>;
-      const deletedIds = JSON.parse(localStorage.getItem("loqest_deleted_attraction_ids") || "[]") as number[];
+    const loadAttractions = async () => {
+      try {
+      const adminKey = getAdminApiKey();
+      if (!adminKey) return;
       const recognitionRecords = JSON.parse(localStorage.getItem("loqest_recognition_test_records") || "{}") as Record<string, RecognitionTestRecord>;
-
-      const combinedAttractions = [...defaultAttractions, ...storedAttractions]
-        .filter((attraction) => !deletedIds.includes(attraction.id))
-        .map((attraction) => {
-          const edited = { ...attraction, ...(attractionEdits[String(attraction.id)] ?? {}) };
+      const response = await fetch("/api/attractions?tourId=amsa&includeHidden=true", {
+        headers: { "x-admin-api-key": adminKey },
+      });
+      if (response.status === 401) {
+        clearAdminApiKey();
+        throw new Error("관리자 API 키가 올바르지 않습니다. 새로고침 후 다시 입력해주세요.");
+      }
+      if (!response.ok) throw new Error("관광지 데이터를 불러오지 못했습니다.");
+      const result = await response.json();
+      const combinedAttractions = result.attractions.map((attraction: Attraction & { referenceImages: unknown[] }) => {
           const record = recognitionRecords[String(attraction.id)];
-
           return {
-            ...edited,
-            status: savedStatuses[String(attraction.id)] ?? edited.status,
-            quality: record?.quality ?? edited.quality,
+            ...attraction,
+            referenceImages: attraction.referenceImages.length,
+            firstSuccess: null,
+            quality: record?.quality ?? attraction.quality,
             lastTestResult: record?.lastResult ?? "미실시",
           };
         });
-
       setAttractions(combinedAttractions);
     } catch (error) {
       console.error("관광지 데이터를 불러오지 못했습니다.", error);
     }
+    };
+    void loadAttractions();
   }, []);
 
   const getQualityClass = (quality: string) => {

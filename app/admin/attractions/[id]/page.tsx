@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { clearAdminApiKey, getAdminApiKey } from "@/lib/adminApiKey";
 import styles from "./detail.module.css";
 
 type ReferenceImage = {
     id: string;
     name: string;
     dataUrl: string;
+    path?: string;
 };
 
 type Attraction = {
@@ -40,99 +42,6 @@ type RecognitionTestRecord = {
     quality: "정상" | "확인 필요" | "기준 이미지 개선";
 };
 
-const defaultAttractions: Attraction[] = [
-    {
-        id: 1,
-        name: "안내판",
-        category: "역사·문화",
-        address: "서울특별시 강동구 암사동",
-        description: "암사동 선사유적지 안내판",
-        latitude: 37.5607,
-        longitude: 127.1304,
-        radius: 50,
-        availableTime: "상시",
-        landmarkThreshold: 40,
-        guideMessage: "가이드라인에 맞춰 안내판과 함께 촬영해주세요.",
-        referenceImages: 12,
-        firstSuccess: 76,
-        status: "공개",
-        quality: "정상",
-    },
-    {
-        id: 2,
-        name: "캐릭터",
-        category: "포토 미션",
-        address: "서울특별시 강동구 암사동",
-        description: "암사동 선사유적지 캐릭터 조형물",
-        latitude: 37.5607,
-        longitude: 127.1304,
-        radius: 50,
-        availableTime: "상시",
-        landmarkThreshold: 45,
-        guideMessage: "가이드라인에 맞춰 캐릭터와 함께 촬영해주세요.",
-        referenceImages: 15,
-        firstSuccess: 68,
-        status: "공개",
-        quality: "확인 필요",
-    },
-    {
-        id: 3,
-        name: "소망움집",
-        category: "역사·문화",
-        address: "서울특별시 강동구 암사동",
-        description: "암사동 선사유적지 소망움집",
-        latitude: 37.5607,
-        longitude: 127.1304,
-        radius: 70,
-        availableTime: "상시",
-        landmarkThreshold: 45,
-        guideMessage: "가이드라인에 맞춰 소망움집과 함께 촬영해주세요.",
-        referenceImages: 11,
-        firstSuccess: 31,
-        status: "공개",
-        quality: "기준 이미지 개선",
-    },
-];
-
-const defaultReferenceImages: Record<string, string[]> = {
-    "1": [
-        "/landmarks/inform/reference/KakaoTalk_20260813_072237513.jpg",
-        "/landmarks/inform/reference/KakaoTalk_20260813_072237513_01.jpg",
-        "/landmarks/inform/reference/KakaoTalk_20260813_072237513_03.jpg",
-        "/landmarks/inform/reference/KakaoTalk_20260813_072237513_05.jpg",
-        "/landmarks/inform/reference/KakaoTalk_20260813_123330386_11.jpg",
-        "/landmarks/inform/reference/KakaoTalk_20260813_123330386_13.jpg",
-        "/landmarks/inform/reference/KakaoTalk_20260813_123330386_15.jpg",
-        "/landmarks/inform/reference/KakaoTalk_20260813_123330386_16.jpg",
-        "/landmarks/inform/reference/KakaoTalk_20260813_123330386_18.jpg",
-    ],
-    "2": [
-        "/landmarks/character/reference/KakaoTalk_20260813_072216328.jpg",
-        "/landmarks/character/reference/KakaoTalk_20260813_072216328_01.jpg",
-        "/landmarks/character/reference/KakaoTalk_20260813_123330386_19.jpg",
-        "/landmarks/character/reference/KakaoTalk_20260813_123330386_21.jpg",
-        "/landmarks/character/reference/KakaoTalk_20260813_123330386_23.jpg",
-        "/landmarks/character/reference/KakaoTalk_20260813_123330386_25.jpg",
-        "/landmarks/character/reference/KakaoTalk_20260813_123330386_26.jpg",
-        "/landmarks/character/reference/KakaoTalk_20260813_123330386_27.jpg",
-        "/landmarks/character/reference/KakaoTalk_20260813_123331048.jpg",
-        "/landmarks/character/reference/KakaoTalk_20260813_123331048_01.jpg",
-    ],
-    "3": [
-        "/landmarks/wish/reference/KakaoTalk_20260813_072216328_02.jpg",
-        "/landmarks/wish/reference/KakaoTalk_20260813_072216328_03.jpg",
-        "/landmarks/wish/reference/KakaoTalk_20260813_072216328_05.jpg",
-        "/landmarks/wish/reference/KakaoTalk_20260813_123330386.jpg",
-        "/landmarks/wish/reference/KakaoTalk_20260813_123330386_01.jpg",
-        "/landmarks/wish/reference/KakaoTalk_20260813_123330386_03.jpg",
-        "/landmarks/wish/reference/KakaoTalk_20260813_123330386_04.jpg",
-        "/landmarks/wish/reference/KakaoTalk_20260813_123330386_06.jpg",
-        "/landmarks/wish/reference/KakaoTalk_20260813_123330386_07.jpg",
-        "/landmarks/wish/reference/KakaoTalk_20260813_123330386_09.jpg",
-        "/landmarks/wish/reference/KakaoTalk_20260813_123330386_10.jpg",
-    ],
-};
-
 export default function AttractionDetailPage() {
     const params = useParams();
     const router = useRouter();
@@ -145,54 +54,43 @@ export default function AttractionDetailPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        try {
-            const storedAttractions = JSON.parse(
-                localStorage.getItem("loqest_attractions") || "[]"
-            ) as Attraction[];
-            const attractionEdits = JSON.parse(
-                localStorage.getItem("loqest_attraction_edits") || "{}"
-            ) as Record<string, Partial<Attraction>>;
-            const savedStatuses = JSON.parse(
-                localStorage.getItem("loqest_attraction_statuses") || "{}"
-            ) as Record<string, string>;
+        const loadAttraction = async () => {
+          try {
+            const adminKey = getAdminApiKey();
+            if (!adminKey) return;
+            const response = await fetch(`/api/attractions/${attractionId}`, { headers: { "x-admin-api-key": adminKey } });
+            if (response.status === 401) {
+                clearAdminApiKey();
+                throw new Error("관리자 API 키가 올바르지 않습니다.");
+            }
+            if (!response.ok) throw new Error("관광지를 불러오지 못했습니다.");
+            const result = await response.json();
+            const item = result.attraction;
             const recognitionRecords = JSON.parse(
                 localStorage.getItem("loqest_recognition_test_records") || "{}"
             ) as Record<string, RecognitionTestRecord>;
-
-            const baseAttraction =
-                storedAttractions.find((item) => item.id === attractionId) ??
-                defaultAttractions.find((item) => item.id === attractionId);
-
-            if (!baseAttraction) {
-                setLoading(false);
-                return;
-            }
-
-            const mergedAttraction = {
-                ...baseAttraction,
-                ...(attractionEdits[String(attractionId)] ?? {}),
-                status:
-                    savedStatuses[String(attractionId)] ?? baseAttraction.status,
-            };
-
             const record = recognitionRecords[String(attractionId)] ?? null;
-            if (record) mergedAttraction.quality = record.quality;
-
-            setAttraction(mergedAttraction);
+            const mapped: Attraction = {
+                id: item.id, name: item.name, category: item.category, address: item.address,
+                description: item.description, latitude: item.latitude, longitude: item.longitude,
+                radius: item.radius, availableTime: item.available_time,
+                landmarkThreshold: Number(item.landmark_threshold), guideMessage: item.guide_message,
+                referenceImages: item.referenceImages.length, referenceImageData: item.referenceImages,
+                firstSuccess: null, status: item.status, quality: record?.quality ?? item.quality,
+            };
+            setAttraction(mapped);
             setTestRecord(record);
-            setReferenceImages(
-                mergedAttraction.referenceImageData?.length
-                    ? mergedAttraction.referenceImageData.map((image) => image.dataUrl)
-                    : defaultReferenceImages[String(attractionId)] ?? []
-            );
+            setReferenceImages(item.referenceImages.map((image: ReferenceImage) => image.dataUrl));
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
         }
+        };
+        void loadAttraction();
     }, [attractionId]);
 
-    const toggleStatus = () => {
+    const toggleStatus = async () => {
         if (!attraction) {
             return;
         }
@@ -218,62 +116,71 @@ export default function AttractionDetailPage() {
             }
         }
 
-        const savedStatuses = JSON.parse(
-            localStorage.getItem(
-                "loqest_attraction_statuses"
-            ) || "{}"
-        ) as Record<string, string>;
-
-        savedStatuses[String(attraction.id)] =
-            nextStatus;
-
-        localStorage.setItem(
-            "loqest_attraction_statuses",
-            JSON.stringify(savedStatuses)
-        );
-
-        setAttraction({
-            ...attraction,
-            status: nextStatus,
+        const adminKey = getAdminApiKey();
+        if (!adminKey) return;
+        const response = await fetch(`/api/attractions/${attraction.id}`, {
+            method: "PUT",
+            headers: {
+                "content-type": "application/json",
+                "x-admin-api-key": adminKey,
+            },
+            body: JSON.stringify({
+                name: attraction.name,
+                category: attraction.category,
+                address: attraction.address ?? "",
+                description: attraction.description ?? "",
+                latitude: attraction.latitude,
+                longitude: attraction.longitude,
+                radius: attraction.radius,
+                availableTime: attraction.availableTime ?? "상시",
+                landmarkThreshold: attraction.landmarkThreshold ?? 70,
+                guideMessage: attraction.guideMessage ?? "",
+                status: nextStatus,
+                quality: attraction.quality,
+                referenceImages: attraction.referenceImageData ?? [],
+                referenceImagesChanged: false,
+            }),
         });
+
+        if (response.status === 401) {
+            clearAdminApiKey();
+            window.alert(
+                "관리자 API 키가 올바르지 않습니다. 새로고침 후 다시 입력해주세요."
+            );
+            return;
+        }
+
+        if (response.ok) {
+            setAttraction({ ...attraction, status: nextStatus });
+        } else {
+            window.alert("공개 상태를 변경하지 못했습니다.");
+        }
     };
 
-    const deleteAttraction = () => {
+    const deleteAttraction = async () => {
         if (!attraction) return;
         if (!window.confirm(`'${attraction.name}' 관광지를 삭제할까요?`)) return;
 
-        const storedAttractions = JSON.parse(
-            localStorage.getItem("loqest_attractions") || "[]"
-        ) as Attraction[];
-        localStorage.setItem(
-            "loqest_attractions",
-            JSON.stringify(storedAttractions.filter((item) => item.id !== attraction.id))
-        );
-
-        if (defaultAttractions.some((item) => item.id === attraction.id)) {
-            const deletedIds = JSON.parse(
-                localStorage.getItem("loqest_deleted_attraction_ids") || "[]"
-            ) as number[];
-            localStorage.setItem(
-                "loqest_deleted_attraction_ids",
-                JSON.stringify([...new Set([...deletedIds, attraction.id])])
-            );
-        }
-
-        [
-            "loqest_attraction_statuses",
-            "loqest_attraction_edits",
-            "loqest_recognition_test_records",
-        ].forEach((key) => {
-            const data = JSON.parse(localStorage.getItem(key) || "{}") as Record<
-                string,
-                unknown
-            >;
-            delete data[String(attraction.id)];
-            localStorage.setItem(key, JSON.stringify(data));
+        const adminKey = getAdminApiKey();
+        if (!adminKey) return;
+        const response = await fetch(`/api/attractions/${attraction.id}`, {
+            method: "DELETE",
+            headers: { "x-admin-api-key": adminKey },
         });
 
-        router.push("/admin/attractions");
+        if (response.status === 401) {
+            clearAdminApiKey();
+            window.alert(
+                "관리자 API 키가 올바르지 않습니다. 새로고침 후 다시 입력해주세요."
+            );
+            return;
+        }
+
+        if (response.ok) {
+            router.push("/admin/attractions");
+        } else {
+            window.alert("관광지를 삭제하지 못했습니다.");
+        }
     };
 
     const formatDate = (date?: string) => {

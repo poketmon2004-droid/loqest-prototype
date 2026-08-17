@@ -8,12 +8,17 @@ import {
 } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import {
+    clearAdminApiKey,
+    getAdminApiKey,
+} from "@/lib/adminApiKey";
 import styles from "../../new/AttractionForm.module.css";
 
 type ReferenceImage = {
     id: string;
     name: string;
     dataUrl: string;
+    path?: string;
 };
 
 type Attraction = {
@@ -49,62 +54,38 @@ type EditForm = {
     status: string;
 };
 
-const defaultAttractions: Attraction[] = [
-    {
-        id: 1,
-        name: "안내판",
-        category: "역사·문화",
-        address: "서울특별시 강동구 암사동",
-        description: "암사동 선사유적지 안내판",
-        latitude: 37.5607,
-        longitude: 127.1304,
-        radius: 50,
-        availableTime: "상시",
-        landmarkThreshold: 70,
-        guideMessage:
-            "가이드라인에 맞춰 안내판과 함께 촬영해주세요.",
-        referenceImages: 12,
-        firstSuccess: 76,
-        status: "공개",
-        quality: "정상",
-    },
-    {
-        id: 2,
-        name: "캐릭터",
-        category: "포토 미션",
-        address: "서울특별시 강동구 암사동",
-        description: "암사동 선사유적지 캐릭터 조형물",
-        latitude: 37.5607,
-        longitude: 127.1304,
-        radius: 50,
-        availableTime: "상시",
-        landmarkThreshold: 70,
-        guideMessage:
-            "가이드라인에 맞춰 캐릭터와 함께 촬영해주세요.",
-        referenceImages: 15,
-        firstSuccess: 68,
-        status: "공개",
-        quality: "확인 필요",
-    },
-    {
-        id: 3,
-        name: "소망움집",
-        category: "역사·문화",
-        address: "서울특별시 강동구 암사동",
-        description: "암사동 선사유적지 소망움집",
-        latitude: 37.5607,
-        longitude: 127.1304,
-        radius: 70,
-        availableTime: "상시",
-        landmarkThreshold: 70,
-        guideMessage:
-            "가이드라인에 맞춰 소망움집과 함께 촬영해주세요.",
-        referenceImages: 11,
-        firstSuccess: 31,
-        status: "공개",
-        quality: "기준 이미지 개선",
-    },
-];
+type AttractionApiResponse = {
+    id: number;
+    name: string;
+    category: string;
+    address?: string;
+    description?: string;
+    latitude?: number;
+    longitude?: number;
+    radius: number;
+    available_time?: string;
+    landmark_threshold?: number;
+    guide_message?: string;
+    first_success?: number | null;
+    status: string;
+    quality?: string;
+    referenceImages?: ReferenceImage[];
+};
+
+function getAdminHeaders() {
+    const adminKey = getAdminApiKey();
+
+    if (!adminKey) {
+        throw new Error(
+            "관리자 API 키가 없습니다. 새로고침 후 다시 입력해주세요."
+        );
+    }
+
+    return {
+        "Content-Type": "application/json",
+        "x-admin-api-key": adminKey,
+    };
+}
 
 const resizeImage = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -180,74 +161,102 @@ export default function EditAttractionPage() {
     ] = useState(false);
 
     useEffect(() => {
-        try {
-            const storedAttractions = JSON.parse(
-                localStorage.getItem("loqest_attractions") || "[]"
-            ) as Attraction[];
+        const fetchAttraction = async () => {
+            setLoading(true);
+            setErrorMessage("");
 
-            const attractionEdits = JSON.parse(
-                localStorage.getItem("loqest_attraction_edits") || "{}"
-            ) as Record<string, Partial<Attraction>>;
+            try {
+                const response = await fetch(
+                    `/api/attractions/${attractionId}`,
+                    {
+                        method: "GET",
+                        headers: getAdminHeaders(),
+                        cache: "no-store",
+                    }
+                );
 
-            const storedAttraction = storedAttractions.find(
-                (attraction) => attraction.id === attractionId
-            );
+                if (response.status === 401) {
+                    clearAdminApiKey();
+                    throw new Error(
+                        "관리자 API 키가 올바르지 않습니다. 새로고침 후 다시 입력해주세요."
+                    );
+                }
 
-            const defaultAttraction = defaultAttractions.find(
-                (attraction) => attraction.id === attractionId
-            );
+                const result = (await response.json()) as {
+                    attraction?: AttractionApiResponse;
+                    message?: string;
+                };
 
-            const baseAttraction =
-                storedAttraction ?? defaultAttraction;
+                if (!response.ok || !result.attraction) {
+                    throw new Error(
+                        result.message ??
+                            "관광지 정보를 불러오지 못했습니다."
+                    );
+                }
 
-            if (!baseAttraction) {
-                setErrorMessage("관광지 정보를 찾지 못했습니다.");
+                const data = result.attraction;
+                const images = data.referenceImages ?? [];
+                const attraction: Attraction = {
+                    id: Number(data.id),
+                    name: data.name,
+                    category: data.category,
+                    address: data.address ?? "",
+                    description: data.description ?? "",
+                    latitude: data.latitude,
+                    longitude: data.longitude,
+                    radius: Number(data.radius),
+                    availableTime: data.available_time ?? "상시",
+                    landmarkThreshold:
+                        data.landmark_threshold ?? 70,
+                    guideMessage:
+                        data.guide_message ??
+                        "가이드라인에 맞춰 관광지와 함께 촬영해주세요.",
+                    referenceImages: images.length,
+                    referenceImageData: images,
+                    firstSuccess: data.first_success ?? null,
+                    status: data.status,
+                    quality: data.quality ?? "확인 필요",
+                };
+
+                setOriginalAttraction(attraction);
+                setReferenceImages(images);
+                setForm({
+                    name: attraction.name,
+                    category: attraction.category,
+                    address: attraction.address ?? "",
+                    description: attraction.description ?? "",
+                    latitude:
+                        attraction.latitude === undefined
+                            ? ""
+                            : String(attraction.latitude),
+                    longitude:
+                        attraction.longitude === undefined
+                            ? ""
+                            : String(attraction.longitude),
+                    radius: String(attraction.radius),
+                    availableTime:
+                        attraction.availableTime ?? "상시",
+                    landmarkThreshold: String(
+                        attraction.landmarkThreshold ?? 70
+                    ),
+                    guideMessage:
+                        attraction.guideMessage ??
+                        "가이드라인에 맞춰 관광지와 함께 촬영해주세요.",
+                    status: attraction.status,
+                });
+            } catch (error) {
+                console.error(error);
+                setErrorMessage(
+                    error instanceof Error
+                        ? error.message
+                        : "관광지 정보를 불러오지 못했습니다."
+                );
+            } finally {
                 setLoading(false);
-                return;
             }
+        };
 
-            const attraction = {
-                ...baseAttraction,
-                ...(attractionEdits[String(attractionId)] ?? {}),
-            };
-
-            setOriginalAttraction(attraction);
-
-            setForm({
-                name: attraction.name,
-                category: attraction.category,
-                address: attraction.address ?? "",
-                description: attraction.description ?? "",
-                latitude:
-                    attraction.latitude === undefined
-                        ? ""
-                        : String(attraction.latitude),
-                longitude:
-                    attraction.longitude === undefined
-                        ? ""
-                        : String(attraction.longitude),
-                radius: String(attraction.radius),
-                availableTime: attraction.availableTime ?? "상시",
-                landmarkThreshold: String(
-                    attraction.landmarkThreshold ?? 70
-                ),
-                guideMessage:
-                    attraction.guideMessage ??
-                    "가이드라인에 맞춰 관광지와 함께 촬영해주세요.",
-                status: attraction.status,
-            });
-
-            setReferenceImages(
-                attraction.referenceImageData ?? []
-            );
-        } catch (error) {
-            console.error(error);
-            setErrorMessage(
-                "관광지 정보를 불러오지 못했습니다."
-            );
-        } finally {
-            setLoading(false);
-        }
+        void fetchAttraction();
     }, [attractionId]);
 
     const updateForm = (
@@ -309,7 +318,7 @@ export default function EditAttractionPage() {
         setReferenceImagesChanged(true);
     };
 
-    const handleSubmit = (
+    const handleSubmit = async (
         event: FormEvent<HTMLFormElement>
     ) => {
         event.preventDefault();
@@ -318,81 +327,55 @@ export default function EditAttractionPage() {
             return;
         }
 
-        const updatedAttraction: Attraction = {
-            ...originalAttraction,
-            id: attractionId,
-            name: form.name,
-            category: form.category,
-            address: form.address,
-            description: form.description,
-            latitude: Number(form.latitude),
-            longitude: Number(form.longitude),
-            radius: Number(form.radius),
-            availableTime: form.availableTime,
-            landmarkThreshold: Number(
-                form.landmarkThreshold
-            ),
-            guideMessage: form.guideMessage,
-            referenceImages: referenceImages.length,
-            referenceImageData: referenceImages,
-            status: referenceImagesChanged
-                ? "비공개"
-                : form.status,
-
-            quality: referenceImagesChanged
-                ? "재테스트 필요"
-                : originalAttraction.quality,
-        };
+        setErrorMessage("");
+        setIsProcessing(true);
 
         try {
-            const storedAttractions = JSON.parse(
-                localStorage.getItem("loqest_attractions") || "[]"
-            ) as Attraction[];
-
-            const storedIndex = storedAttractions.findIndex(
-                (attraction) => attraction.id === attractionId
+            const response = await fetch(
+                `/api/attractions/${attractionId}`,
+                {
+                    method: "PUT",
+                    headers: getAdminHeaders(),
+                    body: JSON.stringify({
+                        name: form.name,
+                        category: form.category,
+                        address: form.address,
+                        description: form.description,
+                        latitude: Number(form.latitude),
+                        longitude: Number(form.longitude),
+                        radius: Number(form.radius),
+                        availableTime: form.availableTime,
+                        landmarkThreshold: Number(
+                            form.landmarkThreshold
+                        ),
+                        guideMessage: form.guideMessage,
+                        status: referenceImagesChanged
+                            ? "비공개"
+                            : form.status,
+                        quality: originalAttraction.quality,
+                        referenceImages,
+                        referenceImagesChanged,
+                    }),
+                }
             );
 
-            if (storedIndex >= 0) {
-                const updatedStoredAttractions = [
-                    ...storedAttractions,
-                ];
-
-                updatedStoredAttractions[storedIndex] =
-                    updatedAttraction;
-
-                localStorage.setItem(
-                    "loqest_attractions",
-                    JSON.stringify(updatedStoredAttractions)
-                );
-            } else {
-                const attractionEdits = JSON.parse(
-                    localStorage.getItem(
-                        "loqest_attraction_edits"
-                    ) || "{}"
-                ) as Record<string, Partial<Attraction>>;
-
-                attractionEdits[String(attractionId)] =
-                    updatedAttraction;
-
-                localStorage.setItem(
-                    "loqest_attraction_edits",
-                    JSON.stringify(attractionEdits)
+            if (response.status === 401) {
+                clearAdminApiKey();
+                throw new Error(
+                    "관리자 API 키가 올바르지 않습니다. 새로고침 후 다시 입력해주세요."
                 );
             }
 
-            const savedStatuses = JSON.parse(
-                localStorage.getItem(
-                    "loqest_attraction_statuses"
-                ) || "{}"
-            ) as Record<string, string>;
+            const result = (await response.json()) as {
+                message?: string;
+            };
 
-            savedStatuses[String(attractionId)] =
-                updatedAttraction.status;
-            localStorage.setItem(
-                "loqest_attraction_statuses",
-                JSON.stringify(savedStatuses)
-            );
+            if (!response.ok) {
+                throw new Error(
+                    result.message ??
+                        "관광지 정보를 저장하지 못했습니다."
+                );
+            }
 
             if (referenceImagesChanged) {
                 const recognitionRecords = JSON.parse(
@@ -409,13 +392,18 @@ export default function EditAttractionPage() {
                 );
             }
 
+            router.refresh();
             router.push("/admin/attractions");
         } catch (error) {
             console.error(error);
 
             setErrorMessage(
-                "저장 공간이 부족하거나 데이터를 저장하지 못했습니다."
+                error instanceof Error
+                    ? error.message
+                    : "관광지 정보를 저장하지 못했습니다."
             );
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -764,8 +752,11 @@ export default function EditAttractionPage() {
                         <button
                             type="submit"
                             className={styles.primaryButton}
+                            disabled={isProcessing}
                         >
-                            수정 내용 저장
+                            {isProcessing
+                                ? "저장 중..."
+                                : "수정 내용 저장"}
                         </button>
                     </div>
                 </section>

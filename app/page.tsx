@@ -22,6 +22,22 @@ type Landmark = {
   };
 };
 
+type PublicAttraction = {
+  id: number | string;
+  name: string;
+  category?: string;
+  description?: string;
+  latitude?: number | string;
+  longitude?: number | string;
+  radius?: number | string;
+  guideMessage?: string;
+  guide_message?: string;
+  recognitionKey?: string;
+  recognition_key?: string;
+  icon?: string;
+  mission?: string;
+};
+
 type Screen =
   | "main-home"
   | "home"
@@ -41,7 +57,7 @@ const GANGDONG_BADGE_DATE_KEY =
 const COMPLETED_TEST_LANDMARKS_KEY =
   "loqestCompletedTestLandmarks";
 
-const landmarks: Landmark[] = [
+const fallbackLandmarks: Landmark[] = [
   {
     id: "amsa-inform",
     name: "선사유적지 안내판",
@@ -98,6 +114,76 @@ const landmarks: Landmark[] = [
   },
 ];
 
+function iconForCategory(category?: string) {
+  if (category === "자연·생태") return "🌿";
+  if (category === "축제·행사") return "🎉";
+  if (category === "체험·레저") return "🎯";
+  if (category === "지역상권") return "🛍️";
+  if (category === "포토 미션") return "📸";
+  return "🏛️";
+}
+
+function recognitionKeyForAttraction(attraction: PublicAttraction) {
+  const key = attraction.recognitionKey ?? attraction.recognition_key;
+
+  if (
+    key === "character" ||
+    key === "inform" ||
+    key === "wish" ||
+    key === "home"
+  ) {
+    return key;
+  }
+
+  return "home";
+}
+
+function mapPublicAttractions(items: PublicAttraction[]): Landmark[] {
+  const rowCount = Math.max(1, Math.ceil(items.length / 2));
+  const verticalGap = rowCount === 1 ? 0 : 330 / (rowCount - 1);
+
+  return items.map((item, index) => {
+    const recognitionKey = recognitionKeyForAttraction(item);
+    const originalLandmark = fallbackLandmarks.find(
+      (landmark) => landmark.recognitionKey === recognitionKey
+    );
+    const guideMessage =
+      item.guideMessage ??
+      item.guide_message ??
+      "랜드마크를 가이드라인에 맞춰 촬영해 주세요.";
+
+    return {
+      id:
+        recognitionKey === "home"
+          ? `amsa-${item.id}`
+          : `amsa-${recognitionKey}`,
+      name: item.name,
+      icon:
+        originalLandmark?.icon ||
+        item.icon ||
+        iconForCategory(item.category),
+      mission:
+        item.mission || originalLandmark?.mission || guideMessage,
+      recognitionKey,
+      requiresGps: true,
+      description:
+        item.description || `${item.name} 인증 사진을 촬영합니다.`,
+      poseGuide:
+        "1. 화면에 제시된 손동작을 따라 하면 촬영 버튼이 활성화됩니다.",
+      landmarkGuide: `2. 손을 내리고, 1분 안에 ${guideMessage}`,
+      latitude: Number(item.latitude),
+      longitude: Number(item.longitude),
+      radius: Number(item.radius ?? 50),
+      mapPosition:
+        originalLandmark?.mapPosition ??
+        {
+          x: index % 2 === 0 ? 88 : 264,
+          y: 90 + Math.floor(index / 2) * verticalGap,
+        },
+    };
+  });
+}
+
 const testLandmarks: Landmark[] = [
   {
     id: "home-keyboard",
@@ -134,6 +220,9 @@ function formatBadgeDate(dateValue: string | null) {
 }
 
 export default function Home() {
+  const [landmarks, setLandmarks] =
+    useState<Landmark[]>([]);
+
   const [screen, setScreen] = useState<Screen>("main-home");
 
   const [selectedLandmark, setSelectedLandmark] =
@@ -151,6 +240,68 @@ export default function Home() {
     useState<string[]>([]);
 
   const [hasUnreadBadge, setHasUnreadBadge] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPublicAttractions = async () => {
+      try {
+        const response = await fetch(
+          "/api/attractions?tourId=amsa",
+          { cache: "no-store" }
+        );
+
+        const result = (await response.json()) as {
+          attractions?: PublicAttraction[];
+          message?: string;
+        };
+
+        if (!response.ok || !Array.isArray(result.attractions)) {
+          throw new Error(
+            result.message ?? "관광지 목록을 불러오지 못했습니다."
+          );
+        }
+
+        if (!cancelled) {
+          setLandmarks(mapPublicAttractions(result.attractions));
+        }
+      } catch (error) {
+        console.error(error);
+
+        if (!cancelled) {
+          setLandmarks([]);
+        }
+      }
+    };
+
+    void loadPublicAttractions();
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        void loadPublicAttractions();
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void loadPublicAttractions();
+    }, 5000);
+
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener(
+      "visibilitychange",
+      refreshWhenVisible
+    );
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener(
+        "visibilitychange",
+        refreshWhenVisible
+      );
+    };
+  }, []);
 
   useEffect(() => {
     const badgeEarned = localStorage.getItem(
@@ -229,6 +380,7 @@ export default function Home() {
       setCompletedLandmarks(uniqueSavedStamps);
 
       if (
+        landmarks.length > 0 &&
         uniqueSavedStamps.length === landmarks.length
       ) {
         const earnedAt =
@@ -250,7 +402,7 @@ export default function Home() {
       localStorage.removeItem("loqestAmsaBadgeSeen");
       setHasUnreadBadge(false);
     }
-  }, []);
+  }, [landmarks]);
 
   function saveCompletedLandmarks(ids: string[]) {
     setCompletedLandmarks(ids);
@@ -372,6 +524,7 @@ export default function Home() {
       별도의 발급 버튼 없이 뱃지를 자동으로 발급합니다.
     */
     if (
+      landmarks.length > 0 &&
       nextCompletedLandmarks.length === landmarks.length
     ) {
       const earnedAt = new Date().toISOString();
@@ -393,10 +546,13 @@ export default function Home() {
   ).length;
 
   const progressPercent = Math.round(
-    (completedCount / landmarks.length) * 100
+    landmarks.length === 0
+      ? 0
+      : (completedCount / landmarks.length) * 100
   );
 
   const tourCompleted =
+    landmarks.length > 0 &&
     completedCount === landmarks.length;
 
   const visitedLandmarks = completedLandmarks
