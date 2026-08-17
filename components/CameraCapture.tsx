@@ -10,88 +10,23 @@ import {
 } from "@mediapipe/tasks-vision";
 
 type CameraCaptureProps = {
-  recognitionKey: "character" | "inform" | "wish" | "home";
+  attractionId: number;
+  recognitionKey: string;
   landmarkName: string;
   landmarkGuide: string;
   poseGuide: string;
   landmarkLatitude: number;
   landmarkLongitude: number;
   allowedRadius: number;
+  referenceImages: string[];
+  goodMatchesThreshold?: number;
+  matchRatioThreshold: number;
   skipLocationVerification?: boolean;
   onProcessingChange: (processing: boolean) => void;
   onVerified: () => void;
 };
 
 type RecognitionKey = CameraCaptureProps["recognitionKey"];
-
-type LandmarkRecognitionConfig = {
-  references: string[];
-  goodMatches: number;
-  matchRatio: number;
-};
-
-const landmarkRecognition: Record<
-  RecognitionKey,
-  LandmarkRecognitionConfig
-> = {
-  character: {
-    references: [
-      "/landmarks/character/reference/KakaoTalk_20260813_072216328.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_072216328_01.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123330386_19.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123330386_21.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123330386_23.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123330386_25.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123330386_26.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123330386_27.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123331048.jpg",
-      "/landmarks/character/reference/KakaoTalk_20260813_123331048_01.jpg",
-    ],
-    goodMatches: 70,
-    matchRatio: 45,
-  },
-  inform: {
-    references: [
-      "/landmarks/inform/reference/KakaoTalk_20260813_072237513.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_072237513_01.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_072237513_03.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_072237513_05.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_11.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_13.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_15.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_16.jpg",
-      "/landmarks/inform/reference/KakaoTalk_20260813_123330386_18.jpg",
-    ],
-    goodMatches: 55,
-    matchRatio: 40,
-  },
-  wish: {
-    references: [
-      "/landmarks/wish/reference/KakaoTalk_20260813_072216328_02.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_072216328_03.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_072216328_05.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_01.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_03.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_04.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_06.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_07.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_09.jpg",
-      "/landmarks/wish/reference/KakaoTalk_20260813_123330386_10.jpg",
-    ],
-    goodMatches: 70,
-    matchRatio: 45,
-  },
-  home: {
-    references: [
-      "/landmarks/home/reference/KakaoTalk_20260815_155103197_01.jpg",
-      "/landmarks/home/reference/KakaoTalk_20260815_155103197_02.jpg",
-      "/landmarks/home/reference/KakaoTalk_20260815_155103197_03.jpg",
-    ],
-    goodMatches: 45,
-    matchRatio: 30,
-  },
-};
 
 const gestureOptions = {
   Thumb_Up: {
@@ -140,13 +75,6 @@ type CaptureRecord = {
   goodMatches: number | null;
   matchRatio: number | null;
   capturedAt: string;
-};
-
-const attractionIdByRecognitionKey: Record<RecognitionKey, number> = {
-  inform: 1,
-  character: 2,
-  wish: 3,
-  home: 4,
 };
 
 function calculateDistance(
@@ -199,6 +127,10 @@ function getCurrentLocation() {
 function loadImage(source: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
+
+    if (source.startsWith("http")) {
+      image.crossOrigin = "anonymous";
+    }
 
     image.onload = () => resolve(image);
     image.onerror = () =>
@@ -319,10 +251,11 @@ function compareDescriptors(
 
 async function recognizeLandmark(
   sourceCanvas: HTMLCanvasElement,
-  recognitionKey: RecognitionKey
+  referenceImages: string[],
+  goodMatchesThreshold: number,
+  matchRatioThreshold: number
 ) {
   const cv = await cvReadyPromise;
-  const config = landmarkRecognition[recognitionKey];
   const landmarkCanvas = cropLandmarkArea(sourceCanvas);
   const testDescriptors = extractFeatures(cv, landmarkCanvas);
 
@@ -330,7 +263,7 @@ async function recognizeLandmark(
   let bestMatchRatio = 0;
 
   try {
-    for (const referencePath of config.references) {
+    for (const referencePath of referenceImages) {
       const referenceImage = await loadImage(referencePath);
       const referenceDescriptors = extractFeatures(cv, referenceImage);
 
@@ -355,19 +288,23 @@ async function recognizeLandmark(
 
   return {
     passed:
-      bestGoodMatches >= config.goodMatches &&
-      bestMatchRatio >= config.matchRatio,
+      bestGoodMatches >= goodMatchesThreshold &&
+      bestMatchRatio >= matchRatioThreshold,
     goodMatches: bestGoodMatches,
     matchRatio: bestMatchRatio,
   };
 }
 
 export default function CameraCapture({
+  attractionId,
   recognitionKey,
   landmarkName,
   landmarkLatitude,
   landmarkLongitude,
   allowedRadius,
+  referenceImages,
+  goodMatchesThreshold = 45,
+  matchRatioThreshold,
   skipLocationVerification = false,
   onProcessingChange,
   onVerified,
@@ -454,7 +391,7 @@ export default function CameraCapture({
         sessionId: captureSessionIdRef.current,
         visitorId,
         tourId: "amsa",
-        attractionId: attractionIdByRecognitionKey[recognitionKey],
+        attractionId,
         recognitionKey,
         landmarkName,
         result,
@@ -966,7 +903,9 @@ export default function CameraCapture({
       if (!skipLocationVerification) {
         const landmarkResult = await recognizeLandmark(
           canvas,
-          recognitionKey
+          referenceImages,
+          goodMatchesThreshold,
+          matchRatioThreshold
         );
 
         if (!landmarkResult.passed) {

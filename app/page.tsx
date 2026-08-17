@@ -5,10 +5,11 @@ import CameraCapture from "../components/CameraCapture";
 
 type Landmark = {
   id: string;
+  attractionId: number;
   name: string;
   icon: string;
   mission: string;
-  recognitionKey: "character" | "inform" | "wish" | "home";
+  recognitionKey: string;
   requiresGps: boolean;
   description: string;
   landmarkGuide: string;
@@ -16,6 +17,9 @@ type Landmark = {
   latitude: number;
   longitude: number;
   radius: number;
+  referenceImages: string[];
+  goodMatchesThreshold: number;
+  matchRatioThreshold: number;
   mapPosition: {
     x: number;
     y: number;
@@ -36,6 +40,12 @@ type PublicAttraction = {
   recognition_key?: string;
   icon?: string;
   mission?: string;
+  landmarkThreshold?: number | string;
+  landmark_threshold?: number | string;
+  referenceImages?: Array<{
+    dataUrl?: string;
+    url?: string;
+  }>;
 };
 
 type Screen =
@@ -60,6 +70,7 @@ const COMPLETED_TEST_LANDMARKS_KEY =
 const fallbackLandmarks: Landmark[] = [
   {
     id: "amsa-inform",
+    attractionId: 1,
     name: "선사유적지 안내판",
     icon: "🗺️",
     mission: "유적지 지도를 찾아보세요",
@@ -74,10 +85,14 @@ const fallbackLandmarks: Landmark[] = [
     latitude: 37.559771,
     longitude: 127.130753,
     radius: 250,
+    referenceImages: [],
+    goodMatchesThreshold: 45,
+    matchRatioThreshold: 40,
     mapPosition: { x: 88, y: 108 },
   },
   {
     id: "amsa-character",
+    attractionId: 2,
     name: "선사유적지 캐릭터",
     icon: "🎨",
     mission: "움스프렌즈를 찾아보세요",
@@ -92,10 +107,14 @@ const fallbackLandmarks: Landmark[] = [
     latitude: 37.559771,
     longitude: 127.130753,
     radius: 250,
+    referenceImages: [],
+    goodMatchesThreshold: 45,
+    matchRatioThreshold: 45,
     mapPosition: { x: 264, y: 250 },
   },
   {
     id: "amsa-wish",
+    attractionId: 3,
     name: "소망움집",
     icon: "🛖",
     mission: "소망움집을 정면에서 담아보세요",
@@ -110,6 +129,9 @@ const fallbackLandmarks: Landmark[] = [
     latitude: 37.559771,
     longitude: 127.130753,
     radius: 250,
+    referenceImages: [],
+    goodMatchesThreshold: 45,
+    matchRatioThreshold: 45,
     mapPosition: { x: 96, y: 396 },
   },
 ];
@@ -125,17 +147,7 @@ function iconForCategory(category?: string) {
 
 function recognitionKeyForAttraction(attraction: PublicAttraction) {
   const key = attraction.recognitionKey ?? attraction.recognition_key;
-
-  if (
-    key === "character" ||
-    key === "inform" ||
-    key === "wish" ||
-    key === "home"
-  ) {
-    return key;
-  }
-
-  return "home";
+  return key || `landmark-${attraction.id}`;
 }
 
 function mapPublicAttractions(items: PublicAttraction[]): Landmark[] {
@@ -151,12 +163,16 @@ function mapPublicAttractions(items: PublicAttraction[]): Landmark[] {
       item.guideMessage ??
       item.guide_message ??
       "랜드마크를 가이드라인에 맞춰 촬영해 주세요.";
+    const referenceImages = (item.referenceImages ?? [])
+      .map((image) => image.dataUrl ?? image.url ?? "")
+      .filter((source): source is string => Boolean(source));
+    const matchRatioThreshold = Number(
+      item.landmarkThreshold ?? item.landmark_threshold ?? 30
+    );
 
     return {
-      id:
-        recognitionKey === "home"
-          ? `amsa-${item.id}`
-          : `amsa-${recognitionKey}`,
+      id: `amsa-${item.id}`,
+      attractionId: Number(item.id),
       name: item.name,
       icon:
         originalLandmark?.icon ||
@@ -174,6 +190,9 @@ function mapPublicAttractions(items: PublicAttraction[]): Landmark[] {
       latitude: Number(item.latitude),
       longitude: Number(item.longitude),
       radius: Number(item.radius ?? 50),
+      referenceImages,
+      goodMatchesThreshold: 45,
+      matchRatioThreshold,
       mapPosition:
         originalLandmark?.mapPosition ??
         {
@@ -187,6 +206,7 @@ function mapPublicAttractions(items: PublicAttraction[]): Landmark[] {
 const testLandmarks: Landmark[] = [
   {
     id: "home-keyboard",
+    attractionId: 4,
     name: "사진 촬영 테스트",
     icon: "🏡",
     mission: "어떤 것이든 촬영 해보세요",
@@ -201,6 +221,9 @@ const testLandmarks: Landmark[] = [
     latitude: 0,
     longitude: 0,
     radius: 0,
+    referenceImages: [],
+    goodMatchesThreshold: 45,
+    matchRatioThreshold: 30,
     mapPosition: { x: 180, y: 260 },
   },
 ];
@@ -1114,6 +1137,7 @@ export default function Home() {
               )}
 
               <CameraCapture
+                attractionId={selectedLandmark.attractionId}
                 recognitionKey={selectedLandmark.recognitionKey}
                 landmarkName={selectedLandmark.name}
                 landmarkGuide={
@@ -1127,6 +1151,13 @@ export default function Home() {
                   selectedLandmark.longitude
                 }
                 allowedRadius={selectedLandmark.radius}
+                referenceImages={selectedLandmark.referenceImages}
+                goodMatchesThreshold={
+                  selectedLandmark.goodMatchesThreshold
+                }
+                matchRatioThreshold={
+                  selectedLandmark.matchRatioThreshold
+                }
                 skipLocationVerification={!selectedLandmark.requiresGps}
                 onProcessingChange={setVerificationProcessing}
                 onVerified={issueStamp}
