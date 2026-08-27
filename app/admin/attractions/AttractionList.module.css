@@ -21,6 +21,24 @@
   font-weight: 700;
 }
 
+.backToSelection {
+  display: inline-block;
+  padding: 8px 11px;
+  margin-bottom: 14px;
+  border: 1px solid #b8c5e0;
+  border-radius: 8px;
+  background: #eef2fb;
+  color: #203a8f;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.backToSelection:hover {
+  border-color: #203a8f;
+  background: #e2e8f6;
+}
+
 .header h1 {
   margin: 0;
   font-size: 28px;
@@ -378,4 +396,150 @@
 .detailsButton:hover {
   border-color: #203a8f;
   background: #eef2fb;
+}
+
+.workflow {
+  max-width: 1180px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 auto 18px;
+}
+
+.successNotice {
+  max-width: 1138px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 18px 20px;
+  margin: 0 auto 18px;
+  border: 1px solid #91cbaa;
+  border-radius: 13px;
+  background: #edf8f1;
+  color: #216b45;
+}
+
+.successNotice > span {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  border-radius: 50%;
+  background: #2f9b68;
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.successNotice strong { font-size: 15px; }
+.successNotice p { margin: 4px 0 0; font-size: 13px; }
+
+.workflow article {
+  display: flex;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid #dce2eb;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.workflow article > span {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e8edf8;
+  color: #203a8f;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.workflow strong {
+  display: block;
+  color: #2c3748;
+  font-size: 14px;
+}
+
+.workflow p {
+  margin: 5px 0 0;
+  color: #7b8793;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.tableWrapper .simpleTable {
+  min-width: 850px;
+}
+
+.progressState {
+  min-width: 235px;
+}
+
+.progressState strong,
+.progressState span {
+  display: block;
+}
+
+.progressState strong {
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.progressState span {
+  color: #7b8793;
+  font-size: 12px;
+  white-space: normal;
+}
+
+.attention { color: #b46d1b; }
+.ready { color: #203a8f; }
+.complete { color: #24734a; }
+
+.actionGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nextButton,
+.emptyAction {
+  display: inline-block;
+  padding: 8px 11px;
+  border-radius: 8px;
+  background: #203a8f;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nextButton:hover,
+.emptyAction:hover {
+  background: #172d72;
+}
+
+.detailLink {
+  color: #6f7b89;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.detailLink:hover { color: #203a8f; }
+
+.messageState {
+  padding: 54px 20px;
+  text-align: center;
+}
+
+.messageState strong { color: #344052; }
+.messageState p { margin: 7px 0 0; color: #84909c; font-size: 13px; }
+.messageState .emptyAction { margin-top: 18px; }
+
+@media (max-width: 800px) {
+  .workflow { grid-template-columns: 1fr; }
 }

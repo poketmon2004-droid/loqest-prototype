@@ -32,12 +32,19 @@
 }
 
 .backLink {
-  padding: 10px 14px;
-  border: 1px solid #d7deea;
-  border-radius: 9px;
-  background: #ffffff;
-  color: #3d4b5d;
+  padding: 12px 17px;
+  border: 1px solid #b6c4e2;
+  border-radius: 10px;
+  background: #e8edf8;
+  color: #203a8f;
+  font-size: 14px;
+  font-weight: 800;
   text-decoration: none;
+}
+
+.backLink:hover {
+  border-color: #203a8f;
+  background: #dfe6f5;
 }
 
 .stepper {
@@ -46,6 +53,17 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin: 0 auto 18px;
+}
+
+.formWideError {
+  max-width: 1150px;
+  padding: 12px 14px;
+  margin: 0 auto 14px;
+  border: 1px solid #efcaca;
+  border-radius: 10px;
+  background: #fff4f4;
+  color: #b84545;
+  font-size: 13px;
 }
 
 .stepItem {
@@ -455,4 +473,23 @@
   .previewCard {
     grid-template-columns: 1fr;
   }
+}
+.publishNotice {
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  border: 1px solid #cfd9ef;
+  border-radius: 12px;
+  background: #f1f4fb;
+}
+
+.publishNotice strong {
+  color: #203a8f;
+  font-size: 14px;
+}
+
+.publishNotice p {
+  margin: 6px 0 0;
+  color: #687483;
+  font-size: 13px;
+  line-height: 1.55;
 }

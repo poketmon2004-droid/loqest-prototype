@@ -1,0 +1,90 @@
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  box-sizing: border-box;
+  padding: 28px 20px;
+  border-right: 1px solid #dce2eb;
+  background: #ffffff;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 36px;
+  color: #1f2937;
+  font-size: 17px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.logoMark {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #203a8f;
+  color: #ffffff;
+}
+
+.menuTitle {
+  margin: 0 0 10px;
+  color: #7a8491;
+  font-size: 13px;
+}
+
+.menu {
+  display: grid;
+  gap: 7px;
+}
+
+.menu a {
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: #3f4858;
+  text-decoration: none;
+}
+
+.menu a:hover {
+  background: #edf1f8;
+  color: #203a8f;
+}
+
+.menu .activeMenu,
+.menu .activeMenu:hover {
+  background: #203a8f;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    position: static;
+    height: auto;
+    padding: 18px 16px 14px;
+    border-right: 0;
+    border-bottom: 1px solid #dce2eb;
+  }
+
+  .logo {
+    margin-bottom: 14px;
+  }
+
+  .menu {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .menu a {
+    flex: 0 0 auto;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .menuTitle {
+    display: none;
+  }
+}

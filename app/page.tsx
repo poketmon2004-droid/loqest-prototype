@@ -48,6 +48,16 @@ type PublicAttraction = {
   }>;
 };
 
+type PublicTour = {
+  id: string;
+  name: string;
+  short_name?: string;
+  region?: string;
+  description?: string;
+  badge_name?: string;
+  questCount?: number;
+};
+
 type Screen =
   | "main-home"
   | "home"
@@ -150,7 +160,7 @@ function recognitionKeyForAttraction(attraction: PublicAttraction) {
   return key || `landmark-${attraction.id}`;
 }
 
-function mapPublicAttractions(items: PublicAttraction[]): Landmark[] {
+function mapPublicAttractions(items: PublicAttraction[], tourId = "amsa"): Landmark[] {
   const rowCount = Math.max(1, Math.ceil(items.length / 2));
   const verticalGap = rowCount === 1 ? 0 : 330 / (rowCount - 1);
 
@@ -171,7 +181,7 @@ function mapPublicAttractions(items: PublicAttraction[]): Landmark[] {
     );
 
     return {
-      id: `amsa-${item.id}`,
+      id: `${tourId}-${item.id}`,
       attractionId: Number(item.id),
       name: item.name,
       icon:
@@ -243,6 +253,8 @@ function formatBadgeDate(dateValue: string | null) {
 }
 
 export default function Home() {
+  const [tours, setTours] = useState<PublicTour[]>([]);
+  const [activeTour, setActiveTour] = useState<PublicTour | null>(null);
   const [landmarks, setLandmarks] =
     useState<Landmark[]>([]);
 
@@ -264,13 +276,37 @@ export default function Home() {
 
   const [hasUnreadBadge, setHasUnreadBadge] = useState(false);
 
+  const activeTourId = activeTour?.id ?? "amsa";
+  const completedLandmarksKey = `${COMPLETED_LANDMARKS_KEY}:${activeTourId}`;
+  const badgeDateKey = `${GANGDONG_BADGE_DATE_KEY}:${activeTourId}`;
+  const badgeSeenKey = `loqestBadgeSeen:${activeTourId}`;
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadTours() {
+      try {
+        const response = await fetch("/api/tours", { cache: "no-store" });
+        const result = await response.json() as { tours?: PublicTour[] };
+        if (!response.ok || !Array.isArray(result.tours)) throw new Error("투어 목록을 불러오지 못했습니다.");
+        if (!cancelled) {
+          setTours(result.tours);
+          setActiveTour((current) => current ?? result.tours.find((tour) => tour.id === "amsa") ?? result.tours[0] ?? null);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    void loadTours();
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
     const loadPublicAttractions = async () => {
       try {
         const response = await fetch(
-          "/api/attractions?tourId=amsa",
+          `/api/attractions?tourId=${encodeURIComponent(activeTourId)}`,
           { cache: "no-store" }
         );
 
@@ -286,7 +322,7 @@ export default function Home() {
         }
 
         if (!cancelled) {
-          setLandmarks(mapPublicAttractions(result.attractions));
+          setLandmarks(mapPublicAttractions(result.attractions, activeTourId));
         }
       } catch (error) {
         console.error(error);
@@ -324,22 +360,22 @@ export default function Home() {
         refreshWhenVisible
       );
     };
-  }, []);
+  }, [activeTourId]);
 
   useEffect(() => {
     const badgeEarned = localStorage.getItem(
-      GANGDONG_BADGE_DATE_KEY
+      badgeDateKey
     );
 
     const badgeSeen = localStorage.getItem(
-      "loqestAmsaBadgeSeen"
+      badgeSeenKey
     );
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setHasUnreadBadge(
       Boolean(badgeEarned) && badgeSeen !== "true"
     );
-  }, []);
+  }, [badgeDateKey, badgeSeenKey]);
 
   const [badgeEarnedAt, setBadgeEarnedAt] =
     useState<string | null>(null);
@@ -368,11 +404,11 @@ export default function Home() {
     }
 
     const savedStamps = localStorage.getItem(
-      COMPLETED_LANDMARKS_KEY
+      completedLandmarksKey
     );
 
     const savedBadgeDate = localStorage.getItem(
-      GANGDONG_BADGE_DATE_KEY
+      badgeDateKey
     );
 
     if (!savedStamps) {
@@ -411,7 +447,7 @@ export default function Home() {
 
         if (!savedBadgeDate) {
           localStorage.setItem(
-            GANGDONG_BADGE_DATE_KEY,
+            badgeDateKey,
             earnedAt
           );
 
@@ -420,18 +456,18 @@ export default function Home() {
         setBadgeEarnedAt(earnedAt);
       }
     } catch {
-      localStorage.removeItem(COMPLETED_LANDMARKS_KEY);
-      localStorage.removeItem(GANGDONG_BADGE_DATE_KEY);
-      localStorage.removeItem("loqestAmsaBadgeSeen");
+      localStorage.removeItem(completedLandmarksKey);
+      localStorage.removeItem(badgeDateKey);
+      localStorage.removeItem(badgeSeenKey);
       setHasUnreadBadge(false);
     }
-  }, [landmarks]);
+  }, [landmarks, completedLandmarksKey, badgeDateKey, badgeSeenKey]);
 
   function saveCompletedLandmarks(ids: string[]) {
     setCompletedLandmarks(ids);
 
     localStorage.setItem(
-      COMPLETED_LANDMARKS_KEY,
+      completedLandmarksKey,
       JSON.stringify(ids)
     );
   }
@@ -452,6 +488,14 @@ export default function Home() {
     setScreen("home");
   }
 
+  function enterTour(tour: PublicTour) {
+    resetVerification();
+    setActiveTour(tour);
+    setCompletedLandmarks([]);
+    setBadgeEarnedAt(null);
+    setScreen("home");
+  }
+
   function goToQuestList() {
     resetVerification();
     setScreen("quests");
@@ -461,7 +505,7 @@ export default function Home() {
     setHasUnreadBadge(false);
 
     localStorage.setItem(
-      "loqestAmsaBadgeSeen",
+      badgeSeenKey,
       "true"
     );
 
@@ -496,9 +540,9 @@ export default function Home() {
     setBadgeEarnedAt(null);
     setHasUnreadBadge(false);
 
-    localStorage.removeItem(COMPLETED_LANDMARKS_KEY);
-    localStorage.removeItem(GANGDONG_BADGE_DATE_KEY);
-    localStorage.removeItem("loqestAmsaBadgeSeen");
+    localStorage.removeItem(completedLandmarksKey);
+    localStorage.removeItem(badgeDateKey);
+    localStorage.removeItem(badgeSeenKey);
   }
 
   function selectLandmark(landmark: Landmark) {
@@ -555,11 +599,11 @@ export default function Home() {
       setBadgeEarnedAt(earnedAt);
 
       localStorage.setItem(
-        GANGDONG_BADGE_DATE_KEY,
+        badgeDateKey,
         earnedAt
       );
 
-      localStorage.removeItem("loqestAmsaBadgeSeen");
+      localStorage.removeItem(badgeSeenKey);
       setHasUnreadBadge(true);
     }
   }
@@ -613,27 +657,16 @@ export default function Home() {
 
           <h2 style={styles.destinationHeading}>여행지 목록</h2>
 
-          <article style={styles.destinationCard}>
-            <p style={styles.destinationLocation}>서울 · 강동구</p>
-
-            <h3 style={styles.destinationTitle}>
-              서울 암사동 유적 투어
-            </h3>
-
-            <p style={styles.destinationDescription}>
-              선사시대의 흔적을 따라
-              <br />
-              특별한 퀘스트를 만나보세요.
-            </p>
-
-            <button
-              type="button"
-              style={styles.primaryButton}
-              onClick={goHome}
-            >
-              선사유적지 탐험하기 →
-            </button>
-          </article>
+          {tours.map((tour, index) => (
+            <article key={tour.id} style={{ ...styles.destinationCard, ...(index > 0 ? { marginTop: "14px" } : {}) }}>
+              <p style={styles.destinationLocation}>{tour.region || "지역 정보 준비 중"}</p>
+              <h3 style={styles.destinationTitle}>{tour.name}</h3>
+              <p style={styles.destinationDescription}>{tour.description || "특별한 퀘스트를 만나보세요."}</p>
+              <button type="button" style={styles.primaryButton} onClick={() => enterTour(tour)}>
+                {tour.short_name || tour.name} 탐험하기 →
+              </button>
+            </article>
+          ))}
 
           <article
             style={{
@@ -809,16 +842,14 @@ export default function Home() {
     return (
       <main style={styles.main}>
         <section style={styles.card}>
-          <p style={styles.badge}>모바일 테스트 투어</p>
+          <p style={styles.badge}>{activeTour?.region || "LOQEST 투어"}</p>
 
           <h1 style={styles.title}>
-            서울 암사동 유적 투어
+            {activeTour?.name ?? "투어"}
           </h1>
 
           <p style={styles.description}>
-            선사유적지의 랜드마크를 발견하고
-            <br />
-            디지털 스탬프와 여행 뱃지를 모아보세요.
+            {activeTour?.description || "랜드마크를 발견하고 디지털 스탬프와 여행 뱃지를 모아보세요."}
           </p>
 
           <h2 style={styles.progressSectionTitle}>
@@ -851,10 +882,10 @@ export default function Home() {
               <span style={styles.completionIcon}>🎉</span>
 
               <div>
-                <strong>선사유적지 탐험 완료!</strong>
+                <strong>{activeTour?.short_name || activeTour?.name} 탐험 완료!</strong>
 
                 <p style={styles.completionText}>
-                  ‘선사유적지 탐험가’ 뱃지가 자동으로
+                  ‘{activeTour?.badge_name || `${activeTour?.short_name || activeTour?.name} 탐험가`}’ 뱃지가 자동으로
                   발급되었습니다.
                 </p>
               </div>
@@ -989,12 +1020,11 @@ export default function Home() {
               </p>
 
               <h2 style={styles.badgeTitle}>
-                선사유적지 탐험가
+                {activeTour?.badge_name || `${activeTour?.short_name || activeTour?.name} 탐험가`}
               </h2>
 
               <p style={styles.badgeDescription}>
-                선사유적지 랜드마크 3곳의 인증을
-                모두 완료했습니다.
+                {activeTour?.name}의 퀘스트 인증을 모두 완료했습니다.
               </p>
 
               <div style={styles.badgeInformation}>
@@ -1035,12 +1065,11 @@ export default function Home() {
               <div style={styles.lockedBadge}>🔒</div>
 
               <h2 style={styles.badgeTitle}>
-                선사유적지 탐험가
+                {activeTour?.badge_name || `${activeTour?.short_name || activeTour?.name} 탐험가`}
               </h2>
 
               <p style={styles.badgeDescription}>
-                선사유적지 랜드마크를 모두 인증하면
-                여행 뱃지가 자동으로 발급됩니다.
+                이 투어의 퀘스트를 모두 인증하면 여행 뱃지가 자동으로 발급됩니다.
               </p>
 
               <div style={styles.miniProgressBackground}>
@@ -1071,7 +1100,7 @@ export default function Home() {
             style={styles.secondaryButton}
             onClick={goHome}
           >
-            서울 암사동 유적 투어 보기
+            {activeTour?.name ?? "투어"} 보기
           </button>
 
           <button
@@ -1137,6 +1166,7 @@ export default function Home() {
               )}
 
               <CameraCapture
+                tourId={activeTourId}
                 attractionId={selectedLandmark.attractionId}
                 recognitionKey={selectedLandmark.recognitionKey}
                 landmarkName={selectedLandmark.name}
@@ -1206,7 +1236,7 @@ export default function Home() {
 
                   <div>
                     <strong>
-                      선사유적지 탐험가 뱃지 획득!
+                      {activeTour?.badge_name || `${activeTour?.short_name || activeTour?.name} 탐험가`} 뱃지 획득!
                     </strong>
 
                     <p style={styles.completionText}>
@@ -1299,7 +1329,7 @@ export default function Home() {
     <main style={styles.main}>
       <section style={styles.card}>
         <p style={styles.badge}>
-          서울 암사동 유적 코스
+          {activeTour?.name ?? "랜드마크 코스"}
         </p>
 
         <h1 style={styles.title}>

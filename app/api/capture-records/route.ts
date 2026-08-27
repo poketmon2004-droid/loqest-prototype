@@ -3,7 +3,20 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
+function isAuthorized(request: NextRequest) {
+  const configuredKey = process.env.ADMIN_API_KEY;
+  const providedKey = request.headers.get("x-admin-api-key");
+  return Boolean(configuredKey && providedKey && configuredKey === providedKey);
+}
+
 export async function GET(request: NextRequest) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json(
+      { message: "관리자 인증이 필요합니다." },
+      { status: 401 }
+    );
+  }
+
   try {
     const tourId = request.nextUrl.searchParams.get("tourId") || "amsa";
 

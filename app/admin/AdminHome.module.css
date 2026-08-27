@@ -1,30 +1,25 @@
 .page {
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
   background: #f4f6fa;
   color: #1f2937;
 }
 
-.sidebar {
-  padding: 28px 20px;
-  border-right: 1px solid #dce2eb;
-  background: #ffffff;
-}
-
-.logo { display: flex; align-items: center; gap: 10px; margin-bottom: 36px; font-size: 17px; font-weight: 700; }
-.logoMark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: #203a8f; color: #ffffff; }
-.menuTitle { margin-bottom: 10px; color: #7a8491; font-size: 13px; }
-.menu { display: grid; gap: 7px; }
-.menu a { padding: 12px 14px; border-radius: 10px; color: #3f4858; text-decoration: none; }
-.menu a:hover { background: #edf1f8; color: #203a8f; }
-.menu .activeMenu { background: #203a8f; color: #ffffff; font-weight: 700; }
-
 .main { min-width: 0; padding: 34px; }
-.header { max-width: 1120px; margin: 0 auto 24px; }
+.header { max-width: 1120px; display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin: 0 auto 24px; }
 .eyebrow { margin: 0 0 7px; color: #203a8f !important; font-size: 13px; font-weight: 800; }
 .header h1 { margin: 0; font-size: 28px; }
 .header p { margin: 8px 0 0; color: #778392; }
+.headerAction { padding: 10px 14px; border-radius: 9px; background: #203a8f; color: #ffffff; font-size: 14px; font-weight: 700; text-decoration: none; }
+
+.startGuide { max-width: 1076px; padding: 22px; margin: 0 auto 18px; border: 1px solid #cbd5e7; border-radius: 16px; background: #ffffff; box-shadow: 0 5px 18px rgb(32 58 143 / 6%); }
+.startGuideHeader { display: flex; justify-content: space-between; align-items: center; gap: 22px; }
+.startGuideHeader h2 { margin: 0; font-size: 21px; }
+.startGuideHeader p:last-child { margin: 7px 0 0; color: #74808d; font-size: 13px; }
+.guideSteps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+.guideSteps article { display: flex; gap: 11px; padding: 15px; border-radius: 12px; background: #f4f6fa; }
+.guideSteps article > span { width: 28px; height: 28px; display: grid; flex: 0 0 auto; place-items: center; border-radius: 50%; background: #203a8f; color: #ffffff; font-size: 13px; font-weight: 800; }
+.guideSteps strong { color: #344052; font-size: 14px; }
+.guideSteps p { margin: 5px 0 0; color: #7b8793; font-size: 12px; line-height: 1.5; }
 
 .summary { max-width: 1120px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; margin: 0 auto 18px; }
 .summary article { padding: 19px; border: 1px solid #dce2eb; border-radius: 14px; background: #ffffff; box-shadow: 0 5px 18px rgb(32 58 143 / 6%); }
@@ -44,10 +39,11 @@
 .badges span { padding: 4px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
 .publicBadge { background: #e8f5ed; color: #24734a; }
 .regionBadge { background: #e8edf8; color: #203a8f; }
+.hiddenBadge { background: #eef0f3; color: #687483; }
 .tourCard h3 { margin: 9px 0 5px; font-size: 20px; }
 .tourCard p { margin: 0; color: #6f7b89; font-size: 13px; line-height: 1.6; }
 
-.cardStats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
+.cardStats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
 .cardStats div { padding: 13px; border-radius: 10px; background: #ffffff; }
 .cardStats span { color: #7b8793; font-size: 12px; }
 .cardStats strong { display: block; margin-top: 5px; color: #344052; font-size: 17px; }
@@ -55,17 +51,26 @@
 .primaryButton, .secondaryButton { padding: 9px 13px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; }
 .primaryButton { background: #203a8f; color: #ffffff; }
 .secondaryButton { border: 1px solid #ccd5e2; background: #ffffff; color: #465264; }
+.tourGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+.emptyState { padding: 52px 20px; text-align: center; }
+.emptyState strong { color: #344052; }
+.emptyState p { margin: 7px 0 18px; color: #7b8793; font-size: 13px; }
 
 @media (max-width: 850px) {
-  .page { grid-template-columns: 1fr; }
-  .sidebar { border-right: 0; border-bottom: 1px solid #dce2eb; }
-  .menu { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .main { padding: 24px 16px; }
+  .header, .startGuideHeader { flex-direction: column; }
+  .guideSteps { grid-template-columns: 1fr; }
   .summary { grid-template-columns: 1fr; }
   .cardStats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tourGrid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 520px) {
+  .headerAction, .startGuideHeader .primaryButton { width: 100%; box-sizing: border-box; text-align: center; }
   .cardTop { grid-template-columns: 1fr; }
   .cardStats { grid-template-columns: 1fr; }
   .cardActions { flex-direction: column; }

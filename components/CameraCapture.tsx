@@ -10,6 +10,7 @@ import {
 } from "@mediapipe/tasks-vision";
 
 type CameraCaptureProps = {
+  tourId: string;
   attractionId: number;
   recognitionKey: string;
   landmarkName: string;
@@ -296,6 +297,7 @@ async function recognizeLandmark(
 }
 
 export default function CameraCapture({
+  tourId,
   attractionId,
   recognitionKey,
   landmarkName,
@@ -390,7 +392,7 @@ export default function CameraCapture({
           .slice(2, 9)}`,
         sessionId: captureSessionIdRef.current,
         visitorId,
-        tourId: "amsa",
+        tourId,
         attractionId,
         recognitionKey,
         landmarkName,

@@ -36,6 +36,95 @@
 .secondaryButton { border: 1px solid #ccd5e2; background: white; color: #465264; }
 .deleteButton { border: 1px solid #efcaca; background: white; color: #bd4545; }
 
+.workflowCard {
+  max-width: 1134px;
+  padding: 22px;
+  margin: 0 auto 18px;
+  border: 1px solid #dce2eb;
+  border-radius: 15px;
+  background: #ffffff;
+  box-shadow: 0 5px 18px rgb(32 58 143 / 6%);
+}
+
+.workflowSteps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.workflowSteps > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.workflowSteps span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 24px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.doneStep { background: #edf7f1; color: #24734a; }
+.doneStep span { background: #d7eedf; }
+.currentStep { background: #edf1fa; color: #203a8f; }
+.currentStep span { background: #dbe3f5; }
+.waitingStep { background: #f4f5f7; color: #87919d; }
+.waitingStep span { background: #e6e9ed; }
+
+.nextGuide {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding-top: 18px;
+  margin-top: 16px;
+  border-top: 1px solid #e6e9ef;
+}
+
+.nextGuide > div > strong { color: #2f3b4c; font-size: 15px; }
+.nextGuide p { margin: 5px 0 0; color: #7b8793; font-size: 13px; }
+
+.publishReady {
+  padding: 28px;
+  border: 2px solid #203a8f;
+  background: linear-gradient(135deg, #ffffff 0%, #eef2fb 100%);
+  box-shadow: 0 10px 28px rgb(32 58 143 / 16%);
+}
+
+.publishReady .nextGuide {
+  padding: 22px;
+  margin-top: 20px;
+  border: 0;
+  border-radius: 13px;
+  background: #ffffff;
+}
+
+.publishReady .nextGuide > div > strong {
+  color: #203a8f;
+  font-size: 20px;
+}
+
+.publishReady .nextGuide p {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.publishButton {
+  min-width: 220px;
+  padding: 15px 22px;
+  border-radius: 11px;
+  font-size: 16px;
+  box-shadow: 0 7px 18px rgb(32 58 143 / 24%);
+}
+
 .metrics {
   max-width: 1180px;
   display: grid;
@@ -76,6 +165,9 @@
   .actions { justify-content: flex-start; }
   .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .contentGrid { grid-template-columns: 1fr; }
+  .workflowSteps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nextGuide { align-items: flex-start; flex-direction: column; }
+  .publishButton { width: 100%; }
 }
 
 @media (max-width: 520px) {

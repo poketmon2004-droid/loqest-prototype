@@ -38,6 +38,7 @@ type Attraction = {
     firstSuccess: number | null;
     status: string;
     quality: string;
+    tourId: string;
 };
 
 type EditForm = {
@@ -70,6 +71,7 @@ type AttractionApiResponse = {
     status: string;
     quality?: string;
     referenceImages?: ReferenceImage[];
+    tour_id?: string;
 };
 
 function getAdminHeaders() {
@@ -216,6 +218,7 @@ export default function EditAttractionPage() {
                     firstSuccess: data.first_success ?? null,
                     status: data.status,
                     quality: data.quality ?? "확인 필요",
+                    tourId: data.tour_id ?? "amsa",
                 };
 
                 setOriginalAttraction(attraction);
@@ -327,6 +330,29 @@ export default function EditAttractionPage() {
             return;
         }
 
+        if (referenceImages.length === 0) {
+            setErrorMessage("랜드마크 판별에 사용할 기준 이미지를 한 장 이상 남겨주세요.");
+            return;
+        }
+
+        const latitude = Number(form.latitude);
+        const longitude = Number(form.longitude);
+        const radius = Number(form.radius);
+        const threshold = Number(form.landmarkThreshold);
+        if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+            !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+            setErrorMessage("위도와 경도를 올바른 범위로 입력해주세요.");
+            return;
+        }
+        if (!Number.isFinite(radius) || radius < 10) {
+            setErrorMessage("GPS 인증 반경은 10m 이상으로 입력해주세요.");
+            return;
+        }
+        if (!Number.isFinite(threshold) || threshold < 0 || threshold > 100) {
+            setErrorMessage("랜드마크 인식 기준은 0~100 사이로 입력해주세요.");
+            return;
+        }
+
         setErrorMessage("");
         setIsProcessing(true);
 
@@ -341,13 +367,11 @@ export default function EditAttractionPage() {
                         category: form.category,
                         address: form.address,
                         description: form.description,
-                        latitude: Number(form.latitude),
-                        longitude: Number(form.longitude),
-                        radius: Number(form.radius),
+                        latitude,
+                        longitude,
+                        radius,
                         availableTime: form.availableTime,
-                        landmarkThreshold: Number(
-                            form.landmarkThreshold
-                        ),
+                        landmarkThreshold: threshold,
                         guideMessage: form.guideMessage,
                         status: referenceImagesChanged
                             ? "비공개"
@@ -393,7 +417,11 @@ export default function EditAttractionPage() {
             }
 
             router.refresh();
-            router.push("/admin/attractions");
+            router.push(
+                referenceImagesChanged
+                    ? `/landmark-test?attractionId=${attractionId}`
+                    : `/admin/attractions/${attractionId}?tourId=${originalAttraction.tourId}`
+            );
         } catch (error) {
             console.error(error);
 
@@ -426,10 +454,10 @@ export default function EditAttractionPage() {
                     <p>{errorMessage}</p>
 
                     <Link
-                        href="/admin/attractions"
+                        href={`/admin/attractions?tourId=${originalAttraction?.tourId ?? "amsa"}`}
                         className={styles.backLink}
                     >
-                        관광지 목록으로 돌아가기
+                        퀘스트 목록으로 돌아가기
                     </Link>
                 </section>
             </div>
@@ -441,7 +469,7 @@ export default function EditAttractionPage() {
             <header className={styles.header}>
                 <div>
                     <p className={styles.eyebrow}>
-                        관광지 관리
+                        퀘스트 관리
                     </p>
 
                     <h1>관광지 수정</h1>
@@ -452,10 +480,10 @@ export default function EditAttractionPage() {
                 </div>
 
                 <Link
-                    href="/admin/attractions"
+                    href={`/admin/attractions?tourId=${originalAttraction.tourId}`}
                     className={styles.backLink}
                 >
-                    관광지 목록으로 돌아가기
+                    ← 퀘스트 목록으로 돌아가기
                 </Link>
             </header>
 
@@ -477,7 +505,7 @@ export default function EditAttractionPage() {
 
                     <div className={styles.fieldGrid}>
                         <label className={styles.field}>
-                            관광지명
+                            퀘스트명
 
                             <input
                                 type="text"
@@ -743,7 +771,7 @@ export default function EditAttractionPage() {
 
                     <div className={styles.formActions}>
                         <Link
-                            href="/admin/attractions"
+                            href={`/admin/attractions?tourId=${originalAttraction.tourId}`}
                             className={styles.secondaryButton}
                         >
                             취소
@@ -756,7 +784,9 @@ export default function EditAttractionPage() {
                         >
                             {isProcessing
                                 ? "저장 중..."
-                                : "수정 내용 저장"}
+                                : referenceImagesChanged
+                                  ? "저장하고 다시 테스트"
+                                  : "수정 내용 저장"}
                         </button>
                     </div>
                 </section>
@@ -768,7 +798,7 @@ export default function EditAttractionPage() {
 
                     <div className={styles.summaryList}>
                         <div>
-                            <span>관광지명</span>
+                            <span>퀘스트명</span>
                             <strong>{form.name}</strong>
                         </div>
 

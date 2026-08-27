@@ -30,6 +30,7 @@ type Attraction = {
     firstSuccess: number | null;
     status: string;
     quality: string;
+    tourId: string;
 };
 
 type RecognitionTestRecord = {
@@ -77,6 +78,7 @@ export default function AttractionDetailPage() {
                 landmarkThreshold: Number(item.landmark_threshold), guideMessage: item.guide_message,
                 referenceImages: item.referenceImages.length, referenceImageData: item.referenceImages,
                 firstSuccess: null, status: item.status, quality: record?.quality ?? item.quality,
+                tourId: item.tour_id || "amsa",
             };
             setAttraction(mapped);
             setTestRecord(record);
@@ -151,6 +153,14 @@ export default function AttractionDetailPage() {
         }
 
         if (response.ok) {
+            if (nextStatus === "공개") {
+                sessionStorage.setItem(
+                    "loqest_admin_notice",
+                    `'${attraction.name}' 관광지가 홈페이지에 공개되었습니다.`
+                );
+                router.push(`/admin/attractions?tourId=${attraction.tourId}`);
+                return;
+            }
             setAttraction({ ...attraction, status: nextStatus });
         } else {
             window.alert("공개 상태를 변경하지 못했습니다.");
@@ -177,7 +187,7 @@ export default function AttractionDetailPage() {
         }
 
         if (response.ok) {
-            router.push("/admin/attractions");
+            router.push(`/admin/attractions?tourId=${attraction.tourId}`);
         } else {
             window.alert("관광지를 삭제하지 못했습니다.");
         }
@@ -207,14 +217,44 @@ export default function AttractionDetailPage() {
         );
     }
 
+    const hasImages = referenceImages.length > 0;
+    const hasPassedTest = testRecord?.lastResult === "통과";
+    const nextStep = !hasImages
+        ? {
+            title: "기준 이미지를 등록해주세요.",
+            description: "여러 각도에서 촬영한 이미지를 등록하면 인식 테스트를 진행할 수 있습니다.",
+            label: "이미지 등록",
+            href: `/admin/attractions/${attraction.id}/edit`,
+          }
+        : !hasPassedTest
+          ? {
+              title: "인식 테스트를 진행해주세요.",
+              description: "실제 촬영 환경에서 테스트를 통과하면 공개할 수 있습니다.",
+              label: "인식 테스트",
+              href: `/landmark-test?attractionId=${attraction.id}`,
+            }
+          : attraction.status !== "공개"
+            ? {
+                title: "홈페이지에 공개할 준비가 끝났습니다.",
+                description: "공개하면 LOQEST 홈페이지에 이 관광지가 바로 표시됩니다.",
+                label: "지금 공개하기",
+                href: "",
+              }
+            : {
+                title: "정상적으로 운영 중입니다.",
+                description: "정보나 기준 이미지를 바꾸면 다시 테스트하는 것을 권장합니다.",
+                label: "정보 수정",
+                href: `/admin/attractions/${attraction.id}/edit`,
+              };
+
     return (
         <main className={styles.page}>
             <header className={styles.header}>
                 <div>
-                    <Link href="/admin/attractions" className={styles.backLink}>
-                        ← 관광지 목록
+                    <Link href={`/admin/attractions?tourId=${attraction.tourId}`} className={styles.backLink}>
+                        ← 퀘스트 목록
                     </Link>
-                    <p className={styles.eyebrow}>관광지 상세</p>
+                    <p className={styles.eyebrow}>퀘스트 상세</p>
                     <div className={styles.titleRow}>
                         <h1>{attraction.name}</h1>
                         <span className={styles.statusBadge}>{attraction.status}</span>
@@ -243,6 +283,23 @@ export default function AttractionDetailPage() {
                     </button>
                 </div>
             </header>
+
+            <section className={`${styles.workflowCard} ${hasPassedTest && attraction.status !== "공개" ? styles.publishReady : ""}`}>
+                <div className={styles.workflowSteps}>
+                    <div className={styles.doneStep}><span>1</span><strong>정보·위치</strong></div>
+                    <div className={hasImages ? styles.doneStep : styles.currentStep}><span>2</span><strong>기준 이미지</strong></div>
+                    <div className={hasPassedTest ? styles.doneStep : hasImages ? styles.currentStep : styles.waitingStep}><span>3</span><strong>인식 테스트</strong></div>
+                    <div className={attraction.status === "공개" ? styles.doneStep : hasPassedTest ? styles.currentStep : styles.waitingStep}><span>4</span><strong>공개</strong></div>
+                </div>
+                <div className={styles.nextGuide}>
+                    <div><strong>{nextStep.title}</strong><p>{nextStep.description}</p></div>
+                    {nextStep.href ? (
+                        <Link href={nextStep.href} className={styles.primaryButton}>{nextStep.label}</Link>
+                    ) : (
+                        <button type="button" className={`${styles.primaryButton} ${styles.publishButton}`} onClick={toggleStatus}>{nextStep.label}</button>
+                    )}
+                </div>
+            </section>
 
             <section className={styles.metrics}>
                 <article><span>인증 상태</span><strong>{attraction.quality}</strong></article>

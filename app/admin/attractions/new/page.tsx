@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { clearAdminApiKey, getAdminApiKey } from "@/lib/adminApiKey";
@@ -40,7 +40,7 @@ const initialForm: AttractionFormData = {
   availableTime: "상시",
   landmarkThreshold: "70",
   guideMessage: "가이드라인에 맞춰 관광지와 함께 촬영해주세요.",
-  status: "임시저장",
+  status: "비공개",
 };
 
 const steps = [
@@ -90,6 +90,24 @@ export default function NewAttractionPage() {
   const [referenceImages, setReferenceImages] = useState<ReferenceImage[]>([]);
   const [imageError, setImageError] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [tourId, setTourId] = useState("amsa");
+  const [tourName, setTourName] = useState("선택한 투어");
+
+  useEffect(() => {
+    const selectedTourId = new URLSearchParams(window.location.search).get("tourId")
+      || localStorage.getItem("loqest_active_tour_id") || "amsa";
+    setTourId(selectedTourId);
+    localStorage.setItem("loqest_active_tour_id", selectedTourId);
+    const adminKey = getAdminApiKey();
+    if (!adminKey) return;
+    void fetch(`/api/tours/${selectedTourId}?includeHidden=true`, {
+      headers: { "x-admin-api-key": adminKey }, cache: "no-store",
+    }).then(async (response) => {
+      if (!response.ok) return;
+      const result = await response.json() as { tour?: { name: string } };
+      if (result.tour) setTourName(result.tour.name);
+    });
+  }, []);
 
   const updateForm = (field: keyof AttractionFormData, value: string) => {
     setForm((previous) => ({ ...previous, [field]: value }));
@@ -146,19 +164,40 @@ export default function NewAttractionPage() {
       return;
     }
 
+    const latitude = Number(form.latitude);
+    const longitude = Number(form.longitude);
+    const radius = Number(form.radius);
+    const threshold = Number(form.landmarkThreshold);
+    if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+        !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+      setStep(2);
+      setImageError("위도와 경도를 올바른 범위로 입력해주세요.");
+      return;
+    }
+    if (!Number.isFinite(radius) || radius < 10) {
+      setStep(2);
+      setImageError("GPS 인증 반경은 10m 이상으로 입력해주세요.");
+      return;
+    }
+    if (!Number.isFinite(threshold) || threshold < 0 || threshold > 100) {
+      setStep(3);
+      setImageError("랜드마크 인식 기준은 0~100 사이로 입력해주세요.");
+      return;
+    }
+
     const newAttraction = {
-      tourId: "amsa",
-      name: form.name || "이름 없는 관광지",
+      tourId,
+      name: form.name || "이름 없는 퀘스트",
       category: form.category,
       address: form.address,
       description: form.description,
-      latitude: Number(form.latitude),
-      longitude: Number(form.longitude),
-      radius: Number(form.radius),
+      latitude,
+      longitude,
+      radius,
       availableTime: form.availableTime,
-      landmarkThreshold: Number(form.landmarkThreshold),
+      landmarkThreshold: threshold,
       guideMessage: form.guideMessage,
-      status: form.status,
+      status: "비공개",
     };
 
     try {
@@ -181,17 +220,17 @@ export default function NewAttractionPage() {
         body: requestBody,
       });
 
-      const result = await response.json();
+      const result = (await response.json()) as { attraction?: { id: number }; message?: string };
       if (response.status === 401) {
         clearAdminApiKey();
         throw new Error("관리자 API 키가 올바르지 않습니다. 다시 등록해주세요.");
       }
-      if (!response.ok) throw new Error(result.message || "관광지를 저장하지 못했습니다.");
+      if (!response.ok || !result.attraction) throw new Error(result.message || "퀘스트를 저장하지 못했습니다.");
 
       router.refresh();
-      router.push("/admin/attractions");
+      router.push(`/landmark-test?attractionId=${result.attraction.id}`);
     } catch (error) {
-      setImageError(error instanceof Error ? error.message : "관광지를 저장하지 못했습니다.");
+      setImageError(error instanceof Error ? error.message : "퀘스트를 저장하지 못했습니다.");
       setStep(3);
     } finally {
       setIsProcessing(false);
@@ -202,15 +241,15 @@ export default function NewAttractionPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>관광지 관리</p>
-          <h1>새 관광지 등록</h1>
+          <p className={styles.eyebrow}>{tourName}</p>
+          <h1>새 퀘스트 등록</h1>
           <p className={styles.headerDescription}>
-            관광지 위치와 랜드마크 인증에 사용할 기준 이미지를 등록합니다.
+            퀘스트 위치와 랜드마크 인증에 사용할 기준 이미지를 등록합니다.
           </p>
         </div>
 
-        <Link href="/admin/attractions" className={styles.backLink}>
-          관광지 목록으로 돌아가기
+        <Link href={`/admin/attractions?tourId=${tourId}`} className={styles.backLink}>
+          퀘스트 목록으로 돌아가기
         </Link>
       </header>
 
@@ -230,6 +269,10 @@ export default function NewAttractionPage() {
         ))}
       </div>
 
+      {imageError && step !== 3 && (
+        <p className={styles.formWideError}>{imageError}</p>
+      )}
+
       <form className={styles.formLayout} onSubmit={handleSubmit}>
         <section className={styles.formCard}>
           {step === 1 && (
@@ -237,14 +280,14 @@ export default function NewAttractionPage() {
               <div className={styles.sectionTitle}>
                 <span>1</span>
                 <div>
-                  <h2>관광지 기본정보</h2>
-                  <p>사용자 화면에 표시할 관광지 정보를 입력합니다.</p>
+                  <h2>퀘스트 기본정보</h2>
+                  <p>사용자 화면에 표시할 인증 지점 정보를 입력합니다.</p>
                 </div>
               </div>
 
               <div className={styles.fieldGrid}>
                 <label className={styles.field}>
-                  관광지명
+                  퀘스트명
                   <input
                     type="text"
                     value={form.name}
@@ -464,24 +507,13 @@ export default function NewAttractionPage() {
                 <span>4</span>
                 <div>
                   <h2>확인 및 등록</h2>
-                  <p>입력한 정보를 확인하고 관광지를 저장합니다.</p>
+                  <p>입력한 정보를 확인하고 퀘스트를 저장합니다.</p>
                 </div>
               </div>
 
-              <div className={styles.fieldGrid}>
-                <label className={styles.field}>
-                  공개 상태
-                  <select
-                    value={form.status}
-                    onChange={(event) =>
-                      updateForm("status", event.target.value)
-                    }
-                  >
-                    <option>임시저장</option>
-                    <option>공개</option>
-                    <option>비공개</option>
-                  </select>
-                </label>
+              <div className={styles.publishNotice}>
+                <strong>처음에는 비공개로 저장됩니다.</strong>
+                <p>저장 직후 인식 테스트로 이동합니다. 테스트를 통과한 뒤 상세 화면에서 공개해주세요.</p>
               </div>
 
               <div className={styles.preview}>
@@ -500,7 +532,7 @@ export default function NewAttractionPage() {
 
                   <div>
                     <span>{form.category}</span>
-                    <h3>{form.name || "관광지명이 표시됩니다."}</h3>
+                    <h3>{form.name || "퀘스트명이 표시됩니다."}</h3>
                     <p>{form.description || "관광지 소개가 표시됩니다."}</p>
                     <div className={styles.previewInfo}>
                       <span>GPS {form.radius}m</span>
@@ -537,7 +569,7 @@ export default function NewAttractionPage() {
                 className={styles.primaryButton}
                 disabled={isProcessing}
               >
-                {isProcessing ? "저장 중..." : "관광지 저장"}
+                {isProcessing ? "저장 중..." : "저장하고 인식 테스트로 이동"}
               </button>
             )}
           </div>
@@ -547,7 +579,7 @@ export default function NewAttractionPage() {
           <p className={styles.summaryTitle}>등록 진행 상황</p>
           <div className={styles.summaryList}>
             <div>
-              <span>관광지명</span>
+              <span>퀘스트명</span>
               <strong>{form.name || "미입력"}</strong>
             </div>
             <div>
