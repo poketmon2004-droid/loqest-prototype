@@ -283,21 +283,71 @@ export default function Home() {
 
   useEffect(() => {
     let cancelled = false;
+
     async function loadTours() {
       try {
-        const response = await fetch("/api/tours", { cache: "no-store" });
-        const result = await response.json() as { tours?: PublicTour[] };
-        if (!response.ok || !Array.isArray(result.tours)) throw new Error("투어 목록을 불러오지 못했습니다.");
+        const response = await fetch("/api/tours", {
+          cache: "no-store",
+        });
+
+        const result = (await response.json()) as {
+          tours?: PublicTour[];
+        };
+
+        if (!response.ok || !Array.isArray(result.tours)) {
+          throw new Error("투어 목록을 불러오지 못했습니다.");
+        }
+
         if (!cancelled) {
           setTours(result.tours);
-          setActiveTour((current) => current ?? result.tours.find((tour) => tour.id === "amsa") ?? result.tours[0] ?? null);
+
+          setActiveTour((current) => {
+            if (current) {
+              const updatedCurrentTour = result.tours?.find(
+                (tour) => tour.id === current.id
+              );
+
+              if (updatedCurrentTour) {
+                return updatedCurrentTour;
+              }
+            }
+
+            return (
+              result.tours?.find((tour) => tour.id === "amsa") ??
+              result.tours?.[0] ??
+              null
+            );
+          });
         }
       } catch (error) {
         console.error(error);
       }
     }
+
     void loadTours();
-    return () => { cancelled = true; };
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        void loadTours();
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void loadTours();
+    }, 5000);
+
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener(
+        "visibilitychange",
+        refreshWhenVisible
+      );
+    };
   }, []);
 
   useEffect(() => {
