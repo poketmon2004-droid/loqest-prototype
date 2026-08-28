@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { clearAdminApiKey, getAdminApiKey } from "@/lib/adminApiKey";
 import TourSelector from "@/components/TourSelector";
 import styles from "../AdminDashboard.module.css";
+import AdminBackButton from "@/components/AdminBackButton";
 
 type Attraction = {
   id: number;
@@ -142,7 +143,7 @@ export default function ParticipantsPage() {
     <div className={styles.page}>
       <main className={styles.main}>
         <header className={styles.header}>
-          <div><a href="/admin/participants" className={styles.backToSelection}>← 투어 선택으로 돌아가기</a><h1>참여자·인증 현황</h1><p>{tourName} 사용자의 실제 촬영과 인증 결과를 확인합니다.</p></div>
+          <AdminBackButton />
         </header>
 
         <section className={styles.metrics}>

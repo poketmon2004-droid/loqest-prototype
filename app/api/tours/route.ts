@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 function authorized(request: NextRequest) {
   return Boolean(
     process.env.ADMIN_API_KEY &&
-      request.headers.get("x-admin-api-key") === process.env.ADMIN_API_KEY,
+    request.headers.get("x-admin-api-key") === process.env.ADMIN_API_KEY,
   );
 }
 
@@ -52,15 +52,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "투어 ID와 투어명을 입력해주세요." }, { status: 400 });
     }
 
-    const { data, error } = await supabaseAdmin.from("tours").insert({
-      id,
-      name: String(input.name).trim(),
-      short_name: String(input.shortName || input.name).trim(),
-      region: String(input.region || "").trim(),
-      description: String(input.description || "").trim(),
-      status: input.status === "공개" ? "공개" : "비공개",
-      badge_name: String(input.badgeName || `${input.name} 탐험가`).trim(),
-    }).select().single();
+    const { data, error } = await supabaseAdmin
+      .from("tours")
+      .insert({
+        id,
+        name: String(input.name).trim(),
+        short_name: String(input.name).trim(), province: String(input.province || "").trim(),
+        region: String(input.region || "").trim(),
+        description: String(input.description || "").trim(),
+        status: input.status === "공개" ? "공개" : "비공개",
+        badge_name: `${String(input.name).trim()} 탐험가`,
+      })
+      .select()
+      .single();
 
     if (error || !data) {
       const duplicate = error?.code === "23505";

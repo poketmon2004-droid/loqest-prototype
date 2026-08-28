@@ -52,6 +52,7 @@ type PublicTour = {
   id: string;
   name: string;
   short_name?: string;
+  province?: string;
   region?: string;
   description?: string;
   badge_name?: string;
@@ -254,6 +255,8 @@ function formatBadgeDate(dateValue: string | null) {
 
 export default function Home() {
   const [tours, setTours] = useState<PublicTour[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProvince, setSelectedProvince] = useState("전체");
   const [activeTour, setActiveTour] = useState<PublicTour | null>(null);
   const [landmarks, setLandmarks] =
     useState<Landmark[]>([]);
@@ -687,6 +690,43 @@ export default function Home() {
     )
     .join(" ");
 
+  const availableProvinces = Array.from(
+    new Set(
+      tours
+        .map((tour) => tour.province)
+        .filter((province): province is string => Boolean(province))
+    )
+  );
+
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+
+  const filteredTours = tours.filter((tour) => {
+    const matchesProvince =
+      selectedProvince === "전체" ||
+      tour.province === selectedProvince;
+
+    const searchableText = [
+      tour.name,
+      tour.short_name,
+      tour.province,
+      tour.region,
+      tour.description,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    const matchesSearch =
+      normalizedSearch === "" ||
+      searchableText.includes(normalizedSearch);
+
+    return matchesProvince && matchesSearch;
+  });
+
+  const hasTourSearch =
+    searchQuery.trim().length > 0 ||
+    selectedProvince !== "전체";
+
   if (screen === "main-home") {
     return (
       <main style={styles.main}>
@@ -707,16 +747,80 @@ export default function Home() {
 
           <h2 style={styles.destinationHeading}>여행지 목록</h2>
 
-          {tours.map((tour, index) => (
-            <article key={tour.id} style={{ ...styles.destinationCard, ...(index > 0 ? { marginTop: "14px" } : {}) }}>
-              <p style={styles.destinationLocation}>{tour.region || "지역 정보 준비 중"}</p>
-              <h3 style={styles.destinationTitle}>{tour.name}</h3>
-              <p style={styles.destinationDescription}>{tour.description || "특별한 퀘스트를 만나보세요."}</p>
-              <button type="button" style={styles.primaryButton} onClick={() => enterTour(tour)}>
-                {tour.short_name || tour.name} 탐험하기 →
-              </button>
-            </article>
-          ))}
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="여행지명 또는 지역을 검색해보세요"
+            aria-label="여행지 검색"
+            style={styles.destinationSearch}
+          />
+
+          <div style={styles.provinceFilters}>
+            {["전체", ...availableProvinces].map((province) => {
+              const active = selectedProvince === province;
+
+              return (
+                <button
+                  key={province}
+                  type="button"
+                  onClick={() => setSelectedProvince(province)}
+                  style={{
+                    ...styles.provinceFilterButton,
+                    ...(active ? styles.activeProvinceFilterButton : {}),
+                  }}
+                >
+                  {province}
+                </button>
+              );
+            })}
+          </div>
+
+          {!hasTourSearch ? (
+            <div style={styles.emptyDestination}>
+              <strong>어디로 떠나볼까요?</strong>
+              <p>
+                여행지명이나 지역을 검색하면
+                이용 가능한 관광지가 표시됩니다.
+              </p>
+            </div>
+          ) : filteredTours.length === 0 ? (
+            <div style={styles.emptyDestination}>
+              <strong>조건에 맞는 여행지가 없습니다.</strong>
+              <p>
+                다른 여행지명이나 지역을 검색해주세요.
+              </p>
+            </div>
+          ) : (
+            filteredTours.map((tour, index) => (
+
+              <article
+                key={tour.id}
+                style={{
+                  ...styles.destinationCard,
+                  ...(index > 0 ? { marginTop: "14px" } : {}),
+                }}
+              >
+                <p style={styles.destinationLocation}>
+                  {tour.region || tour.province || "지역 정보 준비 중"}
+                </p>
+
+                <h3 style={styles.destinationTitle}>{tour.name}</h3>
+
+                <p style={styles.destinationDescription}>
+                  {tour.description || "특별한 퀘스트를 만나보세요."}
+                </p>
+
+                <button
+                  type="button"
+                  style={styles.primaryButton}
+                  onClick={() => enterTour(tour)}
+                >
+                  탐험하기 →
+                </button>
+              </article>
+            ))
+          )}
 
           <article
             style={{
@@ -2052,4 +2156,55 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: "#4c91a8",
     transition: "width 0.3s ease",
   },
+
+  destinationSearch: {
+    boxSizing: "border-box",
+    width: "100%",
+    minHeight: "48px",
+    marginBottom: "12px",
+    padding: "12px 15px",
+    border: "1px solid #ccdfe4",
+    borderRadius: "14px",
+    backgroundColor: "#ffffff",
+    color: "#23445d",
+    fontSize: "14px",
+    outline: "none",
+  },
+
+  provinceFilters: {
+    display: "flex",
+    gap: "8px",
+    marginBottom: "16px",
+    paddingBottom: "2px",
+    overflowX: "auto",
+  },
+
+  provinceFilterButton: {
+    flexShrink: 0,
+    padding: "8px 13px",
+    border: "1px solid #cadde2",
+    borderRadius: "999px",
+    backgroundColor: "#ffffff",
+    color: "#527080",
+    fontSize: "13px",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+
+  activeProvinceFilterButton: {
+    borderColor: "#315f78",
+    backgroundColor: "#315f78",
+    color: "#ffffff",
+  },
+
+  emptyDestination: {
+    padding: "26px 18px",
+    border: "1px dashed #ccdfe4",
+    borderRadius: "18px",
+    backgroundColor: "#f7fbfc",
+    color: "#526873",
+    textAlign: "center",
+    fontSize: "14px",
+  },
 };
+

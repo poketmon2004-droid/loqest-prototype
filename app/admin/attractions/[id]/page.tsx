@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { clearAdminApiKey, getAdminApiKey } from "@/lib/adminApiKey";
 import styles from "./detail.module.css";
+import AdminBackButton from "@/components/AdminBackButton";
 
 type ReferenceImage = {
     id: string;
@@ -56,38 +57,38 @@ export default function AttractionDetailPage() {
 
     useEffect(() => {
         const loadAttraction = async () => {
-          try {
-            const adminKey = getAdminApiKey();
-            if (!adminKey) return;
-            const response = await fetch(`/api/attractions/${attractionId}`, { headers: { "x-admin-api-key": adminKey } });
-            if (response.status === 401) {
-                clearAdminApiKey();
-                throw new Error("관리자 API 키가 올바르지 않습니다.");
+            try {
+                const adminKey = getAdminApiKey();
+                if (!adminKey) return;
+                const response = await fetch(`/api/attractions/${attractionId}`, { headers: { "x-admin-api-key": adminKey } });
+                if (response.status === 401) {
+                    clearAdminApiKey();
+                    throw new Error("관리자 API 키가 올바르지 않습니다.");
+                }
+                if (!response.ok) throw new Error("관광지를 불러오지 못했습니다.");
+                const result = await response.json();
+                const item = result.attraction;
+                const recognitionRecords = JSON.parse(
+                    localStorage.getItem("loqest_recognition_test_records") || "{}"
+                ) as Record<string, RecognitionTestRecord>;
+                const record = recognitionRecords[String(attractionId)] ?? null;
+                const mapped: Attraction = {
+                    id: item.id, name: item.name, category: item.category, address: item.address,
+                    description: item.description, latitude: item.latitude, longitude: item.longitude,
+                    radius: item.radius, availableTime: item.available_time,
+                    landmarkThreshold: Number(item.landmark_threshold), guideMessage: item.guide_message,
+                    referenceImages: item.referenceImages.length, referenceImageData: item.referenceImages,
+                    firstSuccess: null, status: item.status, quality: record?.quality ?? item.quality,
+                    tourId: item.tour_id || "amsa",
+                };
+                setAttraction(mapped);
+                setTestRecord(record);
+                setReferenceImages(item.referenceImages.map((image: ReferenceImage) => image.dataUrl));
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
             }
-            if (!response.ok) throw new Error("관광지를 불러오지 못했습니다.");
-            const result = await response.json();
-            const item = result.attraction;
-            const recognitionRecords = JSON.parse(
-                localStorage.getItem("loqest_recognition_test_records") || "{}"
-            ) as Record<string, RecognitionTestRecord>;
-            const record = recognitionRecords[String(attractionId)] ?? null;
-            const mapped: Attraction = {
-                id: item.id, name: item.name, category: item.category, address: item.address,
-                description: item.description, latitude: item.latitude, longitude: item.longitude,
-                radius: item.radius, availableTime: item.available_time,
-                landmarkThreshold: Number(item.landmark_threshold), guideMessage: item.guide_message,
-                referenceImages: item.referenceImages.length, referenceImageData: item.referenceImages,
-                firstSuccess: null, status: item.status, quality: record?.quality ?? item.quality,
-                tourId: item.tour_id || "amsa",
-            };
-            setAttraction(mapped);
-            setTestRecord(record);
-            setReferenceImages(item.referenceImages.map((image: ReferenceImage) => image.dataUrl));
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
         };
         void loadAttraction();
     }, [attractionId]);
@@ -225,35 +226,33 @@ export default function AttractionDetailPage() {
             description: "여러 각도에서 촬영한 이미지를 등록하면 인식 테스트를 진행할 수 있습니다.",
             label: "이미지 등록",
             href: `/admin/attractions/${attraction.id}/edit`,
-          }
+        }
         : !hasPassedTest
-          ? {
-              title: "인식 테스트를 진행해주세요.",
-              description: "실제 촬영 환경에서 테스트를 통과하면 공개할 수 있습니다.",
-              label: "인식 테스트",
-              href: `/landmark-test?attractionId=${attraction.id}`,
-            }
-          : attraction.status !== "공개"
             ? {
-                title: "홈페이지에 공개할 준비가 끝났습니다.",
-                description: "공개하면 LOQEST 홈페이지에 이 관광지가 바로 표시됩니다.",
-                label: "지금 공개하기",
-                href: "",
-              }
-            : {
-                title: "정상적으로 운영 중입니다.",
-                description: "정보나 기준 이미지를 바꾸면 다시 테스트하는 것을 권장합니다.",
-                label: "정보 수정",
-                href: `/admin/attractions/${attraction.id}/edit`,
-              };
+                title: "인식 테스트를 진행해주세요.",
+                description: "실제 촬영 환경에서 테스트를 통과하면 공개할 수 있습니다.",
+                label: "인식 테스트",
+                href: `/landmark-test?attractionId=${attraction.id}`,
+            }
+            : attraction.status !== "공개"
+                ? {
+                    title: "홈페이지에 공개할 준비가 끝났습니다.",
+                    description: "공개하면 LOQEST 홈페이지에 이 관광지가 바로 표시됩니다.",
+                    label: "지금 공개하기",
+                    href: "",
+                }
+                : {
+                    title: "정상적으로 운영 중입니다.",
+                    description: "정보나 기준 이미지를 바꾸면 다시 테스트하는 것을 권장합니다.",
+                    label: "정보 수정",
+                    href: `/admin/attractions/${attraction.id}/edit`,
+                };
 
     return (
         <main className={styles.page}>
             <header className={styles.header}>
                 <div>
-                    <Link href={`/admin/attractions?tourId=${attraction.tourId}`} className={styles.backLink}>
-                        ← 퀘스트 목록
-                    </Link>
+                    <AdminBackButton />
                     <p className={styles.eyebrow}>퀘스트 상세</p>
                     <div className={styles.titleRow}>
                         <h1>{attraction.name}</h1>

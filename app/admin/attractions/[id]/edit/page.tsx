@@ -13,6 +13,7 @@ import {
     getAdminApiKey,
 } from "@/lib/adminApiKey";
 import styles from "../../new/AttractionForm.module.css";
+import AdminBackButton from "@/components/AdminBackButton";
 
 type ReferenceImage = {
     id: string;
@@ -192,7 +193,7 @@ export default function EditAttractionPage() {
                 if (!response.ok || !result.attraction) {
                     throw new Error(
                         result.message ??
-                            "관광지 정보를 불러오지 못했습니다."
+                        "관광지 정보를 불러오지 못했습니다."
                     );
                 }
 
@@ -397,7 +398,7 @@ export default function EditAttractionPage() {
             if (!response.ok) {
                 throw new Error(
                     result.message ??
-                        "관광지 정보를 저장하지 못했습니다."
+                    "관광지 정보를 저장하지 못했습니다."
                 );
             }
 
@@ -468,6 +469,7 @@ export default function EditAttractionPage() {
         <div className={styles.page}>
             <header className={styles.header}>
                 <div>
+                    <AdminBackButton />
                     <p className={styles.eyebrow}>
                         퀘스트 관리
                     </p>
@@ -479,12 +481,6 @@ export default function EditAttractionPage() {
                     </p>
                 </div>
 
-                <Link
-                    href={`/admin/attractions?tourId=${originalAttraction.tourId}`}
-                    className={styles.backLink}
-                >
-                    ← 퀘스트 목록으로 돌아가기
-                </Link>
             </header>
 
             <form
@@ -785,8 +781,8 @@ export default function EditAttractionPage() {
                             {isProcessing
                                 ? "저장 중..."
                                 : referenceImagesChanged
-                                  ? "저장하고 다시 테스트"
-                                  : "수정 내용 저장"}
+                                    ? "저장하고 다시 테스트"
+                                    : "수정 내용 저장"}
                         </button>
                     </div>
                 </section>

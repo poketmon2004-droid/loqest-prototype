@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { clearAdminApiKey, getAdminApiKey } from "@/lib/adminApiKey";
 import TourSelector from "@/components/TourSelector";
 import styles from "./AttractionList.module.css";
+import AdminBackButton from "@/components/AdminBackButton";
 
 type Attraction = {
   id: number;
@@ -128,9 +129,6 @@ export default function AttractionListPage() {
     };
   };
 
-  const publishedCount = attractions.filter((item) => item.status === "공개").length;
-  const actionNeededCount = attractions.filter((item) => getNextAction(item).tone === "attention").length;
-
   if (selectionMode === null) {
     return <div className={styles.page}>투어 목록을 준비하는 중입니다.</div>;
   }
@@ -140,9 +138,7 @@ export default function AttractionListPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div>
-          <a href="/admin/attractions" className={styles.backToSelection}>
-            ← 투어 선택으로 돌아가기
-          </a>
+          <AdminBackButton />
           <p className={styles.eyebrow}>LOQEST Admin</p>
           <h1>퀘스트 관리</h1>
           <p className={styles.description}>{tourName} 안의 퀘스트를 등록하고 공개 상태를 관리합니다.</p>
@@ -161,12 +157,6 @@ export default function AttractionListPage() {
         <article><span>1</span><div><strong>정보와 위치 입력</strong><p>퀘스트 기본 정보와 인증 범위를 설정합니다.</p></div></article>
         <article><span>2</span><div><strong>기준 이미지 등록</strong><p>여러 각도에서 촬영한 이미지를 등록합니다.</p></div></article>
         <article><span>3</span><div><strong>인식 테스트 후 공개</strong><p>테스트를 통과하면 홈페이지에 공개합니다.</p></div></article>
-      </section>
-
-      <section className={styles.summary}>
-        <article><span>전체 퀘스트</span><strong>{attractions.length}곳</strong></article>
-        <article><span>공개 중</span><strong>{publishedCount}곳</strong></article>
-        <article><span>다음 작업 필요</span><strong>{actionNeededCount}곳</strong></article>
       </section>
 
       <section className={styles.tableCard}>
@@ -188,22 +178,59 @@ export default function AttractionListPage() {
         ) : (
           <div className={styles.tableWrapper}>
             <table className={styles.simpleTable}>
-              <thead><tr><th>퀘스트</th><th>카테고리</th><th>공개 상태</th><th>현재 진행 상태</th><th>관리</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>퀘스트</th>
+                  <th>관리</th>
+                </tr>
+              </thead>
+
               <tbody>
                 {attractions.map((attraction) => {
                   const action = getNextAction(attraction);
+
                   return (
                     <tr key={attraction.id}>
-                      <td><Link href={`/admin/attractions/${attraction.id}`} className={styles.attractionName}>{attraction.name}</Link></td>
-                      <td>{attraction.category}</td>
-                      <td><span className={attraction.status === "공개" ? styles.published : styles.draft}>{attraction.status}</span></td>
-                      <td><div className={styles.progressState}><strong className={styles[action.tone]}>{action.step}</strong><span>{action.description}</span></div></td>
+                      <td>
+                        <div className={styles.questInformation}>
+                          <div className={styles.questTitleRow}>
+                            <span
+                              className={
+                                attraction.status === "공개"
+                                  ? styles.published
+                                  : styles.draft
+                              }
+                            >
+                              {attraction.status}
+                            </span>
+
+                            <Link
+                              href={`/admin/attractions/${attraction.id}`}
+                              className={styles.attractionName}
+                            >
+                              {attraction.name}
+                            </Link>
+
+                            <span className={styles.questCategory}>
+                              {attraction.category}
+                            </span>
+                          </div>
+
+                          <strong
+                            className={`${styles.questProgress} ${styles[action.tone]}`}
+                          >
+                            {action.step}
+                          </strong>
+                        </div>
+                      </td>
+
                       <td>
                         <Link
                           href={`/admin/attractions/${attraction.id}`}
                           className={styles.detailLink}
                         >
                           상세보기
+                          <span>→</span>
                         </Link>
                       </td>
                     </tr>
