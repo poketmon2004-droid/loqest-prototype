@@ -62,29 +62,46 @@
 @media (max-width: 900px) {
   .sidebar {
     position: static;
+    display: flex;
+    box-sizing: border-box;
+    width: 100%;
     height: auto;
-    padding: 18px 16px 14px;
+    min-height: 54px;
+    padding: 9px 14px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     border-right: 0;
     border-bottom: 1px solid #dce2eb;
   }
 
   .logo {
-    margin-bottom: 14px;
-  }
-
-  .menu {
-    display: flex;
-    overflow-x: auto;
-    padding-bottom: 4px;
-  }
-
-  .menu a {
     flex: 0 0 auto;
-    padding: 10px 12px;
-    font-size: 13px;
+    gap: 7px;
+    margin: 0;
+    font-size: 14px;
+  }
+
+  .logoMark {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
   }
 
   .menuTitle {
     display: none;
+  }
+
+  .menu {
+    display: flex;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .menu a {
+    flex: 0 0 auto;
+    padding: 8px 11px;
+    border-radius: 8px;
+    font-size: 12px;
   }
 }

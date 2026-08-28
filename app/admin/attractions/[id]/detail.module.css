@@ -174,3 +174,139 @@
   .metrics { grid-template-columns: 1fr; }
   .infoList div { grid-template-columns: 1fr; gap: 4px; }
 }
+.compactTestStatus {
+  box-sizing: border-box;
+  display: flex;
+  width: calc(100% - 76px);
+  max-width: 1180px;
+  min-height: 92px;
+  padding: 20px 22px;
+  margin: 0 auto 18px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border: 1px solid #dce2eb;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 5px 18px rgb(32 58 143 / 6%);
+}
+
+.compactTestResult {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.compactTestResult > div {
+  display: grid;
+  gap: 5px;
+}
+
+.compactTestResult span {
+  color: #7b8793;
+  font-size: 12px;
+}
+
+.compactTestResult strong {
+  font-size: 20px;
+}
+
+.compactTestResult p {
+  padding-left: 22px;
+  margin: 0;
+  border-left: 1px solid #e0e5ec;
+  color: #687483;
+  font-size: 13px;
+}
+
+.testPassed {
+  color: #24734a;
+}
+
+.testPending {
+  color: #a4661d;
+}
+
+.detailsToggle {
+  min-height: 42px;
+  padding: 10px 15px;
+  border: 1px solid #b6c4e2;
+  border-radius: 9px;
+  background: #eef2fb;
+  color: #203a8f;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.detailsToggle:hover {
+  border-color: #8fa9db;
+  background: #e3eafb;
+}
+
+.detailsPanel {
+  box-sizing: border-box;
+  width: calc(100% - 76px);
+  max-width: 1180px;
+  padding: 22px;
+  margin: 0 auto 18px;
+  border: 1px solid #dce2eb;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 5px 18px rgb(32 58 143 / 6%);
+}
+
+.detailsPanel .contentGrid {
+  max-width: none;
+  margin: 0;
+}
+
+.detailCard {
+  padding: 20px;
+  border: 1px solid #e0e5ec;
+  border-radius: 13px;
+  background: #fafbfd;
+}
+
+.detailCard h2,
+.imageDetailCard h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.imageDetailCard {
+  padding: 20px;
+  margin-top: 18px;
+  border: 1px solid #e0e5ec;
+  border-radius: 13px;
+  background: #fafbfd;
+}
+
+@media (max-width: 850px) {
+  .compactTestStatus,
+  .detailsPanel {
+    width: 100%;
+  }
+
+  .compactTestStatus {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .compactTestResult {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .compactTestResult p {
+    padding: 0;
+    border-left: 0;
+  }
+
+  .detailsToggle {
+    width: 100%;
+  }
+}

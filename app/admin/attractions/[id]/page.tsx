@@ -54,6 +54,7 @@ export default function AttractionDetailPage() {
         useState<RecognitionTestRecord | null>(null);
     const [referenceImages, setReferenceImages] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
+    const [detailsOpen, setDetailsOpen] = useState(false);
 
     useEffect(() => {
         const loadAttraction = async () => {
@@ -252,7 +253,9 @@ export default function AttractionDetailPage() {
         <main className={styles.page}>
             <header className={styles.header}>
                 <div>
-                    <AdminBackButton />
+                    <AdminBackButton
+                        href={`/admin/attractions?tourId=${attraction.tourId}`}
+                    />
                     <p className={styles.eyebrow}>퀘스트 상세</p>
                     <div className={styles.titleRow}>
                         <h1>{attraction.name}</h1>
@@ -300,68 +303,172 @@ export default function AttractionDetailPage() {
                 </div>
             </section>
 
-            <section className={styles.metrics}>
-                <article><span>인증 상태</span><strong>{attraction.quality}</strong></article>
-                <article><span>최근 테스트</span><strong>{testRecord?.lastResult ?? "미실시"}</strong></article>
-                <article><span>테스트 횟수</span><strong>{testRecord?.totalTests ?? 0}회</strong></article>
-                <article><span>1회 성공률</span><strong>{attraction.firstSuccess === null ? "-" : `${attraction.firstSuccess}%`}</strong></article>
-            </section>
-
-            <div className={styles.contentGrid}>
-                <section className={styles.card}>
-                    <h2>기본 정보</h2>
-                    <dl className={styles.infoList}>
-                        <div><dt>카테고리</dt><dd>{attraction.category}</dd></div>
-                        <div><dt>주소</dt><dd>{attraction.address || "미입력"}</dd></div>
-                        <div><dt>위도</dt><dd>{attraction.latitude ?? "미입력"}</dd></div>
-                        <div><dt>경도</dt><dd>{attraction.longitude ?? "미입력"}</dd></div>
-                        <div><dt>GPS 반경</dt><dd>{attraction.radius}m</dd></div>
-                        <div><dt>촬영 가능 시간</dt><dd>{attraction.availableTime ?? "상시"}</dd></div>
-                        <div><dt>인식 기준</dt><dd>{attraction.landmarkThreshold ?? 70}%</dd></div>
-                        <div><dt>촬영 안내</dt><dd>{attraction.guideMessage || "미입력"}</dd></div>
-                    </dl>
-                </section>
-
-                <section className={styles.card}>
-                    <h2>인식 테스트 현황</h2>
-                    <dl className={styles.infoList}>
-                        <div><dt>최근 결과</dt><dd>{testRecord?.lastResult ?? "미실시"}</dd></div>
-                        <div><dt>성공</dt><dd>{testRecord?.successfulTests ?? 0}회</dd></div>
-                        <div><dt>실패</dt><dd>{testRecord?.failedTests ?? 0}회</dd></div>
-                        <div><dt>최근 테스트 일시</dt><dd>{formatDate(testRecord?.lastTestedAt)}</dd></div>
-                    </dl>
-                    <div className={styles.recentResults}>
-                        {(testRecord?.recentResults ?? []).map((result, index) => (
-                            <span key={index} className={result ? styles.pass : styles.fail}>
-                                {result ? "통과" : "실패"}
-                            </span>
-                        ))}
-                        {!testRecord && <span className={styles.emptyText}>테스트 기록이 없습니다.</span>}
-                    </div>
-                </section>
-            </div>
-
-            <section className={styles.card}>
-                <div className={styles.cardHeader}>
+            <section className={styles.compactTestStatus}>
+                <div className={styles.compactTestResult}>
                     <div>
-                        <h2>기준 이미지</h2>
-                        <p>랜드마크 인식에 연결된 이미지 {referenceImages.length}장</p>
+                        <span>최근 인식 테스트</span>
+
+                        <strong
+                            className={
+                                testRecord?.lastResult === "통과"
+                                    ? styles.testPassed
+                                    : styles.testPending
+                            }
+                        >
+                            {testRecord?.lastResult ?? "미실시"}
+                        </strong>
                     </div>
-                    <Link href={`/admin/attractions/${attraction.id}/edit`} className={styles.secondaryButton}>
-                        이미지 관리
-                    </Link>
+
+                    <p>
+                        {testRecord
+                            ? `총 ${testRecord.totalTests}회 · 성공 ${testRecord.successfulTests}회 · 실패 ${testRecord.failedTests}회`
+                            : "아직 진행한 인식 테스트가 없습니다."}
+                    </p>
                 </div>
 
-                {referenceImages.length > 0 ? (
-                    <div className={styles.imageGrid}>
-                        {referenceImages.map((source, index) => (
-                            <img key={`${source}-${index}`} src={source} alt={`${attraction.name} 기준 이미지 ${index + 1}`} />
-                        ))}
-                    </div>
-                ) : (
-                    <p className={styles.emptyText}>등록된 실제 기준 이미지가 없습니다.</p>
-                )}
+                <button
+                    type="button"
+                    className={styles.detailsToggle}
+                    onClick={() =>
+                        setDetailsOpen((previous) => !previous)
+                    }
+                    aria-expanded={detailsOpen}
+                >
+                    {detailsOpen
+                        ? "상세 정보 접기 ↑"
+                        : "상세 정보 보기 ↓"}
+                </button>
             </section>
+
+            {detailsOpen && (
+                <section className={styles.detailsPanel}>
+                    <div className={styles.contentGrid}>
+                        <section className={styles.detailCard}>
+                            <h2>기본 정보</h2>
+
+                            <dl className={styles.infoList}>
+                                <div>
+                                    <dt>카테고리</dt>
+                                    <dd>{attraction.category}</dd>
+                                </div>
+
+                                <div>
+                                    <dt>위도</dt>
+                                    <dd>{attraction.latitude ?? "미입력"}</dd>
+                                </div>
+
+                                <div>
+                                    <dt>경도</dt>
+                                    <dd>{attraction.longitude ?? "미입력"}</dd>
+                                </div>
+
+                                <div>
+                                    <dt>GPS 반경</dt>
+                                    <dd>{attraction.radius}m</dd>
+                                </div>
+
+                                <div>
+                                    <dt>인식 기준</dt>
+                                    <dd>
+                                        {attraction.landmarkThreshold ?? 70}%
+                                    </dd>
+                                </div>
+                            </dl>
+                        </section>
+
+                        <section className={styles.detailCard}>
+                            <h2>인식 테스트 기록</h2>
+
+                            <dl className={styles.infoList}>
+                                <div>
+                                    <dt>최근 결과</dt>
+                                    <dd>
+                                        {testRecord?.lastResult ?? "미실시"}
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt>성공</dt>
+                                    <dd>
+                                        {testRecord?.successfulTests ?? 0}회
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt>실패</dt>
+                                    <dd>
+                                        {testRecord?.failedTests ?? 0}회
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt>최근 테스트</dt>
+                                    <dd>
+                                        {formatDate(testRecord?.lastTestedAt)}
+                                    </dd>
+                                </div>
+                            </dl>
+
+                            <div className={styles.recentResults}>
+                                {(testRecord?.recentResults ?? []).map(
+                                    (result, index) => (
+                                        <span
+                                            key={index}
+                                            className={
+                                                result ? styles.pass : styles.fail
+                                            }
+                                        >
+                                            {result ? "통과" : "실패"}
+                                        </span>
+                                    ),
+                                )}
+
+                                {!testRecord && (
+                                    <span className={styles.emptyText}>
+                                        테스트 기록이 없습니다.
+                                    </span>
+                                )}
+                            </div>
+                        </section>
+                    </div>
+
+                    <section className={styles.imageDetailCard}>
+                        <div className={styles.cardHeader}>
+                            <div>
+                                <h2>기준 이미지</h2>
+                                <p>
+                                    등록된 기준 이미지 {referenceImages.length}장
+                                </p>
+                            </div>
+
+                            <Link
+                                href={`/admin/attractions/${attraction.id}/edit`}
+                                className={styles.secondaryButton}
+                            >
+                                이미지 관리
+                            </Link>
+                        </div>
+
+                        {referenceImages.length > 0 ? (
+                            <div className={styles.imageGrid}>
+                                {referenceImages.map((source, index) => (
+                                    <img
+                                        key={`${source}-${index}`}
+                                        src={source}
+                                        alt={`${attraction.name} 기준 이미지 ${index + 1
+                                            }`}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <p className={styles.emptyText}>
+                                등록된 기준 이미지가 없습니다.
+                            </p>
+                        )}
+                    </section>
+                </section>
+            )}
         </main>
+
     );
 }

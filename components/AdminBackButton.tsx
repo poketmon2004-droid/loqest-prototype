@@ -3,14 +3,29 @@
 import { useRouter } from "next/navigation";
 import styles from "./AdminBackButton.module.css";
 
-export default function AdminBackButton() {
+type AdminBackButtonProps = {
+  href?: string;
+};
+
+export default function AdminBackButton({
+  href,
+}: AdminBackButtonProps) {
   const router = useRouter();
+
+  const goBack = () => {
+    if (href) {
+      router.push(href);
+      return;
+    }
+
+    router.back();
+  };
 
   return (
     <button
       type="button"
       className={styles.backButton}
-      onClick={() => router.back()}
+      onClick={goBack}
     >
       <span aria-hidden="true">←</span>
       뒤로가기

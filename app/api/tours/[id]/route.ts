@@ -124,7 +124,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  context: Context
+  context: Context,
 ) {
   if (!authorized(request)) {
     return NextResponse.json(
@@ -133,49 +133,128 @@ export async function DELETE(
       },
       {
         status: 401,
-      }
+      },
     );
   }
 
   const { id } = await context.params;
 
-  const { count } = await supabaseAdmin
-    .from("attractions")
-    .select("id", {
-      count: "exact",
-      head: true,
-    })
-    .eq("tour_id", id);
+  try {
+    // 삭제할 관광지 내부 퀘스트 확인
+    const {
+      data: attractions,
+      error: attractionLoadError,
+    } = await supabaseAdmin
+      .from("attractions")
+      .select("id")
+      .eq("tour_id", id);
 
-  if ((count ?? 0) > 0) {
+    if (attractionLoadError) {
+      throw attractionLoadError;
+    }
+
+    const attractionIds = (attractions ?? []).map(
+      (attraction) => attraction.id,
+    );
+
+    let storagePaths: string[] = [];
+
+    if (attractionIds.length > 0) {
+      // 기준 이미지 저장 경로 확인
+      const {
+        data: referenceImages,
+        error: referenceLoadError,
+      } = await supabaseAdmin
+        .from("attraction_reference_images")
+        .select("storage_path")
+        .in("attraction_id", attractionIds);
+
+      if (referenceLoadError) {
+        throw referenceLoadError;
+      }
+
+      storagePaths = (referenceImages ?? [])
+        .map((image) => image.storage_path)
+        .filter(
+          (path: string) =>
+            !path.startsWith("/") &&
+            !path.startsWith("http"),
+        );
+
+      // 참여자 인증 기록 삭제
+      const { error: recordDeleteError } =
+        await supabaseAdmin
+          .from("capture_records")
+          .delete()
+          .eq("tour_id", id);
+
+      if (recordDeleteError) {
+        throw recordDeleteError;
+      }
+
+      // 기준 이미지 DB 기록 삭제
+      const { error: imageDeleteError } =
+        await supabaseAdmin
+          .from("attraction_reference_images")
+          .delete()
+          .in("attraction_id", attractionIds);
+
+      if (imageDeleteError) {
+        throw imageDeleteError;
+      }
+
+      // 내부 퀘스트 삭제
+      const { error: attractionDeleteError } =
+        await supabaseAdmin
+          .from("attractions")
+          .delete()
+          .eq("tour_id", id);
+
+      if (attractionDeleteError) {
+        throw attractionDeleteError;
+      }
+
+      // Supabase Storage 기준 이미지 삭제
+      if (storagePaths.length > 0) {
+        const { error: storageDeleteError } =
+          await supabaseAdmin.storage
+            .from("landmark-references")
+            .remove(storagePaths);
+
+        if (storageDeleteError) {
+          console.error(storageDeleteError);
+        }
+      }
+    }
+
+    // 관광지 자체 삭제
+    const { error: tourDeleteError } =
+      await supabaseAdmin
+        .from("tours")
+        .delete()
+        .eq("id", id);
+
+    if (tourDeleteError) {
+      throw tourDeleteError;
+    }
+
+    return NextResponse.json({
+      message:
+        "관광지와 내부 퀘스트가 모두 삭제되었습니다.",
+    });
+  } catch (error) {
+    console.error(error);
+
     return NextResponse.json(
       {
         message:
-          "등록된 퀘스트를 먼저 삭제해야 투어를 삭제할 수 있습니다.",
-      },
-      {
-        status: 409,
-      }
-    );
-  }
-
-  const { error } = await supabaseAdmin
-    .from("tours")
-    .delete()
-    .eq("id", id);
-
-  if (error) {
-    return NextResponse.json(
-      {
-        message: error.message,
+          error instanceof Error
+            ? error.message
+            : "관광지를 삭제하지 못했습니다.",
       },
       {
         status: 500,
-      }
+      },
     );
   }
-
-  return NextResponse.json({
-    message: "투어가 삭제되었습니다.",
-  });
 }

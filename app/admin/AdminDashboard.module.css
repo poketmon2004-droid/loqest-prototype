@@ -375,7 +375,11 @@
 }
 
 @media (max-width: 900px) {
-  .metrics,
+  .metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
   .alertGrid,
   .managementGrid {
     grid-template-columns: 1fr;
@@ -506,4 +510,77 @@
 
 .normalMetric strong {
   color: #203a8f;
+}
+
+@media (max-width: 600px) {
+  .metricCard {
+    min-width: 0;
+    padding: 14px 10px;
+    text-align: center;
+  }
+
+  .metricCard span {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .metricCard strong {
+    margin: 6px 0 0;
+    font-size: 23px;
+  }
+
+  .metricCard p {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .managementSection {
+    padding: 16px 12px;
+  }
+
+  .managementHeader h2 {
+    font-size: 17px;
+  }
+
+  .managementHeader p {
+    display: none;
+  }
+
+  .managementGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .managementCard {
+    min-width: 0;
+    min-height: 130px;
+    padding: 13px 10px;
+    align-items: stretch;
+  }
+
+  .managementNumber {
+    font-size: 10px;
+  }
+
+  .managementCard > strong {
+    margin-top: 9px;
+    font-size: 13px;
+    line-height: 1.35;
+    word-break: keep-all;
+  }
+
+  .managementCard > p {
+    display: none;
+  }
+
+  .managementButton {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 4px;
+    margin-top: auto;
+    font-size: 11px;
+    text-align: center;
+  }
 }

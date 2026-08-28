@@ -78,6 +78,7 @@ export default function EditTourPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [errorMessage, setErrorMessage] =
     useState("");
 
@@ -222,6 +223,59 @@ export default function EditTourPage() {
       );
     } finally {
       setSaving(false);
+    }
+  };
+
+  const deleteTour = async () => {
+    const confirmed = window.confirm(
+    "이 관광지를 정말 삭제하시겠습니까?\n\n내부 퀘스트, 기준 이미지와 인증 기록도 모두 삭제되며 복구할 수 없습니다.",
+    );
+
+    if (!confirmed) return;
+
+    const adminKey = getAdminApiKey();
+
+    if (!adminKey) {
+      setErrorMessage("관리자 API 키를 확인해주세요.");
+      return;
+    }
+
+    setDeleting(true);
+    setErrorMessage("");
+
+    try {
+      const response = await fetch(`/api/tours/${tourId}`, {
+        method: "DELETE",
+        headers: {
+          "x-admin-api-key": adminKey,
+        },
+      });
+
+      const result = (await response.json()) as {
+        message?: string;
+      };
+
+      if (response.status === 401) {
+        clearAdminApiKey();
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          result.message || "관광지를 삭제하지 못했습니다.",
+        );
+      }
+
+      localStorage.removeItem("loqest_active_tour_id");
+      router.push("/admin");
+      router.refresh();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "관광지를 삭제하지 못했습니다.",
+      );
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -420,21 +474,30 @@ export default function EditTourPage() {
         )}
 
         <div className={styles.editorActions}>
-          <Link
-            href={`/admin/tours/${tourId}`}
-            className={styles.editorCancel}
-          >
-            취소
-          </Link>
-
           <button
-            type="submit"
-            disabled={saving}
+            type="button"
+            className={styles.deleteTourButton}
+            onClick={deleteTour}
+            disabled={deleting || saving}
           >
-            {saving
-              ? "저장 중..."
-              : "수정 내용 저장"}
+            {deleting ? "삭제 중..." : "관광지 삭제"}
           </button>
+
+          <div className={styles.editorActionRight}>
+            <Link
+              href={`/admin/tours/${tourId}`}
+              className={styles.editorCancel}
+            >
+              취소
+            </Link>
+
+            <button
+              type="submit"
+              disabled={saving || deleting}
+            >
+              {saving ? "저장 중..." : "수정 내용 저장"}
+            </button>
+          </div>
         </div>
       </form>
     </main>

@@ -645,3 +645,52 @@
         min-height: 140px;
     }
 }
+
+.editorActions {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.editorActionRight {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.deleteTourButton {
+  padding: 11px 15px;
+  border: 1px solid #e1aaaa !important;
+  border-radius: 9px;
+  background: #fff4f4 !important;
+  color: #c44343 !important;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.deleteTourButton:hover {
+  border-color: #c44343 !important;
+  background: #ffe8e8 !important;
+}
+
+.deleteTourButton:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+@media (max-width: 700px) {
+  .editorActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .editorActionRight {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .deleteTourButton {
+    width: 100%;
+  }
+}

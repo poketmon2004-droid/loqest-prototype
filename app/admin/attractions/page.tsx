@@ -138,7 +138,7 @@ export default function AttractionListPage() {
     <div className={styles.page}>
       <header className={styles.header}>
         <div>
-          <AdminBackButton />
+          <AdminBackButton href={`/admin/tours/${tourId}`} />
           <p className={styles.eyebrow}>LOQEST Admin</p>
           <h1>퀘스트 관리</h1>
           <p className={styles.description}>{tourName} 안의 퀘스트를 등록하고 공개 상태를 관리합니다.</p>
