@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import MainHome from "../components/MainHome";
 import type { Landmark, PublicAttraction, PublicTour } from "../types/tour";
 import { mapPublicAttractions } from "../lib/tour/mapPublicAttractions";
+import { COMPLETED_TEST_LANDMARKS_KEY, getTourProgressKeys, validStampIds } from "../lib/tour/progressStorage";
 import QuestList from "../components/QuestList";
 import BadgeCollection from "../components/BadgeCollection";
 import TourHome from "../components/TourHome";
@@ -20,15 +21,6 @@ type Screen =
   | "test-home"
   | "test-quests"
   | "verification";
-
-const COMPLETED_LANDMARKS_KEY =
-  "loqestCompletedLandmarks";
-
-const GANGDONG_BADGE_DATE_KEY =
-  "loqestAmsaBadgeEarnedAt";
-
-const COMPLETED_TEST_LANDMARKS_KEY =
-  "loqestCompletedTestLandmarks";
 
 const testLandmarks: Landmark[] = [
   {
@@ -83,9 +75,8 @@ export default function Home() {
   const [hasUnreadBadge, setHasUnreadBadge] = useState(false);
 
   const activeTourId = activeTour?.id ?? "amsa";
-  const completedLandmarksKey = `${COMPLETED_LANDMARKS_KEY}:${activeTourId}`;
-  const badgeDateKey = `${GANGDONG_BADGE_DATE_KEY}:${activeTourId}`;
-  const badgeSeenKey = `loqestBadgeSeen:${activeTourId}`;
+  const { completedLandmarksKey, badgeDateKey, badgeSeenKey } =
+    getTourProgressKeys(activeTourId);
 
   useEffect(() => {
     let cancelled = false;
@@ -252,10 +243,7 @@ export default function Home() {
           if (Array.isArray(parsed)) {
             const validIds = testLandmarks.map((landmark) => landmark.id);
             setCompletedTestLandmarks(
-              parsed.filter(
-                (id): id is string =>
-                  typeof id === "string" && validIds.includes(id)
-              )
+              validStampIds(parsed, validIds)
             );
           }
         } catch {
@@ -286,10 +274,7 @@ export default function Home() {
           (landmark) => landmark.id
         );
 
-        const validSavedStamps = parsedStamps.filter(
-          (id): id is string =>
-            typeof id === "string" && validIds.includes(id)
-        );
+        const validSavedStamps = validStampIds(parsedStamps, validIds);
 
         const uniqueSavedStamps = [
           ...new Set(validSavedStamps),
