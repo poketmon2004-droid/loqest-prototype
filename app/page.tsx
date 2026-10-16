@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import CameraCapture from "../components/CameraCapture";
+import MainHome, { type PublicTour } from "../components/MainHome";
+import QuestList from "../components/QuestList";
+import BadgeCollection from "../components/BadgeCollection";
+import TourHome from "../components/TourHome";
+import CaptureGuide from "../components/CaptureGuide";
+import TestHome from "../components/TestHome";
+import VerificationScreen from "../components/VerificationScreen";
 
 type Landmark = {
   id: string;
@@ -46,17 +52,6 @@ type PublicAttraction = {
     dataUrl?: string;
     url?: string;
   }>;
-};
-
-type PublicTour = {
-  id: string;
-  name: string;
-  short_name?: string;
-  province?: string;
-  region?: string;
-  description?: string;
-  badge_name?: string;
-  questCount?: number;
 };
 
 type Screen =
@@ -239,19 +234,6 @@ const testLandmarks: Landmark[] = [
   },
 ];
 
-function formatBadgeDate(dateValue: string | null) {
-  if (!dateValue) {
-    return "";
-  }
-
-  const date = new Date(dateValue);
-
-  return new Intl.DateTimeFormat("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(date);
-}
 
 export default function Home() {
   const [tours, setTours] = useState<PublicTour[]>([]);
@@ -681,21 +663,6 @@ export default function Home() {
     landmarks.length > 0 &&
     completedCount === landmarks.length;
 
-  const visitedLandmarks = completedLandmarks
-    .map((id) =>
-      landmarks.find((landmark) => landmark.id === id)
-    )
-    .filter((landmark): landmark is Landmark =>
-      Boolean(landmark)
-    );
-
-  const visitedPath = visitedLandmarks
-    .map(
-      (landmark) =>
-        `${landmark.mapPosition.x},${landmark.mapPosition.y}`
-    )
-    .join(" ");
-
   const availableProvinces = Array.from(
     new Set(
       tours
@@ -735,819 +702,110 @@ export default function Home() {
 
   if (screen === "main-home") {
     return (
-      <main style={styles.main}>
-        <section style={styles.card}>
-          <header style={styles.mainHomeHeader}>
-            <p style={styles.logo}>LOQEST</p>
-
-            <h1 style={styles.mainHomeTitle}>
-              당신만의 여행을 만들어가세요
-            </h1>
-
-            <p style={styles.mainHomeDescription}>
-              지역을 발견하고 퀘스트를 완료하며,
-              <br />
-              나만의 여행 기록을 쌓아보세요.
-            </p>
-          </header>
-
-          <h2 style={styles.destinationHeading}>여행지 목록</h2>
-
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="여행지명 또는 지역을 검색해보세요"
-            aria-label="여행지 검색"
-            style={styles.destinationSearch}
-          />
-
-          <div style={styles.provinceFilters}>
-            {["전체", ...availableProvinces].map((province) => {
-              const active = selectedProvince === province;
-
-              return (
-                <button
-                  key={province}
-                  type="button"
-                  onClick={() => setSelectedProvince(province)}
-                  style={{
-                    ...styles.provinceFilterButton,
-                    ...(active ? styles.activeProvinceFilterButton : {}),
-                  }}
-                >
-                  {province}
-                </button>
-              );
-            })}
-          </div>
-
-          {!hasTourSearch ? (
-            <div style={styles.emptyDestination}>
-              <strong>어디로 떠나볼까요?</strong>
-              <p>
-                여행지명이나 지역을 검색하면
-                이용 가능한 관광지가 표시됩니다.
-              </p>
-            </div>
-          ) : filteredTours.length === 0 ? (
-            <div style={styles.emptyDestination}>
-              <strong>조건에 맞는 여행지가 없습니다.</strong>
-              <p>
-                다른 여행지명이나 지역을 검색해주세요.
-              </p>
-            </div>
-          ) : (
-            filteredTours.map((tour, index) => (
-
-              <article
-                key={tour.id}
-                style={{
-                  ...styles.destinationCard,
-                  ...(index > 0 ? { marginTop: "14px" } : {}),
-                }}
-              >
-                <p style={styles.destinationLocation}>
-                  {tour.region || tour.province || "지역 정보 준비 중"}
-                </p>
-
-                <h3 style={styles.destinationTitle}>{tour.name}</h3>
-
-                <p style={styles.destinationDescription}>
-                  {tour.description || "특별한 퀘스트를 만나보세요."}
-                </p>
-
-                <button
-                  type="button"
-                  style={styles.primaryButton}
-                  onClick={() => enterTour(tour)}
-                >
-                  탐험하기 →
-                </button>
-              </article>
-            ))
-          )}
-
-          <article
-            style={{
-              ...styles.destinationCard,
-              marginTop: "14px",
-            }}
-          >
-            <p style={styles.destinationLocation}>테스트 모드 · GPS 생략</p>
-
-            <h3 style={styles.destinationTitle}>
-              집에서 하는 LOQEST 체험
-            </h3>
-
-            <p style={styles.destinationDescription}>
-              LOQEST의 스탬프 투어를
-              <br />
-              테스트 모드로 진행 해보세요.
-            </p>
-
-            <button
-              type="button"
-              style={styles.primaryButton}
-              onClick={goToTestHome}
-            >
-              테스트 관광지 입장하기 →
-            </button>
-          </article>
-
-          <button
-            type="button"
-            style={styles.badgeButton}
-            onClick={goToBadges}
-          >
-            <span style={styles.badgeMenuIcon}>📖</span>
-            <span>나의 여행 도감</span>
-            <span style={styles.badgeMenuArrow}>→</span>
-
-            {hasUnreadBadge && (
-              <span style={styles.newBadge}>NEW</span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            style={styles.guideButton}
-            onClick={goToGuide}
-          >
-            <span style={styles.guideButtonIcon}>?</span>
-            <span>
-              <strong>촬영 가이드</strong>
-              <small style={styles.guideButtonText}>
-                인증 순서와 손동작 인식 방법 보기
-              </small>
-            </span>
-          </button>
-        </section>
-      </main>
+      <MainHome
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        selectedProvince={selectedProvince}
+        setSelectedProvince={setSelectedProvince}
+        availableProvinces={availableProvinces}
+        filteredTours={filteredTours}
+        hasTourSearch={hasTourSearch}
+        hasUnreadBadge={hasUnreadBadge}
+        enterTour={enterTour}
+        goToTestHome={goToTestHome}
+        goToBadges={goToBadges}
+        goToGuide={goToGuide}
+        styles={styles}
+      />
     );
   }
 
   if (screen === "guide") {
-    return (
-      <main style={styles.main}>
-        <section style={styles.card}>
-          <p style={styles.badge}>이용 안내</p>
-
-          <h1 style={styles.title}>촬영 가이드</h1>
-
-          <p style={styles.description}>
-            손 포즈를 먼저 인증한 뒤 랜드마크를 선명하게 촬영해 주세요.
-          </p>
-
-          <div style={styles.guideStepList}>
-            <div style={styles.guideStep}>
-              <span style={styles.guideStepNumber}>1</span>
-              <div>
-                <strong>손 포즈 인증</strong>
-                <p style={styles.guideStepText}>
-                  화면에 무작위로 제시되는 손동작을 카메라 앞에서 따라해주세요.
-                </p>
-              </div>
-            </div>
-
-            <div style={styles.guideStep}>
-              <span style={styles.guideStepNumber}>2</span>
-              <div>
-                <strong>촬영 버튼 활성화</strong>
-                <p style={styles.guideStepText}>
-                  포즈가 인식되면 촬영 버튼이 활성화되고 1분의 제한시간이 시작됩니다.
-                </p>
-              </div>
-            </div>
-
-            <div style={styles.guideStep}>
-              <span style={styles.guideStepNumber}>3</span>
-              <div>
-                <strong>랜드마크 촬영</strong>
-                <p style={styles.guideStepText}>
-                  손을 내린 뒤 랜드마크에 초점을 맞추고 1분 안에 촬영해 주세요.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div style={styles.poseTipBox}>
-            <h2 style={styles.poseTipTitle}>손동작이 인식되지 않나요?</h2>
-
-            <p style={styles.poseTipText}>
-              ✌️ 브이 포즈는 엄지가 보이는 손바닥 방향을 카메라에 보여주세요.
-            </p>
-
-            <p style={styles.poseTipText}>
-              ☝️ 가리키기 포즈도 엄지가 보이는 방향으로 손을 보여주세요.
-            </p>
-
-            <p style={styles.poseTipText}>
-              손 전체가 화면 안에 들어오도록 하고 밝은 곳에서 인식해주세요.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            style={styles.homeButton}
-            onClick={goToMainHome}
-          >
-            뒤로가기
-          </button>
-        </section>
-      </main>
-    );
+    return <CaptureGuide styles={styles} goToMainHome={goToMainHome} />;
   }
 
   if (screen === "test-home") {
-    return (
-      <main style={styles.main}>
-        <section style={styles.card}>
-          <p style={styles.badge}>GPS 없는 테스트 모드</p>
-
-          <h1 style={styles.title}>집에서 하는 LOQEST 체험</h1>
-
-          <p style={styles.description}>
-            손 포즈 인증부터 스탬프 발급까지 테스트해보세요.
-          </p>
-
-          <div style={styles.testNotice}>
-            <strong>위치 인증을 사용하지 않습니다.</strong>
-            <p style={styles.entryText}>
-              손 포즈와 랜드마크 이미지 인식은 실제 퀘스트와 동일하게 진행됩니다.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            style={styles.primaryButton}
-            onClick={goToTestQuestList}
-          >
-            테스트 시작하기
-          </button>
-
-          <button
-            type="button"
-            style={styles.homeButton}
-            onClick={goToMainHome}
-          >
-            뒤로가기
-          </button>
-        </section>
-      </main>
-    );
+    return <TestHome styles={styles} goToTestQuestList={goToTestQuestList} goToMainHome={goToMainHome} />;
   }
 
   if (screen === "home") {
     return (
-      <main style={styles.main}>
-        <section style={styles.card}>
-          <p style={styles.badge}>{activeTour?.region || "LOQEST 투어"}</p>
-
-          <h1 style={styles.title}>
-            {activeTour?.name ?? "투어"}
-          </h1>
-
-          <p style={styles.description}>
-            {activeTour?.description || "랜드마크를 발견하고 디지털 스탬프와 여행 뱃지를 모아보세요."}
-          </p>
-
-          <h2 style={styles.progressSectionTitle}>
-            현재 탐험 진행률
-          </h2>
-
-          <div style={styles.progressSummary}>
-            <strong style={styles.progressNumber}>
-              {completedCount} / {landmarks.length}
-            </strong>
-
-            <span>개의 스탬프를 모았습니다.</span>
-          </div>
-
-          <div style={styles.progressBarBackground}>
-            <div
-              style={{
-                ...styles.progressBar,
-                width: `${progressPercent}%`,
-              }}
-            />
-          </div>
-
-          <p style={styles.progressText}>
-            전체 코스의 {progressPercent}% 완료
-          </p>
-
-          {tourCompleted && (
-            <div style={styles.completionNotice}>
-              <span style={styles.completionIcon}>🎉</span>
-
-              <div>
-                <strong>{activeTour?.short_name || activeTour?.name} 탐험 완료!</strong>
-
-                <p style={styles.completionText}>
-                  ‘{activeTour?.badge_name || `${activeTour?.short_name || activeTour?.name} 탐험가`}’ 뱃지가 자동으로
-                  발급되었습니다.
-                </p>
-              </div>
-            </div>
-          )}
-
-          <div
-            className="exploration-map"
-            style={{ height: "430px" }}
-          >
-            <div className="map-decoration map-tree-one">♧</div>
-            <div className="map-decoration map-tree-two">♧</div>
-            <div className="map-decoration map-wave-one">≋</div>
-            <div className="map-decoration map-wave-two">≋</div>
-
-            <svg
-              className="map-route"
-              viewBox="0 0 360 520"
-              aria-hidden="true"
-            >
-              {visitedLandmarks.length >= 2 && (
-                <polyline
-                  className="map-route-visited"
-                  points={visitedPath}
-                />
-              )}
-            </svg>
-
-            {landmarks.map((landmark) => {
-              const visitIndex = completedLandmarks.indexOf(
-                landmark.id
-              );
-              const completed = visitIndex >= 0;
-
-              return (
-                <button
-                  type="button"
-                  key={landmark.id}
-                  className={`map-place ${completed ? "map-place-completed" : ""
-                    }`}
-                  style={{
-                    left: `${(landmark.mapPosition.x / 360) * 100}%`,
-                    top: `${(landmark.mapPosition.y / 520) * 100}%`,
-                  }}
-                  onClick={() => {
-                    if (!completed) {
-                      selectLandmark(landmark);
-                    }
-                  }}
-                  aria-label={
-                    completed
-                      ? `${landmark.name}, ${visitIndex + 1}번째 인증 완료`
-                      : `${landmark.name}, 아직 인증하지 않음`
-                  }
-                >
-                  <span className="map-stamp">
-                    {completed ? visitIndex + 1 : "?"}
-                  </span>
-
-                  <span className="map-place-label">
-                    <strong>{landmark.name}</strong>
-                    <small>
-                      {completed
-                        ? `${visitIndex + 1}번째 탐험 완료`
-                        : "눌러서 인증하기"}
-                    </small>
-                  </span>
-                </button>
-              );
-            })}
-
-            {tourCompleted && (
-              <div className="map-finish-flag" aria-label="전체 탐험 완료">
-                ⚑ 완주
-              </div>
-            )}
-          </div>
-
-          <button
-            type="button"
-            style={styles.primaryButton}
-            onClick={goToQuestList}
-          >
-            {tourCompleted
-              ? "완료한 퀘스트 보기"
-              : completedCount > 0
-                ? "탐험 계속하기"
-                : "탐험 시작하기"}
-          </button>
-
-          <button
-            type="button"
-            style={styles.resetButton}
-            onClick={resetProgress}
-          >
-            테스트 기록 초기화
-          </button>
-
-          <button
-            type="button"
-            style={styles.homeButton}
-            onClick={goToMainHome}
-          >
-            홈으로
-          </button>
-        </section>
-      </main>
+      <TourHome
+        activeTour={activeTour}
+        landmarks={landmarks}
+        completedLandmarks={completedLandmarks}
+        completedCount={completedCount}
+        progressPercent={progressPercent}
+        tourCompleted={tourCompleted}
+        onSelectLandmark={selectLandmark}
+        goToQuestList={goToQuestList}
+        resetProgress={resetProgress}
+        goToMainHome={goToMainHome}
+        styles={styles}
+      />
     );
   }
 
   if (screen === "badges") {
     return (
-      <main style={styles.main}>
-        <section style={styles.card}>
-          <p style={styles.badge}>여행 컬렉션</p>
-
-          <h1 style={styles.title}>나의 여행 도감</h1>
-
-          <p style={styles.description}>
-            관광지를 탐험하고 획득한 인증 뱃지를
-            확인해보세요.
-          </p>
-
-          {tourCompleted ? (
-            <div style={styles.earnedBadgeCard}>
-              <div style={styles.badgeGlow}>
-                <div style={styles.badgeMedal}>🏅</div>
-              </div>
-
-              <p style={styles.badgeStatus}>
-                탐험 완료 뱃지
-              </p>
-
-              <h2 style={styles.badgeTitle}>
-                {activeTour?.badge_name || `${activeTour?.short_name || activeTour?.name} 탐험가`}
-              </h2>
-
-              <p style={styles.badgeDescription}>
-                {activeTour?.name}의 퀘스트 인증을 모두 완료했습니다.
-              </p>
-
-              <div style={styles.badgeInformation}>
-                <div>
-                  <span style={styles.infoLabel}>
-                    획득일
-                  </span>
-
-                  <strong>
-                    {formatBadgeDate(badgeEarnedAt)}
-                  </strong>
-                </div>
-
-                <div>
-                  <span style={styles.infoLabel}>
-                    획득 스탬프
-                  </span>
-
-                  <strong>
-                    {completedCount} / {landmarks.length}
-                  </strong>
-                </div>
-              </div>
-
-              <div style={styles.completedList}>
-                {landmarks.map((landmark) => (
-                  <span
-                    key={landmark.id}
-                    style={styles.completedChip}
-                  >
-                    ✓ {landmark.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div style={styles.lockedBadgeCard}>
-              <div style={styles.lockedBadge}>🔒</div>
-
-              <h2 style={styles.badgeTitle}>
-                {activeTour?.badge_name || `${activeTour?.short_name || activeTour?.name} 탐험가`}
-              </h2>
-
-              <p style={styles.badgeDescription}>
-                이 투어의 퀘스트를 모두 인증하면 여행 뱃지가 자동으로 발급됩니다.
-              </p>
-
-              <div style={styles.miniProgressBackground}>
-                <div
-                  style={{
-                    ...styles.miniProgress,
-                    width: `${progressPercent}%`,
-                  }}
-                />
-              </div>
-
-              <strong>
-                {completedCount} / {landmarks.length} 완료
-              </strong>
-
-              <button
-                type="button"
-                style={styles.primaryButton}
-                onClick={goToQuestList}
-              >
-                탐험 계속하기
-              </button>
-            </div>
-          )}
-
-          <button
-            type="button"
-            style={styles.secondaryButton}
-            onClick={goHome}
-          >
-            {activeTour?.name ?? "투어"} 보기
-          </button>
-
-          <button
-            type="button"
-            style={styles.secondaryButton}
-            onClick={goToMainHome}
-          >
-            홈으로 가기
-          </button>
-        </section>
-      </main>
+      <BadgeCollection
+        tourCompleted={tourCompleted}
+        activeTour={activeTour}
+        badgeEarnedAt={badgeEarnedAt}
+        completedCount={completedCount}
+        landmarks={landmarks}
+        progressPercent={progressPercent}
+        goToQuestList={goToQuestList}
+        goHome={goHome}
+        goToMainHome={goToMainHome}
+        styles={styles}
+      />
     );
   }
 
-  if (
-    screen === "verification" &&
-    selectedLandmark
-  ) {
+  if (screen === "verification" && selectedLandmark) {
     return (
-      <main style={styles.main}>
-        <section style={styles.card}>
-          {!stampIssued && (
-            <>
-              <p style={styles.badge}>
-                랜드마크 인증
-              </p>
-
-              <h1 style={styles.title}>
-                {selectedLandmark.name}
-              </h1>
-
-              <p style={styles.description}>
-                {selectedLandmark.description}
-              </p>
-
-              <div style={styles.guideBox}>
-                <strong>촬영 안내</strong>
-
-                <p>{selectedLandmark.poseGuide}</p>
-
-                <p>
-                  {selectedLandmark.landmarkGuide}
-                </p>
-              </div>
-
-              {selectedLandmark.requiresGps ? (
-                <div style={styles.gpsNotice}>
-                  <strong>위치 권한 안내</strong>
-
-                  <p style={styles.gpsNoticeText}>
-                    촬영 시 위치를 확인하며, 인증 장소에서만 스탬프가
-                    발급됩니다.
-                  </p>
-                </div>
-              ) : (
-                <div style={styles.testNotice}>
-                  <strong>GPS 인증 생략</strong>
-
-                  <p style={styles.gpsNoticeText}>
-                    테스트 퀘스트에서는 위치를 확인하지 않습니다.
-                  </p>
-                </div>
-              )}
-
-              <CameraCapture
-                tourId={activeTourId}
-                attractionId={selectedLandmark.attractionId}
-                recognitionKey={selectedLandmark.recognitionKey}
-                landmarkName={selectedLandmark.name}
-                landmarkGuide={
-                  selectedLandmark.landmarkGuide
-                }
-                poseGuide={selectedLandmark.poseGuide}
-                landmarkLatitude={
-                  selectedLandmark.latitude
-                }
-                landmarkLongitude={
-                  selectedLandmark.longitude
-                }
-                allowedRadius={selectedLandmark.radius}
-                referenceImages={selectedLandmark.referenceImages}
-                goodMatchesThreshold={
-                  selectedLandmark.goodMatchesThreshold
-                }
-                matchRatioThreshold={
-                  selectedLandmark.matchRatioThreshold
-                }
-                skipLocationVerification={!selectedLandmark.requiresGps}
-                onProcessingChange={setVerificationProcessing}
-                onVerified={issueStamp}
-              />
-
-              {!verificationProcessing && (
-                <button
-                  type="button"
-                  style={styles.secondaryButton}
-                  onClick={
-                    selectedLandmark.requiresGps
-                      ? goToQuestList
-                      : goToTestQuestList
-                  }
-                >
-                  뒤로가기
-                </button>
-              )}
-            </>
-          )}
-
-          {stampIssued && (
-            <div style={styles.stampBox}>
-              <p style={styles.badge}>
-                디지털 스탬프
-              </p>
-
-              <div style={styles.stampCircle}>
-                <span>STAMP</span>
-              </div>
-
-              <h1 style={styles.title}>인증 완료!</h1>
-
-              <p style={styles.description}>
-                {selectedLandmark.name}
-                <br />
-                디지털 스탬프가 자동으로
-                발급되었습니다.
-              </p>
-
-              {selectedLandmark.requiresGps && tourCompleted && (
-                <div style={styles.completionNotice}>
-                  <span style={styles.completionIcon}>
-                    🏅
-                  </span>
-
-                  <div>
-                    <strong>
-                      {activeTour?.badge_name || `${activeTour?.short_name || activeTour?.name} 탐험가`} 뱃지 획득!
-                    </strong>
-
-                    <p style={styles.completionText}>
-                      여행 도감에서 확인할 수 있습니다.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <button
-                type="button"
-                style={styles.primaryButton}
-                onClick={
-                  selectedLandmark.requiresGps
-                    ? goHome
-                    : goToTestHome
-                }
-              >
-                {selectedLandmark.requiresGps
-                  ? "투어 홈으로 가기"
-                  : "테스트 홈으로 가기"}
-              </button>
-
-            </div>
-          )}
-        </section>
-      </main>
+      <VerificationScreen
+        selectedLandmark={selectedLandmark}
+        activeTour={activeTour}
+        activeTourId={activeTourId}
+        stampIssued={stampIssued}
+        tourCompleted={tourCompleted}
+        verificationProcessing={verificationProcessing}
+        onProcessingChange={setVerificationProcessing}
+        issueStamp={issueStamp}
+        goToQuestList={goToQuestList}
+        goToTestQuestList={goToTestQuestList}
+        goHome={goHome}
+        goToTestHome={goToTestHome}
+        styles={styles}
+      />
     );
   }
 
   if (screen === "test-quests") {
     return (
-      <main style={styles.main}>
-        <section style={styles.card}>
-          <p style={styles.badge}>집에서 하는 LOQEST 체험</p>
-
-          <h1 style={styles.title}>테스트 퀘스트</h1>
-
-          <p style={styles.description}>
-            GPS 인증 없이 전체 촬영 흐름을 확인합니다.
-          </p>
-
-          <div style={styles.landmarkList}>
-            {testLandmarks.map((landmark) => {
-              const completed =
-                completedTestLandmarks.includes(landmark.id);
-
-              return (
-                <button
-                  type="button"
-                  key={landmark.id}
-                  style={{
-                    ...styles.landmarkButton,
-                    ...(completed
-                      ? styles.completedLandmarkButton
-                      : {}),
-                  }}
-                  onClick={() => selectLandmark(landmark)}
-                >
-                  <span style={styles.questIcon}>{landmark.icon}</span>
-
-                  <span style={styles.questContent}>
-                    <strong style={styles.landmarkName}>
-                      {completed ? "✓ " : ""}
-                      {landmark.name}
-                    </strong>
-
-                    <span style={styles.smallText}>
-                      {completed ? "인증 완료 · 다시 테스트 가능" : landmark.mission}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <button
-            type="button"
-            style={styles.homeButton}
-            onClick={goToTestHome}
-          >
-            뒤로가기
-          </button>
-        </section>
-      </main>
+      <QuestList
+        mode="test"
+        landmarks={testLandmarks}
+        completedIds={completedTestLandmarks}
+        onSelect={selectLandmark}
+        onBack={goToTestHome}
+        styles={styles}
+      />
     );
   }
 
   return (
-    <main style={styles.main}>
-      <section style={styles.card}>
-        <p style={styles.badge}>
-          {activeTour?.name ?? "랜드마크 코스"}
-        </p>
-
-        <h1 style={styles.title}>
-          랜드마크 퀘스트
-        </h1>
-
-        <p style={styles.description}>
-          촬영할 랜드마크를 선택해주세요.
-        </p>
-
-        <div style={styles.landmarkList}>
-          {landmarks.map((landmark) => {
-            const completed =
-              completedLandmarks.includes(landmark.id);
-
-            return (
-              <button
-                type="button"
-                key={landmark.id}
-                style={{
-                  ...styles.landmarkButton,
-                  ...(completed
-                    ? styles.completedLandmarkButton
-                    : {}),
-                }}
-                onClick={() =>
-                  selectLandmark(landmark)
-                }
-                disabled={completed}
-              >
-                <span style={styles.questIcon}>
-                  {landmark.icon}
-                </span>
-
-                <span style={styles.questContent}>
-                  <strong style={styles.landmarkName}>
-                    {completed ? "✓ " : ""}
-                    {landmark.name}
-                  </strong>
-
-                  <span style={styles.smallText}>
-                    {completed ? "인증 완료" : landmark.mission}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <button
-          type="button"
-          style={styles.homeButton}
-          onClick={goHome}
-        >
-          뒤로가기
-        </button>
-      </section>
-    </main>
+    <QuestList
+      mode="tour"
+      tourName={activeTour?.name}
+      landmarks={landmarks}
+      completedIds={completedLandmarks}
+      onSelect={selectLandmark}
+      onBack={goHome}
+      styles={styles}
+    />
   );
 }
 
