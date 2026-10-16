@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import NextImage from "next/image";
 import {
   clearAdminApiKey,
   getAdminApiKey,
@@ -621,7 +621,7 @@ export default function NewAttractionPage() {
                         styles.imagePreviewItem
                       }
                     >
-                      <Image
+                      <NextImage
                         src={image.dataUrl}
                         alt={image.name}
                       width={640}
