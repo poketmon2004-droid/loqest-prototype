@@ -1,13 +1,14 @@
 "use client";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { useEffect, useRef, useState } from "react";
-import cvReadyPromise from "@techstark/opencv-js";
 import {
   FilesetResolver,
   GestureRecognizer,
 } from "@mediapipe/tasks-vision";
+import {
+  compareLandmarkToReferences,
+  landmarkRecognitionReady,
+} from "@/lib/landmarkRecognition";
 
 type CameraCaptureProps = {
   tourId: string;
@@ -125,23 +126,6 @@ function getCurrentLocation() {
   });
 }
 
-function loadImage(source: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-
-    if (source.startsWith("http")) {
-      image.crossOrigin = "anonymous";
-    }
-
-    image.onload = () => resolve(image);
-    image.onerror = () =>
-      reject(
-        new Error(`기준 이미지를 불러오지 못했습니다: ${source}`)
-      );
-    image.src = source;
-  });
-}
-
 function cropLandmarkArea(sourceCanvas: HTMLCanvasElement) {
   const croppedCanvas = document.createElement("canvas");
   const cropX = Math.round(sourceCanvas.width * 0.06);
@@ -173,119 +157,20 @@ function cropLandmarkArea(sourceCanvas: HTMLCanvasElement) {
   return croppedCanvas;
 }
 
-function extractFeatures(
-  cv: any,
-  image: HTMLImageElement | HTMLCanvasElement
-) {
-  const source = cv.imread(image);
-  const resized = new cv.Mat();
-  const gray = new cv.Mat();
-  const mask = new cv.Mat();
-  const keypoints = new cv.KeyPointVector();
-  const descriptors = new cv.Mat();
-  const orb = new cv.ORB();
-
-  try {
-    const maxWidth = 900;
-    const scale = Math.min(1, maxWidth / source.cols);
-    const width = Math.round(source.cols * scale);
-    const height = Math.round(source.rows * scale);
-
-    cv.resize(
-      source,
-      resized,
-      new cv.Size(width, height),
-      0,
-      0,
-      cv.INTER_AREA
-    );
-    cv.cvtColor(resized, gray, cv.COLOR_RGBA2GRAY);
-    orb.detectAndCompute(gray, mask, keypoints, descriptors);
-
-    return descriptors.clone();
-  } finally {
-    source.delete();
-    resized.delete();
-    gray.delete();
-    mask.delete();
-    keypoints.delete();
-    descriptors.delete();
-    orb.delete();
-  }
-}
-
-function compareDescriptors(
-  cv: any,
-  testDescriptors: any,
-  referenceDescriptors: any
-) {
-  if (testDescriptors.empty() || referenceDescriptors.empty()) {
-    return { goodMatches: 0, matchRatio: 0 };
-  }
-
-  const matcher = new cv.BFMatcher(cv.NORM_HAMMING, true);
-  const matches = new cv.DMatchVector();
-
-  try {
-    matcher.match(testDescriptors, referenceDescriptors, matches);
-
-    let goodMatches = 0;
-
-    for (let index = 0; index < matches.size(); index += 1) {
-      if (matches.get(index).distance <= 55) {
-        goodMatches += 1;
-      }
-    }
-
-    return {
-      goodMatches,
-      matchRatio:
-        matches.size() === 0
-          ? 0
-          : (goodMatches / matches.size()) * 100,
-    };
-  } finally {
-    matcher.delete();
-    matches.delete();
-  }
-}
-
 async function recognizeLandmark(
   sourceCanvas: HTMLCanvasElement,
   referenceImages: string[],
   goodMatchesThreshold: number,
   matchRatioThreshold: number
 ) {
-  const cv = await cvReadyPromise;
   const landmarkCanvas = cropLandmarkArea(sourceCanvas);
-  const testDescriptors = extractFeatures(cv, landmarkCanvas);
-
-  let bestGoodMatches = 0;
-  let bestMatchRatio = 0;
-
-  try {
-    for (const referencePath of referenceImages) {
-      const referenceImage = await loadImage(referencePath);
-      const referenceDescriptors = extractFeatures(cv, referenceImage);
-
-      try {
-        const comparison = compareDescriptors(
-          cv,
-          testDescriptors,
-          referenceDescriptors
-        );
-
-        if (comparison.goodMatches > bestGoodMatches) {
-          bestGoodMatches = comparison.goodMatches;
-          bestMatchRatio = comparison.matchRatio;
-        }
-      } finally {
-        referenceDescriptors.delete();
-      }
-    }
-  } finally {
-    testDescriptors.delete();
-  }
+  const results = await compareLandmarkToReferences(
+    landmarkCanvas,
+    referenceImages,
+  );
+  const bestResult = results[0];
+  const bestGoodMatches = bestResult?.goodMatches ?? 0;
+  const bestMatchRatio = bestResult?.matchRatio ?? 0;
 
   return {
     passed:
@@ -701,7 +586,7 @@ export default function CameraCapture({
       const modelPromise = initializeGestureRecognizer();
       const landmarkModelPromise = skipLocationVerification
         ? Promise.resolve()
-        : cvReadyPromise;
+        : landmarkRecognitionReady;
 
       const cameraPromise =
         navigator.mediaDevices.getUserMedia({

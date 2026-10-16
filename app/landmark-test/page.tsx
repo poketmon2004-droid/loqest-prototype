@@ -3,12 +3,15 @@
 import { ChangeEvent, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
-import cvReadyPromise from "@techstark/opencv-js";
-import type { Mat } from "@techstark/opencv-js";
 import {
   clearAdminApiKey,
   getAdminApiKey,
 } from "@/lib/adminApiKey";
+import {
+  compareLandmarkToReferences,
+  landmarkRecognitionReady,
+  type LandmarkComparisonResult,
+} from "@/lib/landmarkRecognition";
 
 const FALLBACK_LANDMARK_NAME = "노트북 키보드";
 
@@ -35,13 +38,6 @@ type ApiAttraction = {
   referenceImages?: ApiReferenceImage[];
 };
 
-type ComparisonResult = {
-  referenceName: string;
-  goodMatches: number;
-  totalMatches: number;
-  matchRatio: number;
-};
-
 type RecognitionTestRecord = {
   totalTests: number;
   successfulTests: number;
@@ -51,121 +47,6 @@ type RecognitionTestRecord = {
   lastTestedAt: string;
   quality: "정상" | "확인 필요" | "기준 이미지 개선";
 };
-
-type OpenCv = typeof import("@techstark/opencv-js");
-
-function loadImage(source: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-
-    if (source.startsWith("http")) {
-      image.crossOrigin = "anonymous";
-    }
-
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error(`이미지를 불러오지 못했습니다: ${source}`));
-    image.src = source;
-  });
-}
-
-function extractFeatures(cv: OpenCv, image: HTMLImageElement): Mat {
-  const source = cv.imread(image);
-  const resized = new cv.Mat();
-  const gray = new cv.Mat();
-  const mask = new cv.Mat();
-  const keypoints = new cv.KeyPointVector();
-  const descriptors = new cv.Mat();
-  const orb = new cv.ORB();
-
-  try {
-    const maxWidth = 900;
-    const scale = Math.min(1, maxWidth / source.cols);
-    const width = Math.round(source.cols * scale);
-    const height = Math.round(source.rows * scale);
-
-    cv.resize(
-      source,
-      resized,
-      new cv.Size(width, height),
-      0,
-      0,
-      cv.INTER_AREA
-    );
-
-    cv.cvtColor(resized, gray, cv.COLOR_RGBA2GRAY);
-
-    orb.detectAndCompute(
-      gray,
-      mask,
-      keypoints,
-      descriptors
-    );
-
-    return descriptors.clone();
-  } finally {
-    source.delete();
-    resized.delete();
-    gray.delete();
-    mask.delete();
-    keypoints.delete();
-    descriptors.delete();
-    orb.delete();
-  }
-}
-
-function compareDescriptors(
-  cv: OpenCv,
-  testDescriptors: Mat,
-  referenceDescriptors: Mat
-) {
-  if (
-    testDescriptors.empty() ||
-    referenceDescriptors.empty()
-  ) {
-    return {
-      goodMatches: 0,
-      totalMatches: 0,
-      matchRatio: 0,
-    };
-  }
-
-  const matcher = new cv.BFMatcher(cv.NORM_HAMMING, true);
-  const matches = new cv.DMatchVector();
-
-  try {
-    matcher.match(
-      testDescriptors,
-      referenceDescriptors,
-      matches
-    );
-
-    let goodMatches = 0;
-
-    for (let index = 0; index < matches.size(); index += 1) {
-      const match = matches.get(index);
-
-      // ORB 특징점 사이의 거리가 작을수록 유사한 특징이다.
-      if (match.distance <= 55) {
-        goodMatches += 1;
-      }
-    }
-
-    const totalMatches = matches.size();
-    const matchRatio =
-      totalMatches === 0
-        ? 0
-        : (goodMatches / totalMatches) * 100;
-
-    return {
-      goodMatches,
-      totalMatches,
-      matchRatio,
-    };
-  } finally {
-    matcher.delete();
-    matches.delete();
-  }
-}
 
 export default function LandmarkTestPage() {
   const [activeAttractionId, setActiveAttractionId] = useState<string | null>(
@@ -185,7 +66,7 @@ export default function LandmarkTestPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [status, setStatus] = useState("OpenCV를 불러오는 중입니다.");
   const [analyzing, setAnalyzing] = useState(false);
-  const [results, setResults] = useState<ComparisonResult[]>([]);
+  const [results, setResults] = useState<LandmarkComparisonResult[]>([]);
   const [savedTestMessage, setSavedTestMessage] = useState("");
 
   useEffect(() => {
@@ -290,7 +171,7 @@ export default function LandmarkTestPage() {
 
     async function initializeOpenCV() {
       try {
-        await cvReadyPromise;
+        await landmarkRecognitionReady;
 
         if (active) {
           setOpencvReady(true);
@@ -398,37 +279,10 @@ export default function LandmarkTestPage() {
       `${landmarkName} 기준 사진 ${referenceImages.length}장과 특징점을 비교하고 있습니다.`
     );
 
-    const cv: OpenCv = await cvReadyPromise;
-    let testDescriptors: Mat | null = null;
-
     try {
-      const testImage = await loadImage(selectedImage);
-      testDescriptors = extractFeatures(cv, testImage);
-
-      const comparisonResults: ComparisonResult[] = [];
-
-      for (const referencePath of referenceImages) {
-        const referenceImage = await loadImage(referencePath);
-        const referenceDescriptors = extractFeatures(cv, referenceImage);
-
-        try {
-          const comparison = compareDescriptors(
-            cv,
-            testDescriptors,
-            referenceDescriptors
-          );
-
-          comparisonResults.push({
-            referenceName: referencePath.split("/").pop() ?? referencePath,
-            ...comparison,
-          });
-        } finally {
-          referenceDescriptors.delete();
-        }
-      }
-
-      comparisonResults.sort(
-        (first, second) => second.goodMatches - first.goodMatches
+      const comparisonResults = await compareLandmarkToReferences(
+        selectedImage,
+        referenceImages,
       );
 
       setResults(comparisonResults);
@@ -446,10 +300,6 @@ export default function LandmarkTestPage() {
         "분석 중 오류가 발생했습니다. 기준 사진 경로를 확인해 주세요."
       );
     } finally {
-      if (testDescriptors) {
-        testDescriptors.delete();
-      }
-
       setAnalyzing(false);
     }
   }
