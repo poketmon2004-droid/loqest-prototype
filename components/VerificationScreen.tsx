@@ -2,7 +2,7 @@
 
 import type { CSSProperties } from "react";
 import CameraCapture from "./CameraCapture";
-import type { PublicTour } from "./MainHome";
+import type { PublicTour } from "../types/tour";
 
 type VerificationLandmark = {
   attractionId: number;
