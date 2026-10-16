@@ -4,6 +4,7 @@ import { ChangeEvent, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import cvReadyPromise from "@techstark/opencv-js";
+import type { Mat } from "@techstark/opencv-js";
 import {
   clearAdminApiKey,
   getAdminApiKey,
@@ -51,6 +52,8 @@ type RecognitionTestRecord = {
   quality: "정상" | "확인 필요" | "기준 이미지 개선";
 };
 
+type OpenCv = typeof import("@techstark/opencv-js");
+
 function loadImage(source: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -65,7 +68,7 @@ function loadImage(source: string): Promise<HTMLImageElement> {
   });
 }
 
-function extractFeatures(cv: any, image: HTMLImageElement) {
+function extractFeatures(cv: OpenCv, image: HTMLImageElement): Mat {
   const source = cv.imread(image);
   const resized = new cv.Mat();
   const gray = new cv.Mat();
@@ -111,9 +114,9 @@ function extractFeatures(cv: any, image: HTMLImageElement) {
 }
 
 function compareDescriptors(
-  cv: any,
-  testDescriptors: any,
-  referenceDescriptors: any
+  cv: OpenCv,
+  testDescriptors: Mat,
+  referenceDescriptors: Mat
 ) {
   if (
     testDescriptors.empty() ||
@@ -395,8 +398,8 @@ export default function LandmarkTestPage() {
       `${landmarkName} 기준 사진 ${referenceImages.length}장과 특징점을 비교하고 있습니다.`
     );
 
-    const cv = await cvReadyPromise;
-    let testDescriptors: any = null;
+    const cv: OpenCv = await cvReadyPromise;
+    let testDescriptors: Mat | null = null;
 
     try {
       const testImage = await loadImage(selectedImage);
