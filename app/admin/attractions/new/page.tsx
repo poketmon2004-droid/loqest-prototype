@@ -124,7 +124,9 @@ export default function NewAttractionPage() {
       localStorage.getItem("loqest_active_tour_id") ||
       "amsa";
 
-    setTourId(selectedTourId);
+    const frameId = window.requestAnimationFrame(() => {
+      setTourId(selectedTourId);
+    });
 
     localStorage.setItem(
       "loqest_active_tour_id",
@@ -132,27 +134,29 @@ export default function NewAttractionPage() {
     );
 
     const adminKey = getAdminApiKey();
-    if (!adminKey) return;
-
-    void fetch(
-      `/api/tours/${selectedTourId}?includeHidden=true`,
-      {
-        headers: {
-          "x-admin-api-key": adminKey,
+    if (adminKey) {
+      void fetch(
+        `/api/tours/${selectedTourId}?includeHidden=true`,
+        {
+          headers: {
+            "x-admin-api-key": adminKey,
+          },
+          cache: "no-store",
         },
-        cache: "no-store",
-      },
-    ).then(async (response) => {
-      if (!response.ok) return;
+      ).then(async (response) => {
+        if (!response.ok) return;
 
-      const result = (await response.json()) as {
-        tour?: { name: string };
-      };
+        const result = (await response.json()) as {
+          tour?: { name: string };
+        };
 
-      if (result.tour) {
-        setTourName(result.tour.name);
-      }
-    });
+        if (result.tour) {
+          setTourName(result.tour.name);
+        }
+      });
+    }
+
+    return () => window.cancelAnimationFrame(frameId);
   }, []);
 
   const updateForm = (
