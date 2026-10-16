@@ -416,104 +416,110 @@ export default function Home() {
   }, [activeTourId]);
 
   useEffect(() => {
-    const badgeEarned = localStorage.getItem(
-      badgeDateKey
-    );
+    const frameId = window.requestAnimationFrame(() => {
+      const badgeEarned = localStorage.getItem(
+        badgeDateKey
+      );
 
-    const badgeSeen = localStorage.getItem(
-      badgeSeenKey
-    );
+      const badgeSeen = localStorage.getItem(
+        badgeSeenKey
+      );
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setHasUnreadBadge(
-      Boolean(badgeEarned) && badgeSeen !== "true"
-    );
+      setHasUnreadBadge(
+        Boolean(badgeEarned) && badgeSeen !== "true"
+      );
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
   }, [badgeDateKey, badgeSeenKey]);
 
   const [badgeEarnedAt, setBadgeEarnedAt] =
     useState<string | null>(null);
 
   useEffect(() => {
-    const savedTestStamps = localStorage.getItem(
-      COMPLETED_TEST_LANDMARKS_KEY
-    );
+    const frameId = window.requestAnimationFrame(() => {
+      const savedTestStamps = localStorage.getItem(
+        COMPLETED_TEST_LANDMARKS_KEY
+      );
 
-    if (savedTestStamps) {
-      try {
-        const parsed: unknown = JSON.parse(savedTestStamps);
+      if (savedTestStamps) {
+        try {
+          const parsed: unknown = JSON.parse(savedTestStamps);
 
-        if (Array.isArray(parsed)) {
-          const validIds = testLandmarks.map((landmark) => landmark.id);
-          setCompletedTestLandmarks(
-            parsed.filter(
-              (id): id is string =>
-                typeof id === "string" && validIds.includes(id)
-            )
-          );
+          if (Array.isArray(parsed)) {
+            const validIds = testLandmarks.map((landmark) => landmark.id);
+            setCompletedTestLandmarks(
+              parsed.filter(
+                (id): id is string =>
+                  typeof id === "string" && validIds.includes(id)
+              )
+            );
+          }
+        } catch {
+          localStorage.removeItem(COMPLETED_TEST_LANDMARKS_KEY);
         }
-      } catch {
-        localStorage.removeItem(COMPLETED_TEST_LANDMARKS_KEY);
       }
-    }
 
-    const savedStamps = localStorage.getItem(
-      completedLandmarksKey
-    );
+      const savedStamps = localStorage.getItem(
+        completedLandmarksKey
+      );
 
-    const savedBadgeDate = localStorage.getItem(
-      badgeDateKey
-    );
+      const savedBadgeDate = localStorage.getItem(
+        badgeDateKey
+      );
 
-    if (!savedStamps) {
-      return;
-    }
-
-    try {
-      const parsedStamps: unknown = JSON.parse(savedStamps);
-
-      if (!Array.isArray(parsedStamps)) {
+      if (!savedStamps) {
         return;
       }
 
-      const validIds = landmarks.map(
-        (landmark) => landmark.id
-      );
+      try {
+        const parsedStamps: unknown = JSON.parse(savedStamps);
 
-      const validSavedStamps = parsedStamps.filter(
-        (id): id is string =>
-          typeof id === "string" && validIds.includes(id)
-      );
-
-      const uniqueSavedStamps = [
-        ...new Set(validSavedStamps),
-      ];
-
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCompletedLandmarks(uniqueSavedStamps);
-
-      if (
-        landmarks.length > 0 &&
-        uniqueSavedStamps.length === landmarks.length
-      ) {
-        const earnedAt =
-          savedBadgeDate ?? new Date().toISOString();
-
-        if (!savedBadgeDate) {
-          localStorage.setItem(
-            badgeDateKey,
-            earnedAt
-          );
-
+        if (!Array.isArray(parsedStamps)) {
+          return;
         }
 
-        setBadgeEarnedAt(earnedAt);
+        const validIds = landmarks.map(
+          (landmark) => landmark.id
+        );
+
+        const validSavedStamps = parsedStamps.filter(
+          (id): id is string =>
+            typeof id === "string" && validIds.includes(id)
+        );
+
+        const uniqueSavedStamps = [
+          ...new Set(validSavedStamps),
+        ];
+
+        setCompletedLandmarks(uniqueSavedStamps);
+
+        if (
+          landmarks.length > 0 &&
+          uniqueSavedStamps.length === landmarks.length
+        ) {
+          const earnedAt =
+            savedBadgeDate ?? new Date().toISOString();
+
+          if (!savedBadgeDate) {
+            localStorage.setItem(
+              badgeDateKey,
+              earnedAt
+            );
+
+          }
+
+          setBadgeEarnedAt(earnedAt);
+        }
+      } catch {
+        localStorage.removeItem(completedLandmarksKey);
+        localStorage.removeItem(badgeDateKey);
+        localStorage.removeItem(badgeSeenKey);
+        setHasUnreadBadge(false);
       }
-    } catch {
-      localStorage.removeItem(completedLandmarksKey);
-      localStorage.removeItem(badgeDateKey);
-      localStorage.removeItem(badgeSeenKey);
-      setHasUnreadBadge(false);
-    }
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
   }, [landmarks, completedLandmarksKey, badgeDateKey, badgeSeenKey]);
 
   function saveCompletedLandmarks(ids: string[]) {
