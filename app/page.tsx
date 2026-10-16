@@ -822,6 +822,7 @@ export default function Home() {
             ))
           )}
 
+          {selectedProvince === "전체" && (
           <article
             style={{
               ...styles.destinationCard,
@@ -848,6 +849,7 @@ export default function Home() {
               테스트 관광지 입장하기 →
             </button>
           </article>
+          )}
 
           <button
             type="button"
