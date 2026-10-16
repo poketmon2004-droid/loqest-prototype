@@ -325,14 +325,17 @@ export default function Home() {
     setVerificationProcessing(false);
   }
 
-  function goToMainHome() {
+  function navigateTo(screenName: Screen) {
     resetVerification();
-    setScreen("main-home");
+    setScreen(screenName);
+  }
+
+  function goToMainHome() {
+    navigateTo("main-home");
   }
 
   function goHome() {
-    resetVerification();
-    setScreen("home");
+    navigateTo("home");
   }
 
   function enterTour(tour: PublicTour) {
@@ -344,8 +347,7 @@ export default function Home() {
   }
 
   function goToQuestList() {
-    resetVerification();
-    setScreen("quests");
+    navigateTo("quests");
   }
 
   function goToBadges() {
@@ -360,18 +362,15 @@ export default function Home() {
   }
 
   function goToGuide() {
-    resetVerification();
-    setScreen("guide");
+    navigateTo("guide");
   }
 
   function goToTestHome() {
-    resetVerification();
-    setScreen("test-home");
+    navigateTo("test-home");
   }
 
   function goToTestQuestList() {
-    resetVerification();
-    setScreen("test-quests");
+    navigateTo("test-quests");
   }
 
   function resetProgress() {
