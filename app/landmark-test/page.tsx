@@ -3,6 +3,7 @@
 import { ChangeEvent, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   clearAdminApiKey,
   getAdminApiKey,
@@ -344,11 +345,14 @@ export default function LandmarkTestPage() {
 
         {selectedImage && (
           <div style={styles.previewBox}>
-            <img
+            <Image
               src={selectedImage}
               alt="선택한 테스트 사진"
               style={styles.previewImage}
-            />
+            width={640}
+                                        height={480}
+                                        unoptimized
+                                        />
           </div>
         )}
 
