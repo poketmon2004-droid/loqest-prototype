@@ -1,58 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import MainHome, { type PublicTour } from "../components/MainHome";
+import MainHome from "../components/MainHome";
+import type { Landmark, PublicAttraction, PublicTour } from "../types/tour";
 import QuestList from "../components/QuestList";
 import BadgeCollection from "../components/BadgeCollection";
 import TourHome from "../components/TourHome";
 import CaptureGuide from "../components/CaptureGuide";
 import TestHome from "../components/TestHome";
 import VerificationScreen from "../components/VerificationScreen";
-
-type Landmark = {
-  id: string;
-  attractionId: number;
-  name: string;
-  icon: string;
-  mission: string;
-  recognitionKey: string;
-  requiresGps: boolean;
-  description: string;
-  landmarkGuide: string;
-  poseGuide: string;
-  latitude: number;
-  longitude: number;
-  radius: number;
-  referenceImages: string[];
-  goodMatchesThreshold: number;
-  matchRatioThreshold: number;
-  mapPosition: {
-    x: number;
-    y: number;
-  };
-};
-
-type PublicAttraction = {
-  id: number | string;
-  name: string;
-  category?: string;
-  description?: string;
-  latitude?: number | string;
-  longitude?: number | string;
-  radius?: number | string;
-  guideMessage?: string;
-  guide_message?: string;
-  recognitionKey?: string;
-  recognition_key?: string;
-  icon?: string;
-  mission?: string;
-  landmarkThreshold?: number | string;
-  landmark_threshold?: number | string;
-  referenceImages?: Array<{
-    dataUrl?: string;
-    url?: string;
-  }>;
-};
 
 type Screen =
   | "main-home"
