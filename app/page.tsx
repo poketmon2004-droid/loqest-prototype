@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import CameraCapture from "../components/CameraCapture";
 import MainHome, { type PublicTour } from "../components/MainHome";
+import QuestList from "../components/QuestList";
 
 type Landmark = {
   id: string;
@@ -1279,125 +1280,27 @@ export default function Home() {
 
   if (screen === "test-quests") {
     return (
-      <main style={styles.main}>
-        <section style={styles.card}>
-          <p style={styles.badge}>집에서 하는 LOQEST 체험</p>
-
-          <h1 style={styles.title}>테스트 퀘스트</h1>
-
-          <p style={styles.description}>
-            GPS 인증 없이 전체 촬영 흐름을 확인합니다.
-          </p>
-
-          <div style={styles.landmarkList}>
-            {testLandmarks.map((landmark) => {
-              const completed =
-                completedTestLandmarks.includes(landmark.id);
-
-              return (
-                <button
-                  type="button"
-                  key={landmark.id}
-                  style={{
-                    ...styles.landmarkButton,
-                    ...(completed
-                      ? styles.completedLandmarkButton
-                      : {}),
-                  }}
-                  onClick={() => selectLandmark(landmark)}
-                >
-                  <span style={styles.questIcon}>{landmark.icon}</span>
-
-                  <span style={styles.questContent}>
-                    <strong style={styles.landmarkName}>
-                      {completed ? "✓ " : ""}
-                      {landmark.name}
-                    </strong>
-
-                    <span style={styles.smallText}>
-                      {completed ? "인증 완료 · 다시 테스트 가능" : landmark.mission}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <button
-            type="button"
-            style={styles.homeButton}
-            onClick={goToTestHome}
-          >
-            뒤로가기
-          </button>
-        </section>
-      </main>
+      <QuestList
+        mode="test"
+        landmarks={testLandmarks}
+        completedIds={completedTestLandmarks}
+        onSelect={selectLandmark}
+        onBack={goToTestHome}
+        styles={styles}
+      />
     );
   }
 
   return (
-    <main style={styles.main}>
-      <section style={styles.card}>
-        <p style={styles.badge}>
-          {activeTour?.name ?? "랜드마크 코스"}
-        </p>
-
-        <h1 style={styles.title}>
-          랜드마크 퀘스트
-        </h1>
-
-        <p style={styles.description}>
-          촬영할 랜드마크를 선택해주세요.
-        </p>
-
-        <div style={styles.landmarkList}>
-          {landmarks.map((landmark) => {
-            const completed =
-              completedLandmarks.includes(landmark.id);
-
-            return (
-              <button
-                type="button"
-                key={landmark.id}
-                style={{
-                  ...styles.landmarkButton,
-                  ...(completed
-                    ? styles.completedLandmarkButton
-                    : {}),
-                }}
-                onClick={() =>
-                  selectLandmark(landmark)
-                }
-                disabled={completed}
-              >
-                <span style={styles.questIcon}>
-                  {landmark.icon}
-                </span>
-
-                <span style={styles.questContent}>
-                  <strong style={styles.landmarkName}>
-                    {completed ? "✓ " : ""}
-                    {landmark.name}
-                  </strong>
-
-                  <span style={styles.smallText}>
-                    {completed ? "인증 완료" : landmark.mission}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <button
-          type="button"
-          style={styles.homeButton}
-          onClick={goHome}
-        >
-          뒤로가기
-        </button>
-      </section>
-    </main>
+    <QuestList
+      mode="tour"
+      tourName={activeTour?.name}
+      landmarks={landmarks}
+      completedIds={completedLandmarks}
+      onSelect={selectLandmark}
+      onBack={goHome}
+      styles={styles}
+    />
   );
 }
 
