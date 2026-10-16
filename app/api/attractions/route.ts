@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
       });
       if (imageError) throw imageError;
     }
-  } catch (uploadError) {
+  } catch {
     if (uploadedPaths.length) {
       await supabaseAdmin.storage.from("landmark-references").remove(uploadedPaths);
     }

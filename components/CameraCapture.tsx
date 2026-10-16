@@ -703,8 +703,6 @@ export default function CameraCapture({
         ? Promise.resolve()
         : cvReadyPromise;
 
-      const isAndroid = /Android/i.test(navigator.userAgent);
-
       const cameraPromise =
         navigator.mediaDevices.getUserMedia({
           video: {

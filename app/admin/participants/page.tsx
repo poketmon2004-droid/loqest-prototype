@@ -29,7 +29,6 @@ export default function ParticipantsPage() {
   const [records, setRecords] = useState<CaptureRecord[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [tourName, setTourName] = useState("선택한 투어");
   const [selectionMode, setSelectionMode] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -45,8 +44,7 @@ export default function ParticipantsPage() {
         if (!adminKey) throw new Error("관리자 API 키를 확인해주세요.");
         localStorage.setItem("loqest_active_tour_id", tourId);
         const headers = { "x-admin-api-key": adminKey };
-        const [tourResponse, attractionsResponse, recordsResponse] = await Promise.all([
-          fetch(`/api/tours/${tourId}?includeHidden=true`, { headers, cache: "no-store" }),
+        const [attractionsResponse, recordsResponse] = await Promise.all([
           fetch(`/api/attractions?tourId=${encodeURIComponent(tourId)}&includeHidden=true`, { headers, cache: "no-store" }),
           fetch(`/api/capture-records?tourId=${encodeURIComponent(tourId)}`, { headers, cache: "no-store" }),
         ]);
@@ -61,10 +59,6 @@ export default function ParticipantsPage() {
 
         const attractionsBody = (await attractionsResponse.json()) as { attractions?: Attraction[] };
         const recordsBody = (await recordsResponse.json()) as { records?: CaptureRecord[] };
-        if (tourResponse.ok) {
-          const tourBody = await tourResponse.json() as { tour?: { name: string } };
-          if (tourBody.tour) setTourName(tourBody.tour.name);
-        }
         setAttractions(Array.isArray(attractionsBody.attractions) ? attractionsBody.attractions : []);
         setRecords(Array.isArray(recordsBody.records) ? recordsBody.records : []);
       } catch (error) {
