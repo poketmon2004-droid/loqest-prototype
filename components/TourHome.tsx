@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import type { PublicTour } from "./MainHome";
+import type { PublicTour } from "../types/tour";
 
 type TourLandmark = {
   id: string;
