@@ -6,6 +6,8 @@ import MainHome, { type PublicTour } from "../components/MainHome";
 import QuestList from "../components/QuestList";
 import BadgeCollection from "../components/BadgeCollection";
 import TourHome from "../components/TourHome";
+import CaptureGuide from "../components/CaptureGuide";
+import TestHome from "../components/TestHome";
 
 type Landmark = {
   id: string;
@@ -713,114 +715,11 @@ export default function Home() {
   }
 
   if (screen === "guide") {
-    return (
-      <main style={styles.main}>
-        <section style={styles.card}>
-          <p style={styles.badge}>이용 안내</p>
-
-          <h1 style={styles.title}>촬영 가이드</h1>
-
-          <p style={styles.description}>
-            손 포즈를 먼저 인증한 뒤 랜드마크를 선명하게 촬영해 주세요.
-          </p>
-
-          <div style={styles.guideStepList}>
-            <div style={styles.guideStep}>
-              <span style={styles.guideStepNumber}>1</span>
-              <div>
-                <strong>손 포즈 인증</strong>
-                <p style={styles.guideStepText}>
-                  화면에 무작위로 제시되는 손동작을 카메라 앞에서 따라해주세요.
-                </p>
-              </div>
-            </div>
-
-            <div style={styles.guideStep}>
-              <span style={styles.guideStepNumber}>2</span>
-              <div>
-                <strong>촬영 버튼 활성화</strong>
-                <p style={styles.guideStepText}>
-                  포즈가 인식되면 촬영 버튼이 활성화되고 1분의 제한시간이 시작됩니다.
-                </p>
-              </div>
-            </div>
-
-            <div style={styles.guideStep}>
-              <span style={styles.guideStepNumber}>3</span>
-              <div>
-                <strong>랜드마크 촬영</strong>
-                <p style={styles.guideStepText}>
-                  손을 내린 뒤 랜드마크에 초점을 맞추고 1분 안에 촬영해 주세요.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div style={styles.poseTipBox}>
-            <h2 style={styles.poseTipTitle}>손동작이 인식되지 않나요?</h2>
-
-            <p style={styles.poseTipText}>
-              ✌️ 브이 포즈는 엄지가 보이는 손바닥 방향을 카메라에 보여주세요.
-            </p>
-
-            <p style={styles.poseTipText}>
-              ☝️ 가리키기 포즈도 엄지가 보이는 방향으로 손을 보여주세요.
-            </p>
-
-            <p style={styles.poseTipText}>
-              손 전체가 화면 안에 들어오도록 하고 밝은 곳에서 인식해주세요.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            style={styles.homeButton}
-            onClick={goToMainHome}
-          >
-            뒤로가기
-          </button>
-        </section>
-      </main>
-    );
+    return <CaptureGuide styles={styles} goToMainHome={goToMainHome} />;
   }
 
   if (screen === "test-home") {
-    return (
-      <main style={styles.main}>
-        <section style={styles.card}>
-          <p style={styles.badge}>GPS 없는 테스트 모드</p>
-
-          <h1 style={styles.title}>집에서 하는 LOQEST 체험</h1>
-
-          <p style={styles.description}>
-            손 포즈 인증부터 스탬프 발급까지 테스트해보세요.
-          </p>
-
-          <div style={styles.testNotice}>
-            <strong>위치 인증을 사용하지 않습니다.</strong>
-            <p style={styles.entryText}>
-              손 포즈와 랜드마크 이미지 인식은 실제 퀘스트와 동일하게 진행됩니다.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            style={styles.primaryButton}
-            onClick={goToTestQuestList}
-          >
-            테스트 시작하기
-          </button>
-
-          <button
-            type="button"
-            style={styles.homeButton}
-            onClick={goToMainHome}
-          >
-            뒤로가기
-          </button>
-        </section>
-      </main>
-    );
+    return <TestHome styles={styles} goToTestQuestList={goToTestQuestList} goToMainHome={goToMainHome} />;
   }
 
   if (screen === "home") {
