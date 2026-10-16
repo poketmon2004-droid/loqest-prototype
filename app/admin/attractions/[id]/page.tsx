@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { clearAdminApiKey, getAdminApiKey } from "@/lib/adminApiKey";
@@ -452,12 +453,15 @@ export default function AttractionDetailPage() {
                         {referenceImages.length > 0 ? (
                             <div className={styles.imageGrid}>
                                 {referenceImages.map((source, index) => (
-                                    <img
+                                    <Image
                                         key={`${source}-${index}`}
                                         src={source}
                                         alt={`${attraction.name} 기준 이미지 ${index + 1
                                             }`}
-                                    />
+                                    width={640}
+                                        height={480}
+                                        unoptimized
+                                        />
                                 ))}
                             </div>
                         ) : (
