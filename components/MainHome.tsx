@@ -1,17 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-
-export type PublicTour = {
-  id: string;
-  name: string;
-  short_name?: string;
-  province?: string;
-  region?: string;
-  description?: string;
-  badge_name?: string;
-  questCount?: number;
-};
+import type { PublicTour } from "../types/tour";
 
 type MainHomeProps = {
   searchQuery: string;
