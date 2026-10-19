@@ -11,10 +11,7 @@ type Tour = {
   region: string;
 };
 
-type Mode = "tours" | "dashboard" | "quests" | "participants";
-
-export default function TourSelector(_props: { mode?: Mode }) {
-  void _props;
+export default function TourSelector() {
   const [tours, setTours] = useState<Tour[]>([]);
   const [search, setSearch] = useState("");
   const [loaded, setLoaded] = useState(false);
