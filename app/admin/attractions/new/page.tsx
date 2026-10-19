@@ -315,9 +315,14 @@ export default function NewAttractionPage() {
         JSON.stringify(newAttraction),
       );
 
-      referenceImages.forEach((image) => {
-        requestBody.append("images", image.file);
-      });
+      // 미리보기에서 축소한 이미지를 실제 업로드에도 사용합니다.
+      for (const image of referenceImages) {
+        const compressedImage = await fetch(image.dataUrl).then((result) =>
+          result.blob(),
+        );
+        const jpegName = image.name.replace(/\.[^.]+$/, "") + ".jpg";
+        requestBody.append("images", compressedImage, jpegName);
+      }
 
       const response = await fetch("/api/attractions", {
         method: "POST",
@@ -327,10 +332,20 @@ export default function NewAttractionPage() {
         body: requestBody,
       });
 
-      const result = (await response.json()) as {
-        attraction?: { id: number };
-        message?: string;
-      };
+      const responseText = await response.text();
+      let result: { attraction?: { id: number }; message?: string } = {};
+      try {
+        result = JSON.parse(responseText);
+      } catch {
+        if (!response.ok) {
+          throw new Error(
+            response.status === 413
+              ? "기준 이미지 용량이 서버 업로드 제한을 초과했습니다. 이미지 수를 줄여 다시 시도해주세요."
+              : `서버가 정상적인 응답을 보내지 않았습니다. (HTTP ${response.status})`,
+          );
+        }
+        throw new Error("서버 응답을 확인할 수 없습니다.");
+      }
 
       if (response.status === 401) {
         clearAdminApiKey();
