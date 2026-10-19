@@ -8,6 +8,7 @@ import {
 } from "@mediapipe/tasks-vision";
 import { landmarkRecognitionReady } from "@/lib/landmarkRecognition";
 import { recognizeLandmark } from "@/lib/verification/landmark";
+import { saveCaptureRecord } from "@/lib/verification/captureRecord";
 
 type CameraCaptureProps = {
   tourId: string;
@@ -26,8 +27,6 @@ type CameraCaptureProps = {
   onProcessingChange: (processing: boolean) => void;
   onVerified: () => void;
 };
-
-type RecognitionKey = CameraCaptureProps["recognitionKey"];
 
 const gestureOptions = {
   Thumb_Up: {
@@ -61,22 +60,6 @@ type CaptureInformation = {
   capturedAt: string;
 };
 
-type CaptureRecord = {
-  id: string;
-  sessionId: string;
-  visitorId: string;
-  tourId: string;
-  attractionId: number;
-  recognitionKey: RecognitionKey;
-  landmarkName: string;
-  result: "success" | "failure";
-  stage: "location" | "landmark" | "completed" | "system";
-  attemptNumber: number;
-  distance: number | null;
-  goodMatches: number | null;
-  matchRatio: number | null;
-  capturedAt: string;
-};
 
 export default function CameraCapture({
   tourId,
@@ -131,81 +114,15 @@ export default function CameraCapture({
 
   const [error, setError] = useState("");
 
-  async function saveCaptureRecord({
-    result,
-    stage,
-    attemptNumber,
-    distance = null,
-    goodMatches = null,
-    matchRatio = null,
-  }: {
-    result: CaptureRecord["result"];
-    stage: CaptureRecord["stage"];
-    attemptNumber: number;
-    distance?: number | null;
-    goodMatches?: number | null;
-    matchRatio?: number | null;
-  }) {
-    // 관리자 테스트 촬영은 실제 관광객 통계에 포함하지 않습니다.
-    if (skipLocationVerification || typeof window === "undefined") {
-      return;
-    }
-
-    try {
-      let visitorId = localStorage.getItem("loqest_visitor_id");
-
-      if (!visitorId) {
-        visitorId = `visitor-${Date.now()}-${Math.random()
-          .toString(36)
-          .slice(2, 9)}`;
-
-        localStorage.setItem("loqest_visitor_id", visitorId);
-      }
-
-      if (!captureSessionIdRef.current) {
-        captureSessionIdRef.current = `session-${Date.now()}-${Math.random()
-          .toString(36)
-          .slice(2, 9)}`;
-      }
-
-      const newRecord: CaptureRecord = {
-        id: `capture-${Date.now()}-${Math.random()
-          .toString(36)
-          .slice(2, 9)}`,
-        sessionId: captureSessionIdRef.current,
-        visitorId,
-        tourId,
-        attractionId,
-        recognitionKey,
-        landmarkName,
-        result,
-        stage,
-        attemptNumber,
-        distance,
-        goodMatches,
-        matchRatio,
-        capturedAt: new Date().toISOString(),
-      };
-
-      const response = await fetch("/api/capture-records", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newRecord),
-      });
-
-      if (!response.ok) {
-        const responseBody = await response.json().catch(() => null);
-        throw new Error(
-          responseBody?.message ?? "촬영 기록 API 저장에 실패했습니다."
-        );
-      }
-
-      console.log("LOQEST Supabase 촬영 기록 저장:", newRecord);
-    } catch (storageError) {
-      console.error("Supabase에 촬영 기록을 저장하지 못했습니다.", storageError);
-    }
+  async function saveCaptureRecordForCamera(record: Parameters<typeof saveCaptureRecord>[0]) {
+    return saveCaptureRecord(record, {
+      skipLocationVerification,
+      captureSessionIdRef,
+      tourId,
+      attractionId,
+      recognitionKey,
+      landmarkName,
+    });
   }
 
   async function initializeGestureRecognizer() {
@@ -644,7 +561,7 @@ export default function CameraCapture({
         currentDistance !== null &&
         currentDistance > allowedRadius
       ) {
-        await saveCaptureRecord({
+        await saveCaptureRecordForCamera({
           result: "failure",
           stage: "location",
           attemptNumber: currentAttemptNumber,
@@ -691,7 +608,7 @@ export default function CameraCapture({
         );
 
         if (!landmarkResult.passed) {
-          await saveCaptureRecord({
+          await saveCaptureRecordForCamera({
             result: "failure",
             stage: "landmark",
             attemptNumber: currentAttemptNumber,
@@ -764,7 +681,7 @@ export default function CameraCapture({
 
       setPhoto(capturedPhoto);
 
-      await saveCaptureRecord({
+      await saveCaptureRecordForCamera({
         result: "success",
         stage: "completed",
         attemptNumber: currentAttemptNumber,
