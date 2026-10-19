@@ -132,7 +132,7 @@ export default function AttractionListPage() {
   if (selectionMode === null) {
     return <div className={styles.page}>투어 목록을 준비하는 중입니다.</div>;
   }
-  if (selectionMode) return <TourSelector mode="quests" />;
+  if (selectionMode) return <TourSelector />;
 
   return (
     <div className={styles.page}>
