@@ -131,7 +131,7 @@ export default function ParticipantsPage() {
   if (selectionMode === null) {
     return <div className={styles.page}><main className={styles.main}>투어 목록을 준비하는 중입니다.</main></div>;
   }
-  if (selectionMode) return <TourSelector mode="participants" />;
+  if (selectionMode) return <TourSelector />;
 
   return (
     <div className={styles.page}>
