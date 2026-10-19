@@ -52,13 +52,7 @@ const gestureNames = Object.keys(
   gestureOptions
 ) as GestureName[];
 
-type CaptureInformation = {
-  latitude: number | null;
-  longitude: number | null;
-  accuracy: number | null;
-  distance: number | null;
-  capturedAt: string;
-};
+
 
 
 export default function CameraCapture({
@@ -108,9 +102,6 @@ export default function CameraCapture({
 
   const targetGestureInformation =
     gestureOptions[targetGesture];
-
-  const [, setCaptureInformation] =
-    useState<CaptureInformation | null>(null);
 
   const [error, setError] = useState("");
 
@@ -374,7 +365,6 @@ export default function CameraCapture({
     setPhoto(null);
     setAnalyzing(false);
     setCheckingLocation(false);
-    setCaptureInformation(null);
     setPoseVerified(false);
     setSecondsRemaining(60);
     poseVerifiedRef.current = false;
@@ -582,13 +572,6 @@ export default function CameraCapture({
 
       const capturedAt = new Date().toLocaleString("ko-KR");
 
-      setCaptureInformation({
-        latitude: currentLatitude,
-        longitude: currentLongitude,
-        accuracy: currentAccuracy,
-        distance: currentDistance,
-        capturedAt,
-      });
 
       setPhoto(canvas.toDataURL("image/jpeg", 0.9));
       setAnalyzing(true);
