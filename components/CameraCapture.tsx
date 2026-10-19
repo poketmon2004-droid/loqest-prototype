@@ -94,7 +94,6 @@ export default function CameraCapture({
   const [photo, setPhoto] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [checkingLocation, setCheckingLocation] = useState(false);
-  const [, setThumbDetected] = useState(false);
   const [poseVerified, setPoseVerified] = useState(false);
   const [secondsRemaining, setSecondsRemaining] = useState(60);
   const [targetGesture, setTargetGesture] =
@@ -263,7 +262,6 @@ export default function CameraCapture({
               thumbDetectedRef.current = true;
               poseVerifiedRef.current = true;
               poseExpiresAtRef.current = Date.now() + 60_000;
-              setThumbDetected(true);
               setPoseVerified(true);
               setSecondsRemaining(60);
             }
@@ -275,7 +273,6 @@ export default function CameraCapture({
               !poseVerifiedRef.current
             ) {
               thumbDetectedRef.current = false;
-              setThumbDetected(false);
             }
           }
         } catch (gestureError) {
@@ -320,7 +317,6 @@ export default function CameraCapture({
         thumbDetectedRef.current = false;
         thumbStableSinceRef.current = null;
         setPoseVerified(false);
-        setThumbDetected(false);
         setError(
           "촬영 가능 시간이 지났습니다. 손동작을 다시 인증해 주세요."
         );
@@ -346,7 +342,6 @@ export default function CameraCapture({
     poseExpiresAtRef.current = null;
     thumbStableSinceRef.current = null;
 
-    setThumbDetected(false);
     setPoseVerified(false);
     setSecondsRemaining(60);
     setCameraOpen(false);
@@ -456,7 +451,6 @@ export default function CameraCapture({
     poseExpiresAtRef.current = null;
     thumbStableSinceRef.current = null;
 
-    setThumbDetected(false);
     setPoseVerified(false);
     setSecondsRemaining(60);
   }
@@ -525,7 +519,6 @@ export default function CameraCapture({
     try {
       let currentLatitude: number | null = null;
       let currentLongitude: number | null = null;
-      let currentAccuracy: number | null = null;
       let currentDistance: number | null = null;
 
       if (!skipLocationVerification) {
@@ -533,7 +526,6 @@ export default function CameraCapture({
 
         currentLatitude = position.coords.latitude;
         currentLongitude = position.coords.longitude;
-        currentAccuracy = position.coords.accuracy;
 
         currentDistance = calculateDistance(
           currentLatitude,
