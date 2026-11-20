@@ -601,3 +601,21 @@
 .main .questListRow{border:0;border-radius:0;border-bottom:1px solid #e6edf3;padding:14px 0}.main .questListRow:last-child{border-bottom:0}.main .questManageLink{background:#fff;border:1px solid #cddde9;color:#294760;border-radius:9px;box-shadow:none;padding:11px 16px}.main .questManageLink:hover{border-color:#0284c7;color:#0284c7}
 .main .newQuestButton{background:#0284c7}.main .tourEdit{background:#fff;color:#294760;border:1px solid #cddde9}.main .questListSection h2{font-size:19px}
 @media(max-width:700px){.main{padding:20px 15px 35px}.main .metrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.main .metricCard{padding:11px 8px}.main .metricCard strong{font-size:20px}.main .tourActions{gap:8px;padding:12px}.main .tourEdit{padding:9px;font-size:11px}}
+
+/* Primary tour-edit CTA: prominent and consistent with LOQEST blue */
+.main .tourActions { border:1px solid #cde5f5; background:#f4faff; }
+.main .tourActions > div:first-child strong {font-size:18px;color:#164967}
+.main .tourEdit {
+  display:inline-flex;align-items:center;justify-content:center;
+  flex:0 0 auto;
+  min-width:185px;min-height:54px;box-sizing:border-box;
+  padding:15px 25px!important;
+  background:#0284c7!important;color:#fff!important;
+  border:1px solid #0284c7!important;border-radius:11px!important;
+  font-size:16px!important;font-weight:800!important;
+  box-shadow:0 5px 12px rgb(2 132 199 / 15%);
+  text-align:center;text-decoration:none;
+}
+.main .tourEdit:hover{background:#036fa7!important;border-color:#036fa7!important}
+.main .tourEdit:focus-visible{outline:3px solid #b5e1f6;outline-offset:2px}
+@media(max-width:700px){.main .tourEdit{min-width:140px;min-height:45px;padding:10px 13px!important;font-size:13px!important}}
