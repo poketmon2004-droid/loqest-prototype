@@ -111,15 +111,6 @@ export default function AdminDashboardPage() {
     void loadDashboardData();
   }, [tourId]);
 
-  const getStatusClass = (status: string) => {
-    if (status === "정상") return styles.normal;
-    if (status === "확인 필요" || status === "재테스트 필요") {
-      return styles.warning;
-    }
-    if (status === "기준 이미지 개선") return styles.danger;
-    return styles.neutral;
-  };
-
   const totalCount = attractions.length;
   const publicCount = attractions.filter((item) => item.status === "공개").length;
   const alerts = attractions.filter(
@@ -131,30 +122,11 @@ export default function AdminDashboardPage() {
       item.quality === "확인 필요"
   );
 
-  const getAlertDescription = (attraction: Attraction) => {
-    if (attraction.quality === "재테스트 필요") {
-      return "기준 이미지가 변경되어 인식 테스트가 필요합니다.";
-    }
-    if (attraction.quality === "기준 이미지 개선") {
-      return "최근 테스트 실패가 반복되어 기준 이미지 개선이 필요합니다.";
-    }
-    if (attraction.lastTestResult === "실패") {
-      return "최근 인식 테스트에 실패했습니다.";
-    }
-    if (attraction.lastTestResult === "미실시") {
-      return "아직 관리자 인식 테스트를 실시하지 않았습니다.";
-    }
-    return "인식 조건과 기준 이미지를 확인해주세요.";
-  };
-
   return (
     <div className={styles.page}>
       <main className={styles.main}>
         <header className={styles.header}>
           <div>
-            <a href="/admin" className={styles.backToSelection}>
-              ← 투어 목록으로 돌아가기
-            </a>
             <h1>{tour?.name ?? "투어 운영 대시보드"}</h1>
             <p>{tour?.region ? `${tour.region} · ` : ""}등록된 퀘스트 기준 운영 현황</p>
           </div>
@@ -204,32 +176,6 @@ export default function AdminDashboardPage() {
               </article>)}
           </div>
           <Link href={`/admin/attractions?tourId=${encodeURIComponent(tourId)}`} className={styles.allQuestsLink}>전체 퀘스트 관리로 이동</Link>
-        </section>
-
-        <section className={styles.alertSection}>
-          <div className={styles.sectionHeader}>
-            <h2>운영 알림</h2>
-            <span>조치 필요 {alerts.length}건</span>
-          </div>
-
-          {alerts.length > 0 ? (
-            <div className={styles.alertGrid}>
-              {alerts.slice(0, 6).map((attraction) => (
-                <article className={styles.alertItem} key={attraction.id}>
-                  <span className={`${styles.statusDot} ${getStatusClass(attraction.quality)}`} />
-                  <div>
-                    <strong>{attraction.name}</strong>
-                    <p>{getAlertDescription(attraction)}</p>
-                    <Link href={`/admin/attractions/${attraction.id}`} className={styles.alertAction}>
-                      확인하기
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p className={styles.dashboardEmpty}>현재 조치가 필요한 퀘스트가 없습니다.</p>
-          )}
         </section>
 
       </main>
