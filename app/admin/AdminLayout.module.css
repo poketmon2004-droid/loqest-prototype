@@ -1,3 +1,5 @@
 .shell{min-height:100vh;display:grid;grid-template-columns:260px minmax(0,1fr);background:#f7f9fc;align-items:stretch}
 .content{min-width:0}
 @media(max-width:900px){.shell{grid-template-columns:minmax(0,1fr)}}
+@media(min-width:901px){.shell{background:linear-gradient(to right,#142033 0 260px,#f7f9fc 260px 100%)}}
+@media(max-width:900px){.shell{background:#f7f9fc}}
