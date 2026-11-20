@@ -16,7 +16,7 @@ import {
 import AdminBackButton from "@/components/AdminBackButton";
 import styles from "./AttractionForm.module.css";
 
-type Step = 1 | 2;
+type Step = 1 | 2 | 3;
 
 type AttractionFormData = {
   name: string;
@@ -46,6 +46,7 @@ const initialForm: AttractionFormData = {
 const steps = [
   { number: 1, title: "퀘스트 정보 및 위치" },
   { number: 2, title: "기준 이미지 등록" },
+  { number: 3, title: "최종 확인" },
 ];
 const CATEGORY_ICONS: Record<string, string> = {
   "역사·문화": "🗺️",
@@ -53,6 +54,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   "축제·행사": "🎉",
   "체험·레저": "🎯",
   "지역상권": "🛍️",
+  "기타": "✨",
 };
 
 export default function NewAttractionPage() {
@@ -213,9 +215,11 @@ export default function NewAttractionPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const goReview = () => {if(referenceImages.length===0){setErrorMessage("기준 이미지를 한 장 이상 등록해주세요.");return;}setErrorMessage("");setStep(3);window.scrollTo({top:0,behavior:"smooth"});};
+
   const goPrevious = () => {
     setErrorMessage("");
-    setStep(1);
+    setStep(previous => previous === 3 ? 2 : 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -315,9 +319,8 @@ export default function NewAttractionPage() {
         );
       }
 
-      router.push(
-        `/landmark-test?attractionId=${result.attraction.id}`,
-      );
+      localStorage.setItem(`loqest_new_quest_${tourId}`, String(result.attraction.id));
+      router.push(`/admin/attractions?tourId=${encodeURIComponent(tourId)}`);
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -384,49 +387,18 @@ export default function NewAttractionPage() {
               </div>
 
               <div className={styles.questPreviewCard}>
-                <div className={styles.questPreviewIcon}>
-                  {CATEGORY_ICONS[form.category] || "📍"}
-                </div>
-
-                <div className={styles.questPreviewContent}>
-                  <label className={styles.previewInputWrapper}>
-                    <span className={styles.previewNumber}>1</span>
-
-                    <input
-                      type="text"
-                      className={styles.previewNameInput}
-                      value={form.name}
-                      placeholder="퀘스트명을 입력해주세요."
-                      onChange={(event) =>
-                        updateForm("name", event.target.value)
-                      }
-                      aria-label="퀘스트명"
-                      required
-                    />
-                  </label>
-
-                  <label className={styles.previewInputWrapper}>
-                    <span
-                      className={`${styles.previewNumber} ${styles.secondNumber}`}
-                    >
-                      2
-                    </span>
-
-                    <input
-                      type="text"
-                      className={styles.previewDescriptionInput}
-                      value={form.description}
-                      placeholder="예: 유적지 지도를 찾아보세요"
-                      onChange={(event) =>
-                        updateForm("description", event.target.value)
-                      }
-                      aria-label="퀘스트 설명"
-                      required
-                    />
-                  </label>
-                </div>
+                <div className={styles.questPreviewBanner}>미리보기</div>
+                <div className={styles.questPreviewIcon}>{CATEGORY_ICONS[form.category] || "📍"}</div>
+                <div className={styles.questPreviewContent}><strong>{form.name || "퀘스트명을 입력해주세요."}</strong><p>{form.description || "퀘스트 설명이 표시됩니다."}</p></div>
               </div>
-
+              <div className={styles.inputEmphasis}>
+                <h3>퀘스트 기본 정보</h3>
+                <label className={styles.field}>퀘스트명
+                  <input type="text" value={form.name} onChange={event=>updateForm("name",event.target.value)} placeholder="예: 선사유적지 안내판" required/>
+                </label>
+                <label className={styles.field}>안내 문구
+                  <input type="text" value={form.description} onChange={event=>updateForm("description",event.target.value)} placeholder="관광객에게 보여줄 설명을 입력해 주세요." required/>
+                </label>
               <div className={styles.categorySetting}>
                 <label className={styles.field}>
                   카테고리
@@ -441,6 +413,7 @@ export default function NewAttractionPage() {
                     <option>축제·행사</option>
                     <option>체험·레저</option>
                     <option>지역상권</option>
+                    <option>기타</option>
                   </select>
 
                   <small>
@@ -448,6 +421,8 @@ export default function NewAttractionPage() {
                     변경됩니다.
                   </small>
                 </label>
+              </div>
+
               </div>
 
           <div className={styles.compactSection}>
@@ -614,6 +589,22 @@ export default function NewAttractionPage() {
           </>
         )}
 
+        {step === 3 && (
+          <section className={styles.reviewCard}>
+            <h2>최종 확인</h2>
+            <div className={styles.questPreviewCard}>
+              <div className={styles.questPreviewBanner}>미리보기</div>
+              <div className={styles.questPreviewIcon}>{CATEGORY_ICONS[form.category]||"📍"}</div>
+              <div className={styles.questPreviewContent}><strong>{form.name}</strong><p>{form.description}</p></div>
+            </div>
+            <div className={styles.reviewDetails}>
+              <p><b>카테고리</b>{form.category}</p><p><b>인증 위치</b>{form.latitude}, {form.longitude}</p>
+              <p><b>인증 반경</b>{form.radius}m</p><p><b>기준 이미지</b>{referenceImages.length}장</p>
+            </div>
+            <p className={styles.privateNotice}>등록된 퀘스트는 비공개 상태로 저장됩니다. 인식 테스트를 마친 뒤 공개할 수 있습니다.</p>
+          </section>
+        )}
+
         {errorMessage && (
           <p className={styles.errorMessage}>
             {errorMessage}
@@ -630,7 +621,7 @@ export default function NewAttractionPage() {
               onClick={goPrevious}
               disabled={isProcessing}
             >
-              이전
+              이전단계
             </button>
           )}
 
@@ -640,8 +631,10 @@ export default function NewAttractionPage() {
               className={styles.primaryButton}
               onClick={goNext}
             >
-              다음 단계
+              다음단계
             </button>
+          ) : step === 2 ? (
+            <button type="button" className={styles.primaryButton} onClick={goReview} disabled={isProcessing || referenceImages.length === 0}>다음단계</button>
           ) : (
             <button
               type="submit"
@@ -653,7 +646,7 @@ export default function NewAttractionPage() {
             >
               {isProcessing
                 ? "저장 중..."
-                : "저장하고 인식 테스트하기"}
+                : "퀘스트 등록하기"}
             </button>
           )}
         </div>
