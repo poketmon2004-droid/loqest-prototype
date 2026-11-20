@@ -44,9 +44,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const input = await request.json();
-    const id = String(input.id || "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "-");
-    if (!id || !input.name) {
-      return NextResponse.json({ message: "투어 ID와 투어명을 입력해주세요." }, { status: 400 });
+    const id = input.id ? String(input.id).trim().toLowerCase().replace(/[^a-z0-9-]/g, "-") : `tour-${crypto.randomUUID()}`;
+    if (!String(input.name || "").trim() || !String(input.region || "").trim() || !String(input.description || "").trim() || String(input.description || "").length > 50) {
+      return NextResponse.json({ message: "투어 이름, 소개(50자 이내), 운영 지역을 입력해주세요." }, { status: 400 });
     }
 
     const { data, error } = await supabaseAdmin
