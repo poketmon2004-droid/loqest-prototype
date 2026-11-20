@@ -172,7 +172,12 @@ export default function AttractionDetailPage() {
 
     const deleteAttraction = async () => {
         if (!attraction) return;
-        if (!window.confirm(`'${attraction.name}' 관광지를 삭제할까요?`)) return;
+        const deleteConfirmation = window.prompt(`'${attraction.name}' 퀘스트를 삭제하면 복구할 수 없습니다.\n\n삭제하려면 "모두다 삭제"를 정확히 입력해주세요.`);
+        if (deleteConfirmation === null) return;
+        if (deleteConfirmation !== "모두다 삭제") {
+            window.alert("확인 문구가 일치하지 않아 삭제하지 않았습니다.");
+            return;
+        }
 
         const adminKey = getAdminApiKey();
         if (!adminKey) return;
