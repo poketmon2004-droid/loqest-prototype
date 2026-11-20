@@ -82,22 +82,36 @@ export default function TourSelector() {
   const regionOptions=[...new Set(tours.map(t=>t.region.split(" ")[0]).filter(Boolean))].sort();
   const visibleTours=filteredTours.filter(t=>regionFilter==="all"||t.region.startsWith(regionFilter));
 
+  const visibleTours=filteredTours.filter(t=>regionFilter==="all"||t.region.startsWith(regionFilter));
+  const regions=[...new Set(tours.map(t=>t.region.split(" ")[0]).filter(Boolean))].sort();
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <div><p className={styles.eyebrow}>LOQEST · ADMIN CONSOLE</p><h1>투어 목록</h1><span>관리할 투어를 선택해주세요.</span></div>
-      </header>
-      <Link href="/admin/tours/new" className={styles.createBanner}>
-        <span className={styles.createPlus}>＋</span><span><strong>새 투어 등록하기</strong><small>새로운 관광 투어를 만들고 퀘스트를 추가해보세요.</small></span><span className={styles.createArrow}>등록하기</span>
+      <div className={styles.eyebrow}>TOUR MANAGEMENT</div>
+      <h1 className={styles.homeTitle}>관리할 투어를 선택하세요</h1>
+      <p className={styles.homeSub}>기존 투어를 찾아 관리하거나 새로운 투어를 등록할 수 있어요.</p>
+      <Link href="/admin/tours/new" className={styles.createFeature}>
+        <span aria-hidden="true" className={styles.featureIcon}>+</span>
+        <span className={styles.featureText}>
+          <strong>새로운 투어를 등록하시겠어요?</strong>
+          <small>새로운 지역의 여행 코스를 만들고, 퀘스트를 등록해 보세요.</small>
+          <span className={styles.featureLink}>+ 새 투어 등록하기</span>
+        </span>
       </Link>
-      <section className={styles.card}>
-        <header className={styles.listHeader}><div><h2>기존 투어 관리</h2><p>지역 또는 투어명으로 검색하세요.</p></div><span>{visibleTours.length}개 투어</span></header>
-        <div className={styles.controls}>
-          <select value={regionFilter} onChange={e=>setRegionFilter(e.target.value)} aria-label="지역 필터"><option value="all">전체 지역</option>{regionOptions.map(region=><option key={region} value={region}>{region}</option>)}</select>
-          <input value={search} onChange={event=>setSearch(event.target.value)} placeholder="투어명 또는 관광지 검색" aria-label="투어 검색" />
+      <section className={styles.searchPanel}>
+        <h2 className={styles.searchTitle}>기존 투어 관리</h2>
+        <p className={styles.searchSub}>지역을 선택하거나 투어명을 검색하세요.</p>
+        <div className={styles.regionFilters} role="group" aria-label="지역 필터">
+          <button type="button" className={regionFilter==="all"?styles.regionFilterActive:styles.regionFilter} onClick={()=>setRegionFilter("all")}>전체</button>
+          {regions.map(region=><button type="button" key={region} className={regionFilter===region?styles.regionFilterActive:styles.regionFilter} onClick={()=>setRegionFilter(region)}>{region}</button>)}
         </div>
-        {errorMessage?<div className={styles.empty}><strong>불러오지 못했습니다.</strong><p>{errorMessage}</p></div>:!loaded?<div className={styles.empty}>투어 목록을 불러오는 중입니다.</div>:visibleTours.length===0?<div className={styles.empty}><strong>조건에 맞는 투어가 없습니다.</strong><p>검색어나 지역 필터를 변경해주세요.</p></div>:
-        <div className={styles.tourList}>{visibleTours.map(tour=><article className={styles.tourItem} key={tour.id}><div><strong>{tour.name}</strong><p>{tour.region||"지역 미입력"}</p></div><Link href={`/admin/tours/${encodeURIComponent(tour.id)}`} className={styles.selectButton}>관리하기</Link></article>)}</div>}
+        <input className={styles.searchbox} value={search} type="search" onChange={e=>setSearch(e.target.value)} placeholder="투어명 또는 지역 검색" aria-label="투어 검색"/>
+        <div className={styles.listHead}><strong>투어 목록</strong><small>{visibleTours.length}개 투어</small></div>
+        {errorMessage?<p className={styles.empty}>{errorMessage}</p>:!loaded?<p className={styles.empty}>투어 목록을 불러오는 중입니다.</p>:visibleTours.length===0?<p className={styles.empty}>조건에 맞는 투어가 없습니다.</p>:
+          <div>{visibleTours.map(tour=><article className={styles.tourRow} key={tour.id}>
+            <span className={styles.tourPin} aria-hidden="true">⌖</span>
+            <div className={styles.tourDesc}><strong>{tour.name}</strong><small>{tour.region||"지역 미입력"}</small></div>
+            <Link className={styles.openTour} href={`/admin/tours/${encodeURIComponent(tour.id)}`}>관리하기</Link>
+          </article>)}</div>}
       </section>
     </main>
   );
