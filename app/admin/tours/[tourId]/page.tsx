@@ -156,34 +156,9 @@ export default function AdminDashboardPage() {
           </div>
         </header>
 
-        <section className={styles.managementSection}>
-          <div className={styles.managementHeader}>
-            <h2>주요 관리 기능</h2>
-            <p>필요한 작업을 선택해주세요.</p>
-          </div>
-
-          <div className={styles.managementGrid}>
-            <Link href={`/admin/tours/${tourId}/edit`} className={styles.managementCard}>
-              <span className={styles.managementNumber}>01</span>
-              <strong>관광지 관리</strong>
-              <p>투어명, 지역, 설명과 공개 상태를 수정합니다.</p>
-              <span className={styles.managementButton}>수정하기</span>
-            </Link>
-
-            <Link href={`/admin/attractions?tourId=${tourId}`} className={`${styles.managementCard} ${styles.primaryManagementCard}`}>
-              <span className={styles.managementNumber}>02</span>
-              <strong>퀘스트 관리</strong>
-              <p>퀘스트 등록, 정보 수정, 이미지 테스트와 공개 설정을 진행합니다.</p>
-              <span className={styles.managementButton}>수정하기</span>
-            </Link>
-
-            <Link href={`/admin/participants?tourId=${tourId}`} className={styles.managementCard}>
-              <span className={styles.managementNumber}>03</span>
-              <strong>참여자·인증 현황</strong>
-              <p>촬영 참여자와 인증 성공 및 완주 기록을 확인합니다.</p>
-              <span className={styles.managementButton}>확인하기</span>
-            </Link>
-          </div>
+        <section className={styles.tourActions}>
+          <div><strong>투어 운영 관리</strong><p>현재 투어의 정보를 수정하고 퀘스트를 관리하세요.</p></div>
+          <Link href={`/admin/tours/${tourId}/edit`} className={styles.tourEdit}>투어 정보 수정</Link>
         </section>
 
         <section className={styles.metrics}>
@@ -209,6 +184,22 @@ export default function AdminDashboardPage() {
                 : "테스트 또는 이미지 점검 필요"}
             </p>
           </article>
+        </section>
+
+        <section className={styles.questListSection}>
+          <div className={styles.questListHeader}>
+            <div><h2>이 투어의 퀘스트</h2><p>퀘스트별 등록·테스트·공개 현황을 확인하세요.</p></div>
+            <Link href={`/admin/attractions/new?tourId=${encodeURIComponent(tourId)}`} className={styles.newQuestButton}>+ 새 퀘스트 추가</Link>
+          </div>
+          <div className={styles.questListBody}>
+            {attractions.length===0?<p className={styles.dashboardEmpty}>아직 등록된 퀘스트가 없습니다. 새 퀘스트를 추가해보세요.</p>:
+              attractions.map(attraction=><article className={styles.questListRow} key={attraction.id}>
+                <span className={styles.questCategoryIcon}>{{"역사·문화":"🗺️","자연·생태":"🌿","축제·행사":"🎉","체험·레저":"🎯","지역상권":"🛍️","기타":"✨"}[attraction.category]||"📍"}</span>
+                <div className={styles.questListContent}><strong>{attraction.name}</strong><p>{attraction.category} · {attraction.status} · {attraction.lastTestResult==="통과"?"테스트 통과":"테스트 필요"}</p></div>
+                <Link className={styles.questManageLink} href={`/admin/attractions/${attraction.id}`}>관리하기</Link>
+              </article>)}
+          </div>
+          <Link href={`/admin/attractions?tourId=${encodeURIComponent(tourId)}`} className={styles.allQuestsLink}>전체 퀘스트 관리로 이동</Link>
         </section>
 
         <section className={styles.alertSection}>
