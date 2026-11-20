@@ -177,6 +177,7 @@ export default function NewAttractionPage() {
       return;
     }
 
+    if (!form.latitude.trim() || !form.longitude.trim()) { setErrorMessage("인증 위치의 위도와 경도를 입력해주세요.");return; }
     const latitude = Number(form.latitude);
     const longitude = Number(form.longitude);
     const radius = Number(form.radius);
@@ -227,6 +228,8 @@ export default function NewAttractionPage() {
     event: FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
+    if(step===1){goNext();return;}
+    if(step===2){goReview();return;}
 
     if (referenceImages.length === 0) {
       setErrorMessage(
@@ -239,6 +242,7 @@ export default function NewAttractionPage() {
       tourId,
       name: form.name.trim(),
       category: form.category,
+      icon: CATEGORY_ICONS[form.category] || "📍",
 
       // 화면에서 입력받지 않고 자동 적용
       address: "",
