@@ -17,14 +17,6 @@ type Attraction = {
 };
 
 type RecognitionTestRecord = { lastResult: "통과" | "실패" };
-type NextAction = {
-  step: string;
-  description: string;
-  label: string;
-  href: string;
-  tone: "ready" | "attention" | "complete";
-};
-
 export default function AttractionListPage() {
   const [attractions, setAttractions] = useState<Attraction[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -96,43 +88,6 @@ export default function AttractionListPage() {
     };
     void loadAttractions();
   }, []);
-
-  const getNextAction = (attraction: Attraction): NextAction => {
-    if (attraction.referenceImages === 0) {
-      return {
-        step: "2단계 · 이미지 필요",
-        description: "기준 이미지를 먼저 등록해주세요.",
-        label: "이미지 등록",
-        href: `/admin/attractions/${attraction.id}/edit?tourId=${tourId}`,
-        tone: "attention",
-      };
-    }
-    if (attraction.lastTestResult !== "통과") {
-      return {
-        step: "3단계 · 테스트 필요",
-        description: attraction.lastTestResult === "실패" ? "이미지를 보완하거나 다시 테스트해주세요." : "실제 촬영으로 인식 여부를 확인해주세요.",
-        label: "인식 테스트",
-        href: `/landmark-test?attractionId=${attraction.id}`,
-        tone: "attention",
-      };
-    }
-    if (attraction.status !== "공개") {
-      return {
-        step: "공개 준비 완료",
-        description: "테스트를 통과했습니다. 상세 화면에서 공개할 수 있습니다.",
-        label: "공개 설정",
-        href: `/admin/attractions/${attraction.id}`,
-        tone: "ready",
-      };
-    }
-    return {
-      step: "정상 운영 중",
-      description: "홈페이지에 공개되어 있습니다.",
-      label: "정보 수정",
-      href: `/admin/attractions/${attraction.id}/edit?tourId=${tourId}`,
-      tone: "complete",
-    };
-  };
 
   if (selectionMode === null) {
     return <div className={styles.page}>투어 목록을 준비하는 중입니다.</div>;
