@@ -79,9 +79,6 @@ export default function TourSelector() {
     );
   }, [tours, search]);
 
-  const regionOptions=[...new Set(tours.map(t=>t.region.split(" ")[0]).filter(Boolean))].sort();
-  const visibleTours=filteredTours.filter(t=>regionFilter==="all"||t.region.startsWith(regionFilter));
-
   const visibleTours=filteredTours.filter(t=>regionFilter==="all"||t.region.startsWith(regionFilter));
   const regions=[...new Set(tours.map(t=>t.region.split(" ")[0]).filter(Boolean))].sort();
   return (
