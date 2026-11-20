@@ -60,7 +60,10 @@ export default function TourEditor({tourId}: {tourId?:string}) {
     finally{setSaving(false);}
   };
   const deleteTour=async()=>{
-    if(!tourId||!window.confirm("이 투어를 삭제할까요? 관련 퀘스트·인증 기록도 삭제되며 복구할 수 없습니다."))return;
+    if(!tourId)return;
+    const nameToConfirm=window.prompt(`이 투어를 삭제하면 관련 퀘스트, 기준 이미지, 인증 기록도 삭제되고 복구할 수 없습니다.\n\n삭제하려면 "${form.name}"을(를) 정확히 입력해주세요.`);
+    if(nameToConfirm===null)return;
+    if(nameToConfirm!==form.name){window.alert("투어 이름이 일치하지 않아 삭제하지 않았습니다.");return;}
     const key=getAdminApiKey();if(!key){setError("관리자 API 키를 확인해주세요.");return;}
     setDeleting(true);setError("");
     try{const res=await fetch(`/api/tours/${encodeURIComponent(tourId)}`,{method:"DELETE",headers:{"x-admin-api-key":key}});
@@ -98,21 +101,33 @@ export default function TourEditor({tourId}: {tourId?:string}) {
             <label>시·군·구<input required value={form.region} onChange={e=>update("region",e.target.value)} placeholder="예: 강동구"/></label>
           </div>
         </section>
+        {tourId&&<section className={styles.managementCard}>
+          <h2>투어 운영 설정</h2>
+          <p className={styles.managementHelp}>공개 상태를 선택한 뒤 '다음단계'에서 확인하고 저장하세요.</p>
+          <div className={styles.managementSetting}>
+            <div>
+              <strong>투어 공개 상태</strong>
+              <p>관광객에게 투어를 보여줄지 설정합니다.</p>
+            </div>
+            <div className={styles.statusActions} role="group" aria-label="투어 공개 상태">
+              <button type="button" className={status==="공개"?styles.published:styles.secondary} aria-pressed={status==="공개"} onClick={()=>setStatus("공개")}>공개</button>
+              <button type="button" className={status==="비공개"?styles.hidden:styles.secondary} aria-pressed={status==="비공개"} onClick={()=>setStatus("비공개")}>비공개</button>
+            </div>
+          </div>
+          <div className={styles.managementSetting}>
+            <div>
+              <strong>투어 삭제</strong>
+              <p>이 투어의 퀘스트와 인증 기록까지 삭제됩니다. 되돌릴 수 없습니다.</p>
+            </div>
+            <button type="button" className={styles.danger} onClick={deleteTour} disabled={deleting||saving}>{deleting?"삭제 중...":"투어 삭제"}</button>
+          </div>
+        </section>}
       </div>:<section className={styles.confirmCard}>
         <h2>등록 정보를 확인해 주세요</h2>
-        <dl><div><dt>투어 이름</dt><dd>{form.name}</dd></div><div><dt>투어 소개</dt><dd>{form.description}</dd></div><div><dt>운영 지역</dt><dd>{fullRegion}</dd></div></dl>
-      </section>}
-      {tourId&&step===2&&<section className={styles.confirmCard}>
-        <h2>투어 공개 상태</h2>
-        <p>관광객 화면에 이 투어를 표시할지 결정합니다.</p>
-        <div className={styles.statusActions}>
-          <button type="button" className={status==="공개"?styles.published:styles.secondary} onClick={()=>setStatus("공개")}>공개</button>
-          <button type="button" className={status==="비공개"?styles.hidden:styles.secondary} onClick={()=>setStatus("비공개")}>비공개</button>
-        </div>
+        <dl><div><dt>투어 이름</dt><dd>{form.name}</dd></div><div><dt>투어 소개</dt><dd>{form.description}</dd></div><div><dt>운영 지역</dt><dd>{fullRegion}</dd></div>{tourId&&<div><dt>공개 상태</dt><dd>{status}</dd></div>}</dl>
       </section>}
       {error&&<p className={styles.error} role="alert">{error}</p>}
       <footer className={styles.actions}>
-        {tourId&&step===2&&<button type="button" className={styles.danger} onClick={deleteTour} disabled={deleting||saving}>{deleting?"삭제 중...":"투어 삭제"}</button>}
         {step===1?<Link className={styles.secondary} href={cancelHref}>취소</Link>:<button type="button" className={styles.secondary} onClick={()=>setStep(1)}>이전단계</button>}
         <button className={styles.primary} disabled={saving||deleting||!canContinue}>{saving?"저장 중...":step===1?"다음단계":tourId?"변경사항 저장":"투어 등록하기"}</button>
       </footer>
