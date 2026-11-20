@@ -40,8 +40,12 @@ export default function TourEditor({tourId}: {tourId?:string}) {
   const fullRegion=[form.province.trim(),form.region.trim()].filter(Boolean).join(" ");
   const submit=async(e:FormEvent<HTMLFormElement>)=>{
     e.preventDefault();
-    if(step===1){if(!canContinue){setError("투어 이름, 소개(50자 이내), 지역을 입력해주세요.");return;}setStep(2);return;}
-    if(!canContinue)return;
+    if(!tourId && step===1){if(!canContinue){setError("투어 이름, 소개(50자 이내), 지역을 입력해주세요.");return;}setStep(2);return;}
+    if(!canContinue){setError("투어 이름, 소개(50자 이내), 지역을 입력해주세요.");return;}
+    const confirmation = tourId
+      ? `'${form.name}' 투어 정보를 수정하시겠습니까?\n공개 상태: ${status}`
+      : `'${form.name}' 투어를 등록하시겠습니까?\n등록 후 비공개로 저장됩니다.`;
+    if(!window.confirm(confirmation))return;
     const key=getAdminApiKey();
     if(!key){setError("관리자 API 키를 확인해주세요.");return;}
     setSaving(true);setError("");
@@ -78,7 +82,7 @@ export default function TourEditor({tourId}: {tourId?:string}) {
       <p>관광객에게 보일 투어를 설정해 주세요.</p></div>
       <Link href={cancelHref} className={styles.cancelTop}>취소</Link>
     </header>
-    <div className={styles.steps}><span className={step===1?styles.current:""}>1　투어 정보 입력</span><span className={step===2?styles.current:""}>2　최종 확인</span></div>
+{!tourId&&<div className={styles.steps}><span className={step===1?styles.current:""}>1　투어 정보 입력</span><span className={step===2?styles.current:""}>2　최종 확인</span></div>}
     <form onSubmit={submit} className={styles.form}>
       <section className={styles.previewBox}>
         <h2>관광객에게 이렇게 보여요</h2>
@@ -103,23 +107,15 @@ export default function TourEditor({tourId}: {tourId?:string}) {
         </section>
         {tourId&&<section className={styles.managementCard}>
           <h2>투어 운영 설정</h2>
-          <p className={styles.managementHelp}>공개 상태를 선택한 뒤 '다음단계'에서 확인하고 저장하세요.</p>
+          <p className={styles.managementHelp}>공개 상태와 정보를 변경한 뒤 아래의 '변경사항 저장'을 눌러 적용하세요.</p>
           <div className={styles.managementSetting}>
-            <div>
-              <strong>투어 공개 상태</strong>
-              <p>관광객에게 투어를 보여줄지 설정합니다.</p>
+            <div className={styles.managementActions}>
+              <div className={styles.statusActions} role="group" aria-label="투어 공개 상태">
+                <button type="button" className={status==="공개"?styles.published:styles.secondary} aria-pressed={status==="공개"} onClick={()=>setStatus("공개")}>공개</button>
+                <button type="button" className={status==="비공개"?styles.hidden:styles.secondary} aria-pressed={status==="비공개"} onClick={()=>setStatus("비공개")}>비공개</button>
+              </div>
+              <button type="button" className={styles.danger} onClick={deleteTour} disabled={deleting||saving}>{deleting?"삭제 중...":"투어 삭제"}</button>
             </div>
-            <div className={styles.statusActions} role="group" aria-label="투어 공개 상태">
-              <button type="button" className={status==="공개"?styles.published:styles.secondary} aria-pressed={status==="공개"} onClick={()=>setStatus("공개")}>공개</button>
-              <button type="button" className={status==="비공개"?styles.hidden:styles.secondary} aria-pressed={status==="비공개"} onClick={()=>setStatus("비공개")}>비공개</button>
-            </div>
-          </div>
-          <div className={styles.managementSetting}>
-            <div>
-              <strong>투어 삭제</strong>
-              <p>이 투어의 퀘스트와 인증 기록까지 삭제됩니다. 되돌릴 수 없습니다.</p>
-            </div>
-            <button type="button" className={styles.danger} onClick={deleteTour} disabled={deleting||saving}>{deleting?"삭제 중...":"투어 삭제"}</button>
           </div>
         </section>}
       </div>:<section className={styles.confirmCard}>
@@ -128,8 +124,8 @@ export default function TourEditor({tourId}: {tourId?:string}) {
       </section>}
       {error&&<p className={styles.error} role="alert">{error}</p>}
       <footer className={styles.actions}>
-        {step===1?<Link className={styles.secondary} href={cancelHref}>취소</Link>:<button type="button" className={styles.secondary} onClick={()=>setStep(1)}>이전단계</button>}
-        <button className={styles.primary} disabled={saving||deleting||!canContinue}>{saving?"저장 중...":step===1?"다음단계":tourId?"변경사항 저장":"투어 등록하기"}</button>
+        {(tourId||step===1)?<Link className={styles.secondary} href={cancelHref}>취소</Link>:<button type="button" className={styles.secondary} onClick={()=>setStep(1)}>이전단계</button>}
+        <button className={styles.primary} disabled={saving||deleting||!canContinue}>{saving?"저장 중...":tourId?"변경사항 저장":step===1?"다음단계":"투어 등록하기"}</button>
       </footer>
     </form>
     {successId&&<div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="투어 등록 완료">
