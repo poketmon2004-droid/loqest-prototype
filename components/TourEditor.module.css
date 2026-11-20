@@ -22,3 +22,64 @@
 .actions{padding-top:0}.actions a,.actions button{padding:10px 19px;font-size:13px}.confirmCard dl div{padding:10px 0}
 }
 @media(min-width:901px) and (max-height:780px){.page{padding-top:12px}.heading{margin-bottom:8px}.form{gap:8px}.previewCard{padding:11px 18px}.previewCard h3{font-size:20px}.blueCard,.grayCard{padding:10px 16px}.fields textarea{height:45px;min-height:45px}.fields input,.fields select{padding:7px 10px}}
+
+/* Existing tour only: operating controls immediately under input fields */
+.managementCard {
+  box-sizing: border-box;
+  border: 1px solid #d4e3f0;
+  border-radius: 14px;
+  padding: 20px 22px;
+  background: #fff;
+}
+.managementCard h2 { margin: 0 0 6px; font-size: 17px; color: #1d3a50; }
+.managementHelp { margin: 0 0 10px; font-size: 12px; color: #708698; }
+.managementSetting {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid #e7edf3;
+}
+.managementSetting > div:first-child { min-width: 0; }
+.managementSetting strong { display: block; color: #25435c; font-size: 14px; }
+.managementSetting p { margin: 5px 0 0; color: #72899b; font-size: 12px; line-height: 1.5; }
+.managementSetting .statusActions { display: flex; flex-shrink: 0; margin: 0; gap: 8px; }
+.managementSetting .statusActions button {
+  min-width: 88px;
+  min-height: 40px;
+  padding: 9px 15px;
+  border-radius: 9px;
+  font-weight: 800;
+  font-size: 13px;
+}
+.managementSetting .danger {
+  flex-shrink: 0;
+  min-height: 40px;
+  margin: 0;
+  padding: 9px 18px;
+  border: 1px solid #efb4b4;
+  border-radius: 9px;
+  background: #fff2f2;
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.managementSetting .danger:hover:not(:disabled) { background: #ffe5e5; border-color: #d98f8f; }
+.managementSetting .danger:disabled { opacity: .5; cursor: not-allowed; }
+@media (min-width:901px) {
+  .managementCard { padding: 11px 20px; }
+  .managementCard h2 { font-size: 15px; }
+  .managementHelp { font-size: 11px; margin-bottom: 7px; }
+  .managementSetting { padding: 9px 0; }
+  .managementSetting p { margin-top: 3px; }
+  .managementSetting .statusActions button,
+  .managementSetting .danger { min-height: 35px; padding: 7px 13px; }
+}
+@media(max-width:620px) {
+  .managementCard { padding: 16px; }
+  .managementSetting { align-items: flex-start; flex-direction: column; }
+  .managementSetting .statusActions { width: 100%; }
+  .managementSetting .statusActions button { flex: 1; }
+}
