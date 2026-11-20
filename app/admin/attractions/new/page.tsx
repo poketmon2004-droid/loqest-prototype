@@ -238,6 +238,8 @@ export default function NewAttractionPage() {
       return;
     }
 
+    if (!window.confirm(`"${form.name.trim()}" 퀘스트를 등록하시겠습니까?\n등록 후 비공개 상태로 저장됩니다.`)) return;
+
     const newAttraction = {
       tourId,
       name: form.name.trim(),
