@@ -54,6 +54,7 @@ export default function AdminSidebar() {
           <>
             <p className={styles.tourCaption}>선택한 투어</p>
             <Link className={styles.tourName} href={`/admin/tours/${selected.id}`}>{selected.name}</Link>
+            <Link href={`/admin/tours/${encodeURIComponent(selected.id)}/edit`} className={pathname === `/admin/tours/${selected.id}/edit` ? styles.activeMenu : ""}>⚙ &nbsp; 투어 관리</Link>
             <Link href={`/admin/attractions?tourId=${encodeURIComponent(selected.id)}`} className={pathname.startsWith("/admin/attractions") ? styles.activeMenu : ""}>▤ &nbsp; 퀘스트 관리</Link>
             <Link href={`/admin/participants?tourId=${encodeURIComponent(selected.id)}`} className={pathname === "/admin/participants" ? styles.activeMenu : ""}>♙ &nbsp; 참여자·인증 현황</Link>
           </>
