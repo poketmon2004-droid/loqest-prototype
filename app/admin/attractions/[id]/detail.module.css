@@ -318,3 +318,30 @@
 .passedLabel,.pendingLabel{border-radius:999px;padding:6px 11px;font-size:12px;font-weight:800}.passedLabel{background:#e1f7e9;color:#167249}.pendingLabel{background:#fff4e5;color:#ae6a12}.testSummary{display:flex;gap:18px;flex-wrap:wrap;color:#6e8393;font-size:13px;padding:12px 0 18px}.simpleCard .secondaryButton{display:inline-flex;background:#fff;border:1px solid #c6dce9;color:#0284c7;padding:12px 16px;font-size:14px}
 .largeActions{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:25px 0}.largeActions button{min-height:65px;border-radius:12px;font:inherit;font-size:17px;font-weight:800;cursor:pointer}.publishAction{background:#0284c7;color:#fff;border:1px solid #0284c7}.hideAction{background:#d97706;color:#fff;border:1px solid #d97706}.deleteAction{background:#fff3f3;color:#b42318;border:2px solid #e1a1a1}
 @media(max-width:700px){.simplePage{padding:22px 15px}.simpleDetails>div{grid-template-columns:120px 1fr}.simpleCard{padding:16px}.actionNotice{flex-direction:column;align-items:flex-start}.largeActions{gap:8px}.largeActions button{font-size:13px}}
+
+/* Shared neutral outline navigation treatment */
+.simpleHeader .simpleBack {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 10px 16px;
+  margin-bottom: 13px;
+  border: 1px solid #cfdeea;
+  border-radius: 10px;
+  background: #fff;
+  color: #31546d;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  box-shadow: none;
+  transition: background-color .15s, border-color .15s, color .15s;
+}
+.simpleHeader .simpleBack:hover {
+  background: #edf7fd;
+  color: #0284c7;
+  border-color: #0284c7;
+}
+.simpleHeader .simpleBack:focus-visible {outline: 3px solid #b5e1f6;outline-offset: 2px}
