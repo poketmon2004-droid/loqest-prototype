@@ -590,3 +590,14 @@
 @media(max-width:680px){.questListSection{padding:15px}.questListHeader{align-items:flex-start;flex-direction:column}.questListRow{gap:8px;padding:12px}.questCategoryIcon{flex-basis:36px;width:36px;height:36px;font-size:19px}.questManageLink{padding:10px}}
 
 .newQuestRow{background:#fff1f5;border-color:#f3b8cb}.newBadge{display:inline-flex;background:#ffe0e9;color:#a74365;border-radius:99px;margin:0 0 0 10px;padding:5px 9px;font-size:10px;font-weight:800}
+
+/* Shared dashboard container width and approved flat actions */
+.page{background:#f7f9fc}
+.main{width:100%;max-width:1170px;margin:0 auto;padding:28px 24px 45px;box-sizing:border-box}
+.main .header,.main .metrics,.main .tourActions,.main .questListSection{width:100%;max-width:none;box-sizing:border-box}
+.main .header h1{font-size:28px;color:#19364d}.main .header p{font-size:13px;color:#8191a1}
+.main .metrics{gap:12px;margin:0 0 18px}.main .metricCard{padding:18px 19px;box-sizing:border-box;background:#f3f8fc;box-shadow:none;border:0;border-radius:14px}.main .metricCard strong{color:#19445e;font-size:28px}.main .metricCard p{color:#8193a3}
+.main .tourActions{padding:15px 20px;margin:0 0 17px}.main .questListSection{padding:22px 23px;margin:0}
+.main .questListRow{border:0;border-radius:0;border-bottom:1px solid #e6edf3;padding:14px 0}.main .questListRow:last-child{border-bottom:0}.main .questManageLink{background:#fff;border:1px solid #cddde9;color:#294760;border-radius:9px;box-shadow:none;padding:11px 16px}.main .questManageLink:hover{border-color:#0284c7;color:#0284c7}
+.main .newQuestButton{background:#0284c7}.main .tourEdit{background:#fff;color:#294760;border:1px solid #cddde9}.main .questListSection h2{font-size:19px}
+@media(max-width:700px){.main{padding:20px 15px 35px}.main .metrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.main .metricCard{padding:11px 8px}.main .metricCard strong{font-size:20px}.main .tourActions{gap:8px;padding:12px}.main .tourEdit{padding:9px;font-size:11px}}
