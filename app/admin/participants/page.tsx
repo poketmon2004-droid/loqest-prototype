@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { clearAdminApiKey, getAdminApiKey } from "@/lib/adminApiKey";
 import styles from "./ParticipantsAnalytics.module.css";
@@ -9,7 +9,7 @@ type Attraction={id:number;name:string;status:string};
 type RecordItem={id:string;sessionId:string;visitorId:string;attractionId:number;result:"success"|"failure";stage:"location"|"landmark"|"completed"|"system";attemptNumber:number;capturedAt:string};
 const dateText=(value:string)=>{const d=new Date(value);return Number.isNaN(d.getTime())?"-":d.toLocaleString("ko-KR",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"});};
 const stageText:Record<RecordItem["stage"],string>={location:"위치 인증",landmark:"랜드마크",completed:"퀘스트 완료",system:"시스템"};
-export default function ParticipantsPage(){
+function ParticipantsPageContent(){
  const params=useSearchParams();const tourId=params.get("tourId")||"";
  const [attractions,setAttractions]=useState<Attraction[]>([]);
  const [records,setRecords]=useState<RecordItem[]>([]);
@@ -83,3 +83,5 @@ export default function ParticipantsPage(){
   </section>
  </main>;
 }
+
+export default function ParticipantsPage(){return <Suspense fallback={<main>참여자·인증 현황을 불러오는 중입니다.</main>}><ParticipantsPageContent/></Suspense>;}
