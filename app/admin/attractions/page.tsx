@@ -31,6 +31,7 @@ export default function AttractionListPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [noticeMessage, setNoticeMessage] = useState("");
   const [tourId, setTourId] = useState("amsa");
+  const [newQuestId, setNewQuestId] = useState<number | null>(null);
   const [tourName, setTourName] = useState("선택한 투어");
   const [selectionMode, setSelectionMode] = useState<boolean | null>(null);
 
@@ -82,6 +83,10 @@ export default function AttractionListPage() {
             lastTestResult: recognitionRecords[String(attraction.id)]?.lastResult ?? "미실시",
           }),
         );
+        const idString=localStorage.getItem(`loqest_new_quest_${selectedTourId}`);
+        const newId=idString?Number(idString):null;
+        if(newId && recognitionRecords[String(newId)]){localStorage.removeItem(`loqest_new_quest_${selectedTourId}`);setNewQuestId(null);}
+        else setNewQuestId(newId);
         setAttractions(combinedAttractions);
       } catch (error) {
         setErrorMessage(error instanceof Error ? error.message : "퀘스트 데이터를 불러오지 못했습니다.");
@@ -186,11 +191,11 @@ export default function AttractionListPage() {
               </thead>
 
               <tbody>
-                {attractions.map((attraction) => {
+                {[...attractions].sort((a,b)=>Number(b.id===newQuestId)-Number(a.id===newQuestId)).map((attraction) => {
                   const action = getNextAction(attraction);
 
                   return (
-                    <tr key={attraction.id}>
+                    <tr key={attraction.id} className={attraction.id===newQuestId?styles.newQuestRow:""}>
                       <td>
                         <div className={styles.questInformation}>
                           <div className={styles.questTitleRow}>
@@ -211,6 +216,7 @@ export default function AttractionListPage() {
                               {attraction.name}
                             </Link>
 
+                            {attraction.id===newQuestId && <span className={styles.newBadge}>NEW · 인식 테스트 필요</span>}
                             <span className={styles.questCategory}>
                               {attraction.category}
                             </span>
