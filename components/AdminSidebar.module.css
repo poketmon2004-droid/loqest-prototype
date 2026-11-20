@@ -1,12 +1,4 @@
-.sidebar{position:sticky;top:0;height:100vh;box-sizing:border-box;padding:28px 18px;background:#142033;color:#fff}
-.logo{display:flex;align-items:center;gap:12px;color:#fff;text-decoration:none;font-size:18px;font-weight:800;margin-bottom:40px}
-.logo small{display:block;margin-top:3px;font-size:10px;letter-spacing:.12em;color:#9eb7d2;font-weight:600}
-.logoMark{width:38px;height:38px;border-radius:11px;background:#0284c7;display:grid;place-items:center;color:#fff}
-.menuTitle,.tourCaption{margin:0 0 12px 10px;font-size:12px;font-weight:700;color:#93a9c1}
-.menu{display:grid;gap:7px}
-.menu a{display:block;min-width:0;padding:12px 13px;border-radius:10px;color:#dce7f4;text-decoration:none;font-size:14px;line-height:1.5}
-.menu a:hover{background:#213b54;color:#fff}
-.menu .activeMenu,.menu .activeMenu:hover{background:#294e70;color:#fff;font-weight:800}
-.menu .tourCaption{margin:23px 0 3px;padding-top:20px;border-top:1px solid #314359}
-.menu .tourName{background:#1d314b;color:#fff;font-weight:700;overflow-wrap:anywhere}
-@media(max-width:900px){.sidebar{position:relative;height:auto;padding:16px}.logo{margin-bottom:16px}.menu{display:flex;flex-wrap:wrap}.menu a{font-size:12px;padding:9px}.menu .tourCaption{flex-basis:100%;margin:8px 0 0;padding-top:10px}}
+.sidebar{position:sticky;top:0;align-self:start;height:100dvh;min-height:100vh;box-sizing:border-box;padding:28px 18px;background:#142033;color:#fff;z-index:10;overflow-y:auto;overscroll-behavior:contain}
+.logo{display:flex;align-items:center;gap:12px;color:#fff;text-decoration:none;font-size:18px;font-weight:800;margin-bottom:40px}.logo small{display:block;margin-top:3px;font-size:10px;letter-spacing:.12em;color:#9eb7d2;font-weight:600}.logoMark{width:38px;height:38px;border-radius:11px;background:#0284c7;display:grid;place-items:center;color:#fff}
+.menuTitle,.tourCaption{margin:0 0 12px 10px;font-size:12px;font-weight:700;color:#93a9c1}.menu{display:grid;gap:7px}.menu a{display:block;min-width:0;padding:12px 13px;border-radius:10px;color:#dce7f4;text-decoration:none;font-size:14px;line-height:1.5}.menu a:hover{background:#213b54;color:#fff}.menu .activeMenu,.menu .activeMenu:hover{background:#294e70;color:#fff;font-weight:800}.menu .tourCaption{margin:23px 0 3px;padding-top:20px;border-top:1px solid #314359}.menu .tourName{background:#1d314b;color:#fff;font-weight:700;overflow-wrap:anywhere}
+@media(max-width:900px){.sidebar{position:relative;top:auto;height:auto;min-height:0;overflow:visible;padding:16px}.logo{margin-bottom:16px}.menu{display:flex;flex-wrap:wrap}.menu a{font-size:12px;padding:9px}.menu .tourCaption{flex-basis:100%;margin:8px 0 0;padding-top:10px}}
