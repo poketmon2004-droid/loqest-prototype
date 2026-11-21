@@ -355,3 +355,6 @@
 .actionSuccess{background:#ecf8f0;border-color:#bee7cc}
 .actionSuccess strong{color:#176444}
 .actionSuccess p{color:#47765b}
+
+/* Quiet, consistent preview heading for tour and quest admin screens */
+.previewBanner{background:#f4f7fa;color:#526779;border-bottom:1px solid #e3eaf0;font-size:17px;font-weight:750}
