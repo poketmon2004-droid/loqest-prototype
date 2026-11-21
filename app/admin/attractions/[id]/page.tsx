@@ -105,20 +105,21 @@ export default function AttractionDetailPage() {
                 ? "비공개"
                 : "공개";
 
-        if (nextStatus === "공개") {
-            if (!testRecord) {
-                window.alert(
-                    "인식 테스트를 완료한 후 공개할 수 있습니다."
-                );
-                return;
-            }
+        // Once a quest has been published, hiding it does not invalidate its test.
+        // A reference-image change explicitly invalidates this approval.
+        const previouslyPublished = localStorage.getItem(
+            `loqest_previously_published_${attraction.id}`
+        ) === "true";
+        const requiresRetest = attraction.quality === "재테스트 필요";
+        const hasSuccessfulTest = (testRecord?.successfulTests ?? 0) > 0;
 
-            if (testRecord.lastResult !== "통과") {
-                window.alert(
-                    "최근 인식 테스트를 통과한 후 공개할 수 있습니다."
-                );
-                return;
-            }
+        if (nextStatus === "공개" && (
+            !referenceImages.length ||
+            requiresRetest ||
+            (!previouslyPublished && !hasSuccessfulTest)
+        )) {
+            window.alert("기준 이미지 등록 후 인식 테스트를 통과해야 공개할 수 있습니다.");
+            return;
         }
 
         const adminKey = getAdminApiKey();
@@ -156,7 +157,11 @@ export default function AttractionDetailPage() {
         }
 
         if (response.ok) {
+            if (nextStatus === "비공개" && attraction.status === "공개") {
+                localStorage.setItem(`loqest_previously_published_${attraction.id}`, "true");
+            }
             if (nextStatus === "공개") {
+                localStorage.setItem(`loqest_previously_published_${attraction.id}`, "true");
                 sessionStorage.setItem(
                     "loqest_admin_notice",
                     `'${attraction.name}' 관광지가 홈페이지에 공개되었습니다.`
@@ -226,8 +231,11 @@ export default function AttractionDetailPage() {
     }
 
     const hasImages = referenceImages.length>0;
-    const hasPassedTest=testRecord?.lastResult==="통과";
-    const needsAction = !hasImages ? "기준 이미지가 필요해요" : !hasPassedTest ? "인식 테스트가 필요해요" : attraction.status!=="공개" ? "공개할 준비가 끝났어요" : "";
+    const hasPassedTest=(testRecord?.successfulTests ?? 0)>0;
+    const isRetestRequired=attraction.quality==="재테스트 필요";
+    const hasPublicationApproval=typeof window!=="undefined" && localStorage.getItem(`loqest_previously_published_${attraction.id}`)==="true";
+    const readyForPublish=hasImages && !isRetestRequired && (hasPassedTest || hasPublicationApproval);
+    const needsAction = !hasImages ? "기준 이미지가 필요해요" : !readyForPublish ? "인식 테스트가 필요해요" : attraction.status!=="공개" ? "공개할 준비가 끝났어요" : "";
     const explanation=!hasImages ? "퀘스트 기준 이미지를 한 장 이상 등록해주세요." : !hasPassedTest ? "기준 이미지를 확인하고 실제 사진으로 인식 테스트를 진행해주세요." : "테스트를 통과했습니다. 관광객에게 공개할 수 있습니다.";
     const icons:Record<string,string>={"역사·문화":"🗺️","자연·생태":"🌿","축제·행사":"🎉","체험·레저":"🎯","지역상권":"🛍️","기타":"✨"};
 
@@ -241,9 +249,9 @@ export default function AttractionDetailPage() {
             <span className={`${styles.statusBadge} ${attraction.status==="공개"?styles.publishedBadge:styles.unpublishedBadge}`}>{attraction.status}</span>
           </div>
         </header>
-        {needsAction && <section className={`${styles.actionNotice} ${hasImages && hasPassedTest ? styles.actionSuccess : styles.actionPending}`}>
+        {needsAction && <section className={`${styles.actionNotice} ${readyForPublish ? styles.actionSuccess : styles.actionPending}`}>
           <div><strong>{needsAction}</strong><p>{explanation}</p></div>
-          {hasImages&&!hasPassedTest&&<Link href={`/landmark-test?attractionId=${attraction.id}`} className={styles.primaryButton}>인식 테스트하기</Link>}
+          {hasImages&&!readyForPublish&&<Link href={`/landmark-test?attractionId=${attraction.id}`} className={styles.primaryButton}>인식 테스트하기</Link>}
           {!hasImages&&<Link href={`/admin/attractions/${attraction.id}/images`} className={styles.primaryButton}>기준 이미지 등록</Link>}
         </section>}
         <section className={styles.simpleCard}>
@@ -268,7 +276,7 @@ export default function AttractionDetailPage() {
           <Link href={`/landmark-test?attractionId=${attraction.id}`} className={styles.secondaryButton}>인식 테스트 진행하기</Link>
         </section>
         <section className={styles.largeActions}>
-          <button type="button" className={attraction.status==="공개"?styles.hideAction:styles.publishAction} onClick={toggleStatus} aria-disabled={attraction.status!=="공개"&&!hasPassedTest}>
+          <button type="button" className={attraction.status==="공개"?styles.hideAction:styles.publishAction} onClick={toggleStatus} aria-disabled={attraction.status!=="공개"&&!readyForPublish}>
             {attraction.status==="공개"?"비공개로 전환":"공개하기"}
           </button>
           <button type="button" className={styles.deleteAction} onClick={deleteAttraction}>퀘스트 삭제</button>
