@@ -112,17 +112,15 @@ export default function TourEditor({tourId}: {tourId?:string}) {
             </button>
           </div>
         </section>}
-      </div>:<section className={styles.confirmCard}>
-        <h2>등록 정보를 확인해 주세요</h2>
-        <dl><div><dt>투어 이름</dt><dd>{form.name}</dd></div><div><dt>투어 소개</dt><dd>{form.description}</dd></div><div><dt>운영 지역</dt><dd>{fullRegion}</dd></div>{tourId&&<div><dt>공개 상태</dt><dd>{status}</dd></div>}</dl>
-        {!tourId && <div className={styles.reviewPreview}>
-          <h3>관광객 화면 미리보기</h3>
+      </div>:<section className={styles.confirmCard} aria-label="관광객 화면 미리보기">
+        <div className={styles.reviewPreview}>
+          <h2>관광객 화면 미리보기</h2>
           <div className={styles.reviewPreviewCard}>
             <span className={styles.reviewPreviewLocation}>{fullRegion}</span>
             <strong>{form.name}</strong>
             <p>{form.description}</p>
           </div>
-        </div>}
+        </div>
       </section>}
       {error&&<p className={styles.error} role="alert">{error}</p>}
       <footer className={styles.actions}>
