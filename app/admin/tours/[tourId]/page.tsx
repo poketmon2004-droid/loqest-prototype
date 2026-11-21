@@ -175,7 +175,6 @@ export default function AdminDashboardPage() {
                 <Link className={styles.questManageLink} href={`/admin/attractions/${attraction.id}`}>관리하기</Link>
               </article>)}
           </div>
-          <Link href={`/admin/attractions?tourId=${encodeURIComponent(tourId)}`} className={styles.allQuestsLink}>전체 퀘스트 관리로 이동</Link>
         </section>
 
       </main>
