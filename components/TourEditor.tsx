@@ -116,6 +116,7 @@ export default function TourEditor({tourId}: {tourId?:string}) {
         <h2>등록 정보를 확인해 주세요</h2>
         <dl><div><dt>투어 이름</dt><dd>{form.name}</dd></div><div><dt>투어 소개</dt><dd>{form.description}</dd></div><div><dt>운영 지역</dt><dd>{fullRegion}</dd></div>{tourId&&<div><dt>공개 상태</dt><dd>{status}</dd></div>}</dl>
       </section>}
+      {!tourId && (
       <section className={styles.previewBox} aria-label="관광객 화면 미리보기">
         <div className={styles.previewBanner}>미리보기</div>
         <div className={styles.previewPadding}>
@@ -127,6 +128,7 @@ export default function TourEditor({tourId}: {tourId?:string}) {
           </div>
         </div>
       </section>
+      )}
       {error&&<p className={styles.error} role="alert">{error}</p>}
       <footer className={styles.actions}>
         {(tourId||step===1)?<Link className={styles.secondary} href={cancelHref}>취소</Link>:<button type="button" className={styles.secondary} onClick={()=>setStep(1)}>이전단계</button>}
