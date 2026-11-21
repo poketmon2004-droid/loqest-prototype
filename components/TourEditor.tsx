@@ -116,9 +116,10 @@ export default function TourEditor({tourId}: {tourId?:string}) {
         <div className={styles.reviewPreview}>
           <h2>관광객 화면 미리보기</h2>
           <div className={styles.reviewPreviewCard}>
-            <span className={styles.reviewPreviewLocation}>{fullRegion}</span>
+            <span className={styles.reviewPreviewLocation}><span aria-hidden="true">⌖</span> {fullRegion}</span>
             <strong>{form.name}</strong>
             <p>{form.description}</p>
+            <div className={styles.reviewPreviewExplore} aria-hidden="true">탐험하기 <span>→</span></div>
           </div>
         </div>
       </section>}
