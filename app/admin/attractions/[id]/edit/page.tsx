@@ -108,6 +108,7 @@ export default function EditAttractionPage() {
 
     const [loading, setLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [showReferenceImages, setShowReferenceImages] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [
         referenceImagesChanged,
@@ -492,22 +493,7 @@ export default function EditAttractionPage() {
                             </select>
                         </label>
 
-                        <label
-                            className={`${styles.field} ${styles.fullField}`}
-                        >
-                            주소
 
-                            <input
-                                type="text"
-                                value={form.address}
-                                onChange={(event) =>
-                                    updateForm(
-                                        "address",
-                                        event.target.value
-                                    )
-                                }
-                            />
-                        </label>
 
                         <label
                             className={`${styles.field} ${styles.fullField}`}
@@ -584,23 +570,7 @@ export default function EditAttractionPage() {
                             </div>
                         </label>
 
-                        <label className={styles.field}>
-                            촬영 가능 시간
 
-                            <select
-                                value={form.availableTime}
-                                onChange={(event) =>
-                                    updateForm(
-                                        "availableTime",
-                                        event.target.value
-                                    )
-                                }
-                            >
-                                <option>상시</option>
-                                <option>관광지 운영시간</option>
-                                <option>직접 설정</option>
-                            </select>
-                        </label>
 
                         <label className={styles.field}>
                             랜드마크 인식 기준
@@ -627,23 +597,7 @@ export default function EditAttractionPage() {
                             />
                         </label>
 
-                        <label className={styles.field}>
-                            공개 상태
 
-                            <select
-                                value={form.status}
-                                onChange={(event) =>
-                                    updateForm(
-                                        "status",
-                                        event.target.value
-                                    )
-                                }
-                            >
-                                <option>임시저장</option>
-                                <option>공개</option>
-                                <option>비공개</option>
-                            </select>
-                        </label>
 
                         <label
                             className={`${styles.field} ${styles.fullField}`}
@@ -704,6 +658,14 @@ export default function EditAttractionPage() {
                         )}
 
                         {referenceImages.length > 0 && (
+                            <div className={styles.imageDisclosure}>
+                              <button type="button" className={styles.imageDisclosureButton}
+                                aria-expanded={showReferenceImages}
+                                onClick={() => setShowReferenceImages(previous => !previous)}>
+                                <span>등록된 기준 이미지 {referenceImages.length}장</span>
+                                <span>{showReferenceImages ? "사진 접기 ↑" : "사진 보기 ↓"}</span>
+                              </button>
+                              {showReferenceImages && (
                             <div
                                 className={`${styles.fullField} ${styles.imagePreviewGrid}`}
                             >
@@ -736,6 +698,8 @@ export default function EditAttractionPage() {
                                         </div>
                                     </article>
                                 ))}
+                            </div>
+                              )}
                             </div>
                         )}
                     </div>
