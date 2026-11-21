@@ -107,3 +107,35 @@
   .managementActions .statusActions button{min-width:0!important;flex:1;padding:11px 8px!important;font-size:12px!important}
   .managementActions .danger{min-width:0!important;flex:0 0 auto;padding:11px 10px!important;font-size:12px!important}
 }
+
+/* Consistent quest-style tour editing, matching approved preview */
+.page{max-width:1120px;margin:0 auto;padding:22px 30px 45px;box-sizing:border-box;color:#21394d}
+.heading{display:block;margin:0 0 18px}.heading h1{font-size:28px;margin:0;color:#19364d;font-weight:800}
+.form{gap:13px}.fields{gap:13px}
+.previewBox{padding:0!important;overflow:hidden;border:1px solid #dce7ef;border-radius:16px;background:#fff}
+.previewBanner{height:46px;display:flex;align-items:center;justify-content:center;background:linear-gradient(120deg,#d5eef3,#e8edf8);color:#365d70;font-size:20px;font-weight:800}
+.previewPadding{padding:19px 22px}
+.previewCard{padding:20px 23px!important;min-height:0!important;background:linear-gradient(135deg,#fbfefe 0%,#f3faf9 100%)!important;border:1px solid #d8e9e9!important;border-radius:16px!important;box-shadow:none}
+.previewCard .previewLocation{color:#3c839b;font-size:12px;margin:0 0 8px}
+.previewCard h3{color:#1c435f;font-size:24px;font-weight:800;margin:3px 0 8px}
+.previewCard .previewDescription{color:#72899c;font-size:13px;margin:0 0 20px}
+.previewCard .explore{display:block;box-sizing:border-box;width:100%!important;text-align:center;background:linear-gradient(100deg,#244a64,#306079);color:white;padding:15px 12px!important;border-radius:15px;margin-top:0!important;font-size:14px;font-weight:800}
+.blueCard,.grayCard,.managementCard{padding:20px 23px!important;border:1px solid #dce7ef!important;border-radius:16px!important;background:#fff!important;box-shadow:none}
+.fields h2{font-size:18px!important;font-weight:800;margin:0 0 16px!important;color:#1c3b53}
+.fields label{font-size:12px;color:#416179;gap:6px}
+.fields input,.fields textarea,.fields select{padding:11px 12px!important;box-sizing:border-box;border:1px solid #cbdae7;border-radius:9px;font-size:13px;color:#2a4960;background:white}
+.fields textarea{height:65px!important;min-height:65px!important}
+.regionGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.regionGrid input,.regionGrid select{height:44px!important;min-height:44px!important;max-height:44px!important}
+.managementCard{display:block}
+.managementHelp{color:#8192a2;font-size:12px!important;margin:-6px 0 16px!important}
+.managementActions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px!important;border-top:1px solid #e8edf2;padding-top:17px}
+.managementActions button{box-sizing:border-box;min-width:0!important;min-height:59px!important;width:100%;border-radius:12px!important;font:inherit;font-size:16px!important;font-weight:800;cursor:pointer}
+.managementActions .publishAction{background:#0284c7;border:1px solid #0284c7;color:#fff}
+.managementActions .hideAction{background:#d97706;border:1px solid #d97706;color:#fff}
+.managementActions .deleteAction{background:#fff3f3;border:2px solid #e1a1a1;color:#b42318}
+.managementActions button:disabled{opacity:.55;cursor:not-allowed}
+.actions{padding:4px 0 0}.actions button,.actions a{border-radius:9px;font-size:13px;padding:12px 19px}
+@media(min-width:901px){.page{max-width:1120px;padding:22px 30px 45px}.heading{margin:0 0 18px}.heading h1{font-size:28px}.form{gap:13px}.previewPadding{padding:19px 22px}.previewCard{padding:20px 23px!important}.previewCard h3{font-size:24px}.previewCard .explore{padding:15px 12px!important}.blueCard,.grayCard,.managementCard{padding:20px 23px!important}.fields{gap:13px}.fields h2{font-size:18px!important}.fields label{font-size:12px}.fields input,.fields textarea,.fields select{padding:11px 12px!important}.fields textarea{height:65px!important}.managementCard h2{font-size:18px!important}.managementHelp{font-size:12px!important}.managementActions button{min-height:59px!important;font-size:16px!important}}
+@media(min-width:901px) and (max-height:780px){.page{padding-top:20px}.form{gap:13px}.previewCard{padding:20px 23px!important}.blueCard,.grayCard,.managementCard{padding:20px 23px!important}.fields textarea{height:65px!important}.fields input,.fields select{padding:11px 12px!important}}
+@media(max-width:700px){.page{padding:18px 14px 32px}.previewPadding{padding:15px}.previewCard{padding:17px!important}.previewCard h3{font-size:21px}.blueCard,.grayCard,.managementCard{padding:17px!important}.regionGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.managementActions{gap:8px!important}.managementActions button{font-size:13px!important;min-height:53px!important}}
