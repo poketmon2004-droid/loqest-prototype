@@ -413,7 +413,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                         href={`/admin/tours/${encodeURIComponent(originalAttraction?.tourId ?? "amsa")}`}
                         className={styles.backLink}
                     >
-                        퀘스트 목록으로 돌아가기
+                        투어 대시보드로 돌아가기
                     </Link>
                 </section>
             </div>
