@@ -384,3 +384,5 @@
 .imageManageButton:hover{background:#edf7fd;border-color:#0284c7}
 .imageManageButton:focus-visible{outline:3px solid #b5e1f6;outline-offset:2px}
 @media(max-width:520px){.questOverview{padding:15px;gap:12px}.questOverviewIcon{width:48px;height:48px;flex-basis:48px;font-size:23px}.questOverviewCopy h3{font-size:17px}.questStats{gap:8px}.questStat{padding:12px}.questStat strong{font-size:13px}.questImagesRow{padding:13px}.imageManageButton{padding:9px 11px;font-size:12px}}
+
+.coordinateHint{font-size:11px;font-weight:400;color:#92a2af;margin-left:3px}
