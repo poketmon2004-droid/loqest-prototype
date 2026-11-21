@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import AdminBackButton from "@/components/AdminBackButton";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getAdminApiKey, clearAdminApiKey } from "@/lib/adminApiKey";
@@ -77,45 +78,47 @@ export default function TourEditor({tourId}: {tourId?:string}) {
   };
   if(loading)return <main className={styles.page}><p>투어 정보를 불러오는 중입니다.</p></main>;
   return <main className={styles.page}>
+    <AdminBackButton href={cancelHref} />
     <header className={styles.heading}>
-      <div><p className={styles.eyebrow}>LOQEST ADMIN · TOUR</p><h1>{tourId?"투어 정보 수정":"새 투어 등록"}</h1>
-      <p>관광객에게 보일 투어를 설정해 주세요.</p></div>
-      <Link href={cancelHref} className={styles.cancelTop}>취소</Link>
+      <h1>{tourId ? "투어 정보 수정" : "새 투어 등록"}</h1>
     </header>
-{!tourId&&<div className={styles.steps}><span className={step===1?styles.current:""}>1　투어 정보 입력</span><span className={step===2?styles.current:""}>2　최종 확인</span></div>}
+    {!tourId && <div className={styles.steps}><span className={step===1?styles.current:""}>1　투어 정보 입력</span><span className={step===2?styles.current:""}>2　최종 확인</span></div>}
     <form onSubmit={submit} className={styles.form}>
-      <section className={styles.previewBox}>
-        <h2>관광객에게 이렇게 보여요</h2>
-        <div className={styles.previewCard}>
-          <p>{fullRegion||"지역을 선택해 주세요"}</p>
-          <h3>{form.name||"새 투어 이름"}</h3>
-          <p>{form.description||"관광객에게 보여줄 투어 소개가 여기에 표시됩니다."}</p>
-          <div className={styles.explore}>탐험하기</div>
+      <section className={styles.previewBox} aria-label="관광객 화면 미리보기">
+        <div className={styles.previewBanner}>미리보기</div>
+        <div className={styles.previewPadding}>
+          <div className={styles.previewCard}>
+            <p className={styles.previewLocation}>{fullRegion||"지역을 선택해 주세요"}</p>
+            <h3>{form.name||"새 투어 이름"}</h3>
+            <p className={styles.previewDescription}>{form.description||"관광객에게 보여줄 투어 소개가 여기에 표시됩니다."}</p>
+            <div className={styles.explore}>탐험하기 →</div>
+          </div>
         </div>
       </section>
       {step===1?<div className={styles.fields}>
-        <section className={styles.blueCard}><h2>투어 기본 정보</h2>
+        <section className={styles.blueCard}><h2>1. 투어 기본 정보</h2>
           <label>투어 이름<input required value={form.name} onChange={e=>update("name",e.target.value)} placeholder="예: 암사동 선사유적 투어" maxLength={100}/></label>
           <label>투어 소개 (최대 50자)<textarea required rows={3} maxLength={50} value={form.description} onChange={e=>update("description",e.target.value)} placeholder="투어를 간단하게 소개해 주세요."/></label>
           <p className={styles.counter}>{form.description.length}/50자</p>
         </section>
-        <section className={styles.grayCard}><h2>운영 지역 설정</h2>
+        <section className={styles.grayCard}><h2>2. 운영 지역 설정</h2>
           <div className={styles.regionGrid}>
             <label>시·도<select value={form.province} onChange={e=>update("province",e.target.value)}>{provinces.map(p=><option key={p} value={p}>{p}</option>)}</select></label>
             <label>시·군·구<input required value={form.region} onChange={e=>update("region",e.target.value)} placeholder="예: 강동구"/></label>
           </div>
         </section>
-        {tourId&&<section className={styles.managementCard}>
+        {tourId && <section className={styles.managementCard}>
           <h2>투어 운영 설정</h2>
-          <p className={styles.managementHelp}>공개 상태와 정보를 변경한 뒤 아래의 '변경사항 저장'을 눌러 적용하세요.</p>
-          <div className={styles.managementSetting}>
-            <div className={styles.managementActions}>
-              <div className={styles.statusActions} role="group" aria-label="투어 공개 상태">
-                <button type="button" className={status==="공개"?styles.published:styles.secondary} aria-pressed={status==="공개"} onClick={()=>setStatus("공개")}>공개</button>
-                <button type="button" className={status==="비공개"?styles.hidden:styles.secondary} aria-pressed={status==="비공개"} onClick={()=>setStatus("비공개")}>비공개</button>
-              </div>
-              <button type="button" className={styles.danger} onClick={deleteTour} disabled={deleting||saving}>{deleting?"삭제 중...":"투어 삭제"}</button>
-            </div>
+          <p className={styles.managementHelp}>공개 상태를 변경한 뒤 '변경사항 저장'을 눌러 적용하세요.</p>
+          <div className={styles.managementActions}>
+            <button type="button" className={status==="공개"?styles.hideAction:styles.publishAction}
+              onClick={()=>setStatus(prev=>prev==="공개"?"비공개":"공개")} disabled={saving||deleting}
+              aria-label={status==="공개"?"비공개로 전환":"공개하기"}>
+              {status==="공개"?"비공개로 전환":"공개하기"}
+            </button>
+            <button type="button" className={styles.deleteAction} onClick={deleteTour} disabled={deleting||saving}>
+              {deleting?"삭제 중...":"투어 삭제"}
+            </button>
           </div>
         </section>}
       </div>:<section className={styles.confirmCard}>
