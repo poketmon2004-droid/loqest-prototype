@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { clearAdminApiKey, getAdminApiKey } from "@/lib/adminApiKey";
@@ -55,7 +54,6 @@ export default function AttractionDetailPage() {
         useState<RecognitionTestRecord | null>(null);
     const [referenceImages, setReferenceImages] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
-    const [detailsOpen, setDetailsOpen] = useState(false);
 
     useEffect(() => {
         const loadAttraction = async () => {
@@ -105,20 +103,21 @@ export default function AttractionDetailPage() {
                 ? "비공개"
                 : "공개";
 
-        if (nextStatus === "공개") {
-            if (!testRecord) {
-                window.alert(
-                    "인식 테스트를 완료한 후 공개할 수 있습니다."
-                );
-                return;
-            }
+        // Once a quest has been published, hiding it does not invalidate its test.
+        // A reference-image change explicitly invalidates this approval.
+        const previouslyPublished = localStorage.getItem(
+            `loqest_previously_published_${attraction.id}`
+        ) === "true";
+        const requiresRetest = attraction.quality === "재테스트 필요";
+        const hasSuccessfulTest = (testRecord?.successfulTests ?? 0) > 0;
 
-            if (testRecord.lastResult !== "통과") {
-                window.alert(
-                    "최근 인식 테스트를 통과한 후 공개할 수 있습니다."
-                );
-                return;
-            }
+        if (nextStatus === "공개" && (
+            !referenceImages.length ||
+            requiresRetest ||
+            (!previouslyPublished && !hasSuccessfulTest)
+        )) {
+            window.alert("랜드마크 이미지 등록 후 인식 테스트를 통과해야 공개할 수 있습니다.");
+            return;
         }
 
         const adminKey = getAdminApiKey();
@@ -156,12 +155,16 @@ export default function AttractionDetailPage() {
         }
 
         if (response.ok) {
+            if (nextStatus === "비공개" && attraction.status === "공개") {
+                localStorage.setItem(`loqest_previously_published_${attraction.id}`, "true");
+            }
             if (nextStatus === "공개") {
+                localStorage.setItem(`loqest_previously_published_${attraction.id}`, "true");
                 sessionStorage.setItem(
                     "loqest_admin_notice",
                     `'${attraction.name}' 관광지가 홈페이지에 공개되었습니다.`
                 );
-                router.push(`/admin/attractions?tourId=${attraction.tourId}`);
+                router.push(`/admin/tours/${encodeURIComponent(attraction.tourId)}`);
                 return;
             }
             setAttraction({ ...attraction, status: nextStatus });
@@ -172,7 +175,12 @@ export default function AttractionDetailPage() {
 
     const deleteAttraction = async () => {
         if (!attraction) return;
-        if (!window.confirm(`'${attraction.name}' 관광지를 삭제할까요?`)) return;
+        const deleteConfirmation = window.prompt(`'${attraction.name}' 퀘스트를 삭제하면 복구할 수 없습니다.\n\n삭제하려면 "삭제"를 정확히 입력해주세요.`);
+        if (deleteConfirmation === null) return;
+        if (deleteConfirmation !== "삭제") {
+            window.alert("확인 문구가 일치하지 않아 삭제하지 않았습니다.");
+            return;
+        }
 
         const adminKey = getAdminApiKey();
         if (!adminKey) return;
@@ -190,7 +198,7 @@ export default function AttractionDetailPage() {
         }
 
         if (response.ok) {
-            router.push(`/admin/attractions?tourId=${attraction.tourId}`);
+            router.push(`/admin/tours/${encodeURIComponent(attraction.tourId)}`);
         } else {
             window.alert("관광지를 삭제하지 못했습니다.");
         }
@@ -220,259 +228,72 @@ export default function AttractionDetailPage() {
         );
     }
 
-    const hasImages = referenceImages.length > 0;
-    const hasPassedTest = testRecord?.lastResult === "통과";
-    const nextStep = !hasImages
-        ? {
-            title: "기준 이미지를 등록해주세요.",
-            description: "여러 각도에서 촬영한 이미지를 등록하면 인식 테스트를 진행할 수 있습니다.",
-            label: "이미지 등록",
-            href: `/admin/attractions/${attraction.id}/edit`,
-        }
-        : !hasPassedTest
-            ? {
-                title: "인식 테스트를 진행해주세요.",
-                description: "실제 촬영 환경에서 테스트를 통과하면 공개할 수 있습니다.",
-                label: "인식 테스트",
-                href: `/landmark-test?attractionId=${attraction.id}`,
-            }
-            : attraction.status !== "공개"
-                ? {
-                    title: "홈페이지에 공개할 준비가 끝났습니다.",
-                    description: "공개하면 LOQEST 홈페이지에 이 관광지가 바로 표시됩니다.",
-                    label: "지금 공개하기",
-                    href: "",
-                }
-                : {
-                    title: "정상적으로 운영 중입니다.",
-                    description: "정보나 기준 이미지를 바꾸면 다시 테스트하는 것을 권장합니다.",
-                    label: "정보 수정",
-                    href: `/admin/attractions/${attraction.id}/edit`,
-                };
+    const hasImages = referenceImages.length>0;
+    const hasPassedTest=(testRecord?.successfulTests ?? 0)>0;
+    const isRetestRequired=attraction.quality==="재테스트 필요";
+    const hasPublicationApproval=typeof window!=="undefined" && localStorage.getItem(`loqest_previously_published_${attraction.id}`)==="true";
+    const readyForPublish=hasImages && !isRetestRequired && (hasPassedTest || hasPublicationApproval);
+    const needsAction = !hasImages ? "랜드마크 이미지가 필요해요" : !readyForPublish ? "인식 테스트가 필요해요" : attraction.status!=="공개" ? "공개할 준비가 끝났어요" : "";
+    const explanation=!hasImages ? "랜드마크 이미지를 한 장 이상 등록해주세요." : !hasPassedTest ? "랜드마크 이미지를 확인하고 실제 사진으로 인식 테스트를 진행해주세요." : "테스트를 통과했습니다. 관광객에게 공개할 수 있습니다.";
+    const icons:Record<string,string>={"역사·문화":"🗺️","자연·생태":"🌿","축제·행사":"🎉","체험·레저":"🎯","지역상권":"🛍️","기타":"✨"};
 
     return (
-        <main className={styles.page}>
-            <header className={styles.header}>
-                <div>
-                    <AdminBackButton
-                        href={`/admin/attractions?tourId=${attraction.tourId}`}
-                    />
-                    <p className={styles.eyebrow}>퀘스트 상세</p>
-                    <div className={styles.titleRow}>
-                        <h1>{attraction.name}</h1>
-                        <span className={styles.statusBadge}>{attraction.status}</span>
-                    </div>
-                    <p>{attraction.description || "등록된 관광지 설명이 없습니다."}</p>
-                </div>
-
-                <div className={styles.actions}>
-                    <Link
-                        href={`/landmark-test?attractionId=${attraction.id}`}
-                        className={styles.primaryButton}
-                    >
-                        인식 테스트
-                    </Link>
-                    <Link
-                        href={`/admin/attractions/${attraction.id}/edit`}
-                        className={styles.secondaryButton}
-                    >
-                        정보 수정
-                    </Link>
-                    <button className={styles.secondaryButton} onClick={toggleStatus}>
-                        {attraction.status === "공개" ? "비공개로 전환" : "공개하기"}
-                    </button>
-                    <button className={styles.deleteButton} onClick={deleteAttraction}>
-                        삭제
-                    </button>
-                </div>
-            </header>
-
-            <section className={`${styles.workflowCard} ${hasPassedTest && attraction.status !== "공개" ? styles.publishReady : ""}`}>
-                <div className={styles.workflowSteps}>
-                    <div className={styles.doneStep}><span>1</span><strong>정보·위치</strong></div>
-                    <div className={hasImages ? styles.doneStep : styles.currentStep}><span>2</span><strong>기준 이미지</strong></div>
-                    <div className={hasPassedTest ? styles.doneStep : hasImages ? styles.currentStep : styles.waitingStep}><span>3</span><strong>인식 테스트</strong></div>
-                    <div className={attraction.status === "공개" ? styles.doneStep : hasPassedTest ? styles.currentStep : styles.waitingStep}><span>4</span><strong>공개</strong></div>
-                </div>
-                <div className={styles.nextGuide}>
-                    <div><strong>{nextStep.title}</strong><p>{nextStep.description}</p></div>
-                    {nextStep.href ? (
-                        <Link href={nextStep.href} className={styles.primaryButton}>{nextStep.label}</Link>
-                    ) : (
-                        <button type="button" className={`${styles.primaryButton} ${styles.publishButton}`} onClick={toggleStatus}>{nextStep.label}</button>
-                    )}
-                </div>
-            </section>
-
-            <section className={styles.compactTestStatus}>
-                <div className={styles.compactTestResult}>
-                    <div>
-                        <span>최근 인식 테스트</span>
-
-                        <strong
-                            className={
-                                testRecord?.lastResult === "통과"
-                                    ? styles.testPassed
-                                    : styles.testPending
-                            }
-                        >
-                            {testRecord?.lastResult ?? "미실시"}
-                        </strong>
-                    </div>
-
-                    <p>
-                        {testRecord
-                            ? `총 ${testRecord.totalTests}회 · 성공 ${testRecord.successfulTests}회 · 실패 ${testRecord.failedTests}회`
-                            : "아직 진행한 인식 테스트가 없습니다."}
-                    </p>
-                </div>
-
-                <button
-                    type="button"
-                    className={styles.detailsToggle}
-                    onClick={() =>
-                        setDetailsOpen((previous) => !previous)
-                    }
-                    aria-expanded={detailsOpen}
-                >
-                    {detailsOpen
-                        ? "상세 정보 접기 ↑"
-                        : "상세 정보 보기 ↓"}
-                </button>
-            </section>
-
-            {detailsOpen && (
-                <section className={styles.detailsPanel}>
-                    <div className={styles.contentGrid}>
-                        <section className={styles.detailCard}>
-                            <h2>기본 정보</h2>
-
-                            <dl className={styles.infoList}>
-                                <div>
-                                    <dt>카테고리</dt>
-                                    <dd>{attraction.category}</dd>
-                                </div>
-
-                                <div>
-                                    <dt>위도</dt>
-                                    <dd>{attraction.latitude ?? "미입력"}</dd>
-                                </div>
-
-                                <div>
-                                    <dt>경도</dt>
-                                    <dd>{attraction.longitude ?? "미입력"}</dd>
-                                </div>
-
-                                <div>
-                                    <dt>GPS 반경</dt>
-                                    <dd>{attraction.radius}m</dd>
-                                </div>
-
-                                <div>
-                                    <dt>인식 기준</dt>
-                                    <dd>
-                                        {attraction.landmarkThreshold ?? 70}%
-                                    </dd>
-                                </div>
-                            </dl>
-                        </section>
-
-                        <section className={styles.detailCard}>
-                            <h2>인식 테스트 기록</h2>
-
-                            <dl className={styles.infoList}>
-                                <div>
-                                    <dt>최근 결과</dt>
-                                    <dd>
-                                        {testRecord?.lastResult ?? "미실시"}
-                                    </dd>
-                                </div>
-
-                                <div>
-                                    <dt>성공</dt>
-                                    <dd>
-                                        {testRecord?.successfulTests ?? 0}회
-                                    </dd>
-                                </div>
-
-                                <div>
-                                    <dt>실패</dt>
-                                    <dd>
-                                        {testRecord?.failedTests ?? 0}회
-                                    </dd>
-                                </div>
-
-                                <div>
-                                    <dt>최근 테스트</dt>
-                                    <dd>
-                                        {formatDate(testRecord?.lastTestedAt)}
-                                    </dd>
-                                </div>
-                            </dl>
-
-                            <div className={styles.recentResults}>
-                                {(testRecord?.recentResults ?? []).map(
-                                    (result, index) => (
-                                        <span
-                                            key={index}
-                                            className={
-                                                result ? styles.pass : styles.fail
-                                            }
-                                        >
-                                            {result ? "통과" : "실패"}
-                                        </span>
-                                    ),
-                                )}
-
-                                {!testRecord && (
-                                    <span className={styles.emptyText}>
-                                        테스트 기록이 없습니다.
-                                    </span>
-                                )}
-                            </div>
-                        </section>
-                    </div>
-
-                    <section className={styles.imageDetailCard}>
-                        <div className={styles.cardHeader}>
-                            <div>
-                                <h2>기준 이미지</h2>
-                                <p>
-                                    등록된 기준 이미지 {referenceImages.length}장
-                                </p>
-                            </div>
-
-                            <Link
-                                href={`/admin/attractions/${attraction.id}/edit`}
-                                className={styles.secondaryButton}
-                            >
-                                이미지 관리
-                            </Link>
-                        </div>
-
-                        {referenceImages.length > 0 ? (
-                            <div className={styles.imageGrid}>
-                                {referenceImages.map((source, index) => (
-                                    <Image
-                                        key={`${source}-${index}`}
-                                        src={source}
-                                        alt={`${attraction.name} 기준 이미지 ${index + 1
-                                            }`}
-                                    width={640}
-                                        height={480}
-                                        unoptimized
-                                        />
-                                ))}
-                            </div>
-                        ) : (
-                            <p className={styles.emptyText}>
-                                등록된 기준 이미지가 없습니다.
-                            </p>
-                        )}
-                    </section>
-                </section>
-            )}
-        </main>
-
+      <main className={styles.simplePage}>
+        <header className={styles.simpleHeader}>
+          <div>
+            <Link href={`/admin/tours/${encodeURIComponent(attraction.tourId)}`} className={styles.simpleBack}>← 투어 대시보드</Link>
+            <p className={styles.eyebrow}>퀘스트 관리</p>
+            <h1>{attraction.name}</h1>
+            <span className={`${styles.statusBadge} ${attraction.status==="공개"?styles.publishedBadge:styles.unpublishedBadge}`}>{attraction.status}</span>
+          </div>
+        </header>
+        {needsAction && <section className={`${styles.actionNotice} ${readyForPublish ? styles.actionSuccess : styles.actionPending}`}>
+          <div><strong>{needsAction}</strong><p>{explanation}</p></div>
+          {hasImages&&!readyForPublish&&<Link href={`/landmark-test?attractionId=${attraction.id}`} className={styles.primaryButton}>인식 테스트하기</Link>}
+          {!hasImages&&<Link href={`/admin/attractions/${attraction.id}/images`} className={styles.primaryButton}>랜드마크 이미지 등록</Link>}
+        </section>}
+        <section className={styles.simpleCard}>
+          <div className={styles.simpleCardHeader}>
+            <h2>퀘스트 기본 정보</h2>
+            <Link href={`/admin/attractions/${attraction.id}/edit`} className={styles.blueEditButton}>정보 수정</Link>
+          </div>
+          <div className={styles.questOverview}>
+            <div className={styles.questOverviewIcon} aria-hidden="true">{icons[attraction.category]||"📍"}</div>
+            <div className={styles.questOverviewCopy}>
+              <span className={styles.questCategory}>{attraction.category}</span>
+              <h3>{attraction.name}</h3>
+              <p>{attraction.description||"등록된 안내 문구가 없습니다."}</p>
+            </div>
+          </div>
+          <div className={styles.questStats}>
+            <div className={styles.questStat}>
+              <span className={styles.statCaption}>인증 위치 <small className={styles.coordinateHint}>(위도 · 경도)</small></span>
+              <strong>{attraction.latitude??"-"}, {attraction.longitude??"-"}</strong>
+            </div>
+            <div className={styles.questStat}>
+              <span className={styles.statCaption}>GPS 인증 반경</span>
+              <strong>{attraction.radius}m</strong>
+            </div>
+          </div>
+          <div className={styles.questImagesRow}>
+            <div className={styles.questImagesText}>
+              <strong>랜드마크 이미지 {referenceImages.length}장</strong>
+              <span>등록된 랜드마크 사진</span>
+            </div>
+            <Link href={`/admin/attractions/${attraction.id}/images`} className={styles.imageManageButton}>이미지 관리</Link>
+          </div>
+        </section>
+        <section className={styles.simpleCard}>
+          <div className={styles.simpleCardHeader}><h2>인식 테스트 결과</h2><span className={hasPassedTest?styles.passedLabel:styles.pendingLabel}>{testRecord?.lastResult||"미실시"}</span></div>
+          <div className={styles.testSummary}><span>전체 {testRecord?.totalTests||0}회</span><span>성공 {testRecord?.successfulTests||0}회</span><span>실패 {testRecord?.failedTests||0}회</span><span>최근 {formatDate(testRecord?.lastTestedAt)}</span></div>
+          <Link href={`/landmark-test?attractionId=${attraction.id}`} className={styles.secondaryButton}>인식 테스트 진행하기</Link>
+        </section>
+        <section className={styles.largeActions}>
+          <button type="button" className={attraction.status==="공개"?styles.hideAction:styles.publishAction} onClick={toggleStatus} aria-disabled={attraction.status!=="공개"&&!readyForPublish}>
+            {attraction.status==="공개"?"비공개로 전환":"공개하기"}
+          </button>
+          <button type="button" className={styles.deleteAction} onClick={deleteAttraction}>퀘스트 삭제</button>
+        </section>
+      </main>
     );
 }
