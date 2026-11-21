@@ -267,7 +267,7 @@ export default function AttractionDetailPage() {
           </div>
           <div className={styles.questStats}>
             <div className={styles.questStat}>
-              <span className={styles.statCaption}>인증 위치</span>
+              <span className={styles.statCaption}>인증 위치 <small className={styles.coordinateHint}>(위도 · 경도)</small></span>
               <strong>{attraction.latitude??"-"}, {attraction.longitude??"-"}</strong>
             </div>
             <div className={styles.questStat}>
