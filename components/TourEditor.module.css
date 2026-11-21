@@ -148,3 +148,7 @@
 
 /* Quiet, consistent preview heading for tour and quest admin screens */
 .previewBanner{background:#f4f7fa;color:#526779;border-bottom:1px solid #e3eaf0;font-size:17px;font-weight:750}
+
+/* Group the two tour-information sections without changing their inputs */
+.informationGroup{display:grid;gap:13px;padding:15px;background:#fff;border:1px solid #dce7ef;border-radius:17px}
+@media(max-width:700px){.informationGroup{padding:10px;gap:10px}}
