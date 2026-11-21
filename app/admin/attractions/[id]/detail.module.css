@@ -358,3 +358,9 @@
 
 /* Quiet, consistent preview heading for tour and quest admin screens */
 .previewBanner{background:#f4f7fa;color:#526779;border-bottom:1px solid #e3eaf0;font-size:17px;font-weight:750}
+
+/* Harmonized quest management metadata and status chips */
+.simpleHeader .eyebrow{color:#49748b;font-weight:750;letter-spacing:.01em}
+.simpleHeader .statusBadge{display:inline-flex;align-items:center;margin-top:8px;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:800}
+.simpleHeader .publishedBadge{background:#e4f5ec;color:#197349}
+.simpleHeader .unpublishedBadge{background:#edf2f6;color:#586c7c}
