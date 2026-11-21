@@ -419,7 +419,7 @@ export default function EditAttractionPage() {
     }
 
     return (
-        <div className={styles.page}>
+        <div className={`${styles.page} ${styles.editPage}`}>
             <header className={styles.header}>
                 <div>
                     <AdminBackButton />
@@ -427,7 +427,7 @@ export default function EditAttractionPage() {
                         퀘스트 관리
                     </p>
 
-                    <h1>관광지 수정</h1>
+                    <h1>퀘스트 정보 수정</h1>
 
                     <p className={styles.headerDescription}>
                         관광지 정보와 기준 이미지를 수정합니다.
@@ -442,17 +442,19 @@ export default function EditAttractionPage() {
             >
                 <section className={styles.formCard}>
                     <div className={styles.sectionTitle}>
-                        <span>✓</span>
+                        <span>1</span>
 
                         <div>
-                            <h2>{form.name}</h2>
+                            <h2>퀘스트 정보 및 위치</h2>
                             <p>
                                 수정한 내용은 저장 후 목록에 반영됩니다.
                             </p>
                         </div>
                     </div>
 
-                    <div className={styles.fieldGrid}>
+                    <div className={styles.inputEmphasis}>
+                        <h3>퀘스트 기본 정보</h3>
+                        <div className={styles.fieldGrid}>
                         <label className={styles.field}>
                             퀘스트명
 
@@ -524,6 +526,12 @@ export default function EditAttractionPage() {
                             />
                         </label>
 
+                        </div>
+                    </div>
+                    <div className={styles.compactSection}>
+                        <h3>인증 위치 및 운영 설정</h3>
+                        <p className={styles.editSectionHint}>관광객이 인증할 위치와 촬영 조건을 설정합니다.</p>
+                        <div className={styles.fieldGrid}>
                         <label className={styles.field}>
                             위도
 
@@ -654,6 +662,17 @@ export default function EditAttractionPage() {
                             />
                         </label>
 
+                        </div>
+                    </div>
+                    <div className={styles.uploadArea}>
+                        <div className={styles.sectionTitle}>
+                            <span>2</span>
+                            <div>
+                                <h2>기준 이미지 등록</h2>
+                                <p>기존 이미지를 관리하거나 새로운 이미지를 추가합니다.</p>
+                            </div>
+                        </div>
+                        <div className={styles.fieldGrid}>
                         <label
                             className={`${styles.field} ${styles.fullField}`}
                         >
@@ -721,6 +740,7 @@ export default function EditAttractionPage() {
                         )}
                     </div>
 
+                    </div>
                     <div className={styles.formActions}>
                         <Link
                             href={`/admin/attractions?tourId=${originalAttraction.tourId}`}
@@ -738,40 +758,12 @@ export default function EditAttractionPage() {
                                 ? "저장 중..."
                                 : referenceImagesChanged
                                     ? "저장하고 다시 테스트"
-                                    : "수정 내용 저장"}
+                                    : "변경사항 저장"}
                         </button>
                     </div>
                 </section>
 
-                <aside className={styles.summaryCard}>
-                    <p className={styles.summaryTitle}>
-                        수정 내용
-                    </p>
 
-                    <div className={styles.summaryList}>
-                        <div>
-                            <span>퀘스트명</span>
-                            <strong>{form.name}</strong>
-                        </div>
-
-                        <div>
-                            <span>인증 반경</span>
-                            <strong>{form.radius}m</strong>
-                        </div>
-
-                        <div>
-                            <span>기준 이미지</span>
-                            <strong>
-                                {referenceImages.length}장
-                            </strong>
-                        </div>
-
-                        <div>
-                            <span>공개 상태</span>
-                            <strong>{form.status}</strong>
-                        </div>
-                    </div>
-                </aside>
             </form>
         </div>
     );
