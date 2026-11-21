@@ -410,7 +410,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                     <p>{errorMessage}</p>
 
                     <Link
-                        href={`/admin/attractions?tourId=${originalAttraction?.tourId ?? "amsa"}`}
+                        href={`/admin/tours/${encodeURIComponent(originalAttraction?.tourId ?? "amsa")}`}
                         className={styles.backLink}
                     >
                         퀘스트 목록으로 돌아가기
