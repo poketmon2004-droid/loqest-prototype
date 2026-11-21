@@ -284,7 +284,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
         }
 
         if (referenceImages.length === 0) {
-            setErrorMessage("랜드마크 판별에 사용할 기준 이미지를 한 장 이상 남겨주세요.");
+            setErrorMessage("랜드마크 판별에 사용할 랜드마크 이미지를 한 장 이상 남겨주세요.");
             return;
         }
 
@@ -306,7 +306,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
             return;
         }
 
-        if (!window.confirm(`"${form.name.trim()}" 퀘스트의 변경사항을 저장하시겠습니까?${referenceImagesChanged ? "\n기준 이미지 변경으로 비공개 상태가 되고 재테스트가 필요합니다." : ""}`)) return;
+        if (!window.confirm(`"${form.name.trim()}" 퀘스트의 변경사항을 저장하시겠습니까?${referenceImagesChanged ? "\n랜드마크 이미지 변경으로 비공개 상태가 되고 재테스트가 필요합니다." : ""}`)) return;
 
         setErrorMessage("");
         setIsProcessing(true);
@@ -426,9 +426,9 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
             <header className={styles.header}>
                 <div>
                     <p className={styles.eyebrow}>퀘스트 관리</p>
-                    <h1>{imageMode ? "기준 이미지 관리" : "퀘스트 정보 수정"}</h1>
+                    <h1>{imageMode ? "랜드마크 이미지 관리" : "퀘스트 정보 수정"}</h1>
                     <p className={styles.headerDescription}>
-                        {imageMode ? "등록된 기준 이미지를 확인하고 추가하거나 삭제합니다." : "퀘스트 정보와 인증 위치를 수정합니다."}
+                        {imageMode ? "등록된 랜드마크 이미지를 확인하고 추가하거나 삭제합니다." : "퀘스트 정보와 인증 위치를 수정합니다."}
                     </p>
                 </div>
             </header>
@@ -488,17 +488,17 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                     ) : (
                         <div className={styles.uploadArea}>
                             <div className={styles.uploadHeader}>
-                                <div><h3>기준 이미지 등록</h3><p>기존 사진을 관리하거나 새로운 사진을 추가합니다.</p></div>
+                                <div><h3>랜드마크 이미지 등록</h3><p>기존 사진을 관리하거나 새로운 사진을 추가합니다.</p></div>
                                 <strong>{referenceImages.length}장 등록</strong>
                             </div>
-                            <label className={styles.fileButton}>+ 기준 이미지 선택
+                            <label className={styles.fileButton}>+ 랜드마크 이미지 선택
                                 <input type="file" accept="image/*" multiple onChange={handleReferenceImages} disabled={isProcessing}/>
                             </label>
                             {isProcessing && <p className={styles.uploadCount}>이미지를 처리하고 있습니다.</p>}
                             {referenceImages.length === 0 ? (
                                 <div className={styles.emptyImageState}>
-                                    <strong>등록된 기준 이미지가 없습니다.</strong>
-                                    <p>기준 이미지를 한 장 이상 추가해 주세요.</p>
+                                    <strong>등록된 랜드마크 이미지가 없습니다.</strong>
+                                    <p>랜드마크 이미지를 한 장 이상 추가해 주세요.</p>
                                 </div>
                             ) : (
                                 <div className={styles.imageDisclosure}>
