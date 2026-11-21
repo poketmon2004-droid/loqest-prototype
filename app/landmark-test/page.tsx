@@ -139,7 +139,7 @@ export default function LandmarkTestPage() {
         if (imageUrls.length === 0) {
           setReferenceImages([]);
           setAttractionError(
-            "이 관광지에는 실제 기준 이미지가 저장되어 있지 않습니다."
+            "이 관광지에는 실제 랜드마크 이미지가 저장되어 있지 않습니다."
           );
           return;
         }
@@ -154,7 +154,7 @@ export default function LandmarkTestPage() {
           setAttractionError(
             error instanceof Error
               ? error.message
-              : "관광지 기준 이미지를 불러오지 못했습니다."
+              : "랜드마크 이미지를 불러오지 못했습니다."
           );
         }
       }
@@ -277,7 +277,7 @@ export default function LandmarkTestPage() {
     setAnalyzing(true);
     setResults([]);
     setStatus(
-      `${landmarkName} 기준 사진 ${referenceImages.length}장과 특징점을 비교하고 있습니다.`
+      `${landmarkName} 랜드마크 사진 ${referenceImages.length}장과 특징점을 비교하고 있습니다.`
     );
 
     try {
@@ -298,7 +298,7 @@ export default function LandmarkTestPage() {
     } catch (error) {
       console.error(error);
       setStatus(
-        "분석 중 오류가 발생했습니다. 기준 사진 경로를 확인해 주세요."
+        "분석 중 오류가 발생했습니다. 랜드마크 사진 경로를 확인해 주세요."
       );
     } finally {
       setAnalyzing(false);
@@ -320,7 +320,7 @@ export default function LandmarkTestPage() {
         <h1 style={styles.title}>{landmarkName} 랜드마크 인식 실험</h1>
 
         <p style={styles.description}>
-          테스트 사진과 {landmarkName} 기준 사진 {referenceImages.length}장의
+          테스트 사진과 {landmarkName} 랜드마크 사진 {referenceImages.length}장의
           ORB 특징점을 비교합니다.
         </p>
 
@@ -413,7 +413,7 @@ export default function LandmarkTestPage() {
             </p>
 
             <p style={styles.fileName}>
-              가장 유사한 기준 사진: {bestResult.referenceName}
+              가장 유사한 랜드마크 사진: {bestResult.referenceName}
             </p>
           </section>
         )}
@@ -424,7 +424,7 @@ export default function LandmarkTestPage() {
 
         {results.length > 0 && (
           <section style={styles.listSection}>
-            <h2 style={styles.listTitle}>기준 사진별 비교 결과</h2>
+            <h2 style={styles.listTitle}>랜드마크 사진별 비교 결과</h2>
 
             <div style={styles.resultList}>
               {results.map((result, index) => (
