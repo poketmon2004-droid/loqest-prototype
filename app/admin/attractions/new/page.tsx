@@ -45,7 +45,7 @@ const initialForm: AttractionFormData = {
 
 const steps = [
   { number: 1, title: "퀘스트 정보 및 위치" },
-  { number: 2, title: "기준 이미지 등록" },
+  { number: 2, title: "랜드마크 이미지 등록" },
   { number: 3, title: "최종 확인" },
 ];
 const CATEGORY_ICONS: Record<string, string> = {
@@ -216,7 +216,7 @@ export default function NewAttractionPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const goReview = () => {if(referenceImages.length===0){setErrorMessage("기준 이미지를 한 장 이상 등록해주세요.");return;}setErrorMessage("");setStep(3);window.scrollTo({top:0,behavior:"smooth"});};
+  const goReview = () => {if(referenceImages.length===0){setErrorMessage("랜드마크 이미지를 한 장 이상 등록해주세요.");return;}setErrorMessage("");setStep(3);window.scrollTo({top:0,behavior:"smooth"});};
 
   const goPrevious = () => {
     setErrorMessage("");
@@ -233,7 +233,7 @@ export default function NewAttractionPage() {
 
     if (referenceImages.length === 0) {
       setErrorMessage(
-        "인식 테스트에 사용할 기준 이미지를 한 장 이상 등록해주세요.",
+        "인식 테스트에 사용할 랜드마크 이미지를 한 장 이상 등록해주세요.",
       );
       return;
     }
@@ -303,7 +303,7 @@ export default function NewAttractionPage() {
         if (!response.ok) {
           throw new Error(
             response.status === 413
-              ? "기준 이미지 용량이 서버 업로드 제한을 초과했습니다. 이미지 수를 줄여 다시 시도해주세요."
+              ? "랜드마크 이미지 용량이 서버 업로드 제한을 초과했습니다. 이미지 수를 줄여 다시 시도해주세요."
               : `서버가 정상적인 응답을 보내지 않았습니다. (HTTP ${response.status})`,
           );
         }
@@ -509,7 +509,7 @@ export default function NewAttractionPage() {
               <span>2</span>
 
               <div>
-                <h2>기준 이미지 등록</h2>
+                <h2>랜드마크 이미지 등록</h2>
                 <p>
                   실제 촬영 사진과 비교할 이미지를
                   등록합니다.
@@ -533,7 +533,7 @@ export default function NewAttractionPage() {
               </div>
 
               <label className={styles.fileButton}>
-                + 기준 이미지 선택
+                + 랜드마크 이미지 선택
                 <input
                   type="file"
                   accept="image/*"
@@ -605,7 +605,7 @@ export default function NewAttractionPage() {
             </div>
             <div className={styles.reviewDetails}>
               <p><b>카테고리</b>{form.category}</p><p><b>인증 위치</b>{form.latitude}, {form.longitude}</p>
-              <p><b>인증 반경</b>{form.radius}m</p><p><b>기준 이미지</b>{referenceImages.length}장</p>
+              <p><b>인증 반경</b>{form.radius}m</p><p><b>랜드마크 이미지</b>{referenceImages.length}장</p>
             </div>
             <p className={styles.privateNotice}>등록된 퀘스트는 비공개 상태로 저장됩니다. 인식 테스트를 마친 뒤 공개할 수 있습니다.</p>
           </section>
