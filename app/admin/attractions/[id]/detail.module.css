@@ -364,3 +364,23 @@
 .simpleHeader .statusBadge{display:inline-flex;align-items:center;margin-top:8px;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:800}
 .simpleHeader .publishedBadge{background:#e4f5ec;color:#197349}
 .simpleHeader .unpublishedBadge{background:#edf2f6;color:#586c7c}
+
+/* Quest detail overview: visitor-style identity with compact admin metrics */
+.questOverview{display:flex;align-items:center;gap:17px;padding:18px 20px;margin:18px 0 13px;background:#f5fafc;border:1px solid #d9e8f0;border-radius:14px}
+.questOverviewIcon{display:grid;place-items:center;flex:0 0 58px;width:58px;height:58px;border-radius:13px;background:#e7f2f8;font-size:27px}
+.questOverviewCopy{min-width:0}
+.questCategory{display:block;color:#54859c;font-size:12px;font-weight:750}
+.questOverviewCopy h3{margin:5px 0 4px;color:#193e59;font-size:20px;font-weight:800;line-height:1.35;overflow-wrap:anywhere}
+.questOverviewCopy p{margin:0;color:#73899a;font-size:13px;line-height:1.55;overflow-wrap:anywhere}
+.questStats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 13px}
+.questStat{display:grid;align-content:center;gap:7px;min-width:0;min-height:75px;padding:15px 17px;background:#f6f8fb;border-radius:12px}
+.statCaption{color:#73899a;font-size:12px}
+.questStat strong{font-size:15px;color:#1d415a;overflow-wrap:anywhere}
+.questImagesRow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 17px;background:#f8fafc;border-radius:12px}
+.questImagesText{display:grid;gap:5px}
+.questImagesText strong{color:#1d415a;font-size:14px}
+.questImagesText span{color:#73899a;font-size:12px}
+.imageManageButton{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;min-height:40px;padding:9px 15px;border:1px solid #bad4e5;border-radius:8px;background:#fff;color:#0278b5;font-size:13px;font-weight:800;text-decoration:none;transition:background .15s,border-color .15s}
+.imageManageButton:hover{background:#edf7fd;border-color:#0284c7}
+.imageManageButton:focus-visible{outline:3px solid #b5e1f6;outline-offset:2px}
+@media(max-width:520px){.questOverview{padding:15px;gap:12px}.questOverviewIcon{width:48px;height:48px;flex-basis:48px;font-size:23px}.questOverviewCopy h3{font-size:17px}.questStats{gap:8px}.questStat{padding:12px}.questStat strong{font-size:13px}.questImagesRow{padding:13px}.imageManageButton{padding:9px 11px;font-size:12px}}
