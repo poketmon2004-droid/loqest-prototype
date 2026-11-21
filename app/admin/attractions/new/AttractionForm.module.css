@@ -654,3 +654,28 @@
   border: 1px solid #d8e6ef;
   background: #f0f6fa;
 }
+
+/* Quest edit: follow the same design language as new quest registration */
+.editPage .header{max-width:1100px}
+.editPage .formLayout{max-width:1100px}
+.editPage .formCard{padding:27px}
+.editPage .sectionTitle{margin-bottom:18px}
+.editPage .inputEmphasis{margin-bottom:17px!important}
+.editPage .inputEmphasis .fieldGrid{margin-top:14px;gap:16px}
+.editPage .inputEmphasis .field input,
+.editPage .inputEmphasis .field select,
+.editPage .inputEmphasis .field textarea{background:#fff!important;border:1px solid #c9dbe9!important}
+.editPage .compactSection{margin-bottom:18px!important}
+.editPage .compactSection h3{font-size:18px;color:#23445c}
+.editPage .editSectionHint{margin:5px 0 0;color:#7b8e9d;font-size:13px}
+.editPage .compactSection .fieldGrid{margin-top:16px}
+.editPage .compactSection .field input,
+.editPage .compactSection .field select,
+.editPage .compactSection .field textarea{background:#fff;border:1px solid #c9dbe9}
+.editPage .uploadArea{background:#f8fbfd;border:1px solid #dce6ee;border-radius:14px;padding:23px}
+.editPage .uploadArea .sectionTitle{margin-bottom:12px}
+.editPage .uploadArea .fieldGrid{margin-top:12px}
+.editPage .uploadArea .field input[type=file]{border:1px dashed #bfd6e5;background:#fff;padding:14px}
+.editPage .formActions{margin-top:22px}
+.editPage .formActions .primaryButton{min-width:140px}
+@media(max-width:700px){.editPage .formCard{padding:17px}.editPage .uploadArea{padding:16px}.editPage .inputEmphasis .fieldGrid{grid-template-columns:1fr}}
