@@ -619,3 +619,30 @@
 .main .tourEdit:hover{background:#036fa7!important;border-color:#036fa7!important}
 .main .tourEdit:focus-visible{outline:3px solid #b5e1f6;outline-offset:2px}
 @media(max-width:700px){.main .tourEdit{min-width:140px;min-height:45px;padding:10px 13px!important;font-size:13px!important}}
+
+/* Tour management and quest list share the same neutral white card treatment. */
+.main .tourActions {
+  background:#fff!important;
+  border:1px solid #dce6ee!important;
+  border-radius:15px;
+  padding:22px 23px;
+  margin:0 0 14px;
+}
+.main .tourActions > div:first-child strong {color:#19364d}
+.main .newQuestButton{
+  display:inline-flex;align-items:center;justify-content:center;
+  box-sizing:border-box;flex:0 0 auto;
+  min-width:185px;min-height:54px;
+  padding:15px 25px!important;
+  background:#0284c7!important;color:#fff!important;
+  border:1px solid #0284c7!important;border-radius:11px!important;
+  font-size:16px!important;font-weight:800!important;
+  box-shadow:0 5px 12px rgb(2 132 199 / 15%);
+  text-decoration:none;text-align:center;
+}
+.main .newQuestButton:hover{background:#036fa7!important;border-color:#036fa7!important}
+.main .newQuestButton:focus-visible{outline:3px solid #b5e1f6;outline-offset:2px}
+@media(max-width:700px){
+  .main .tourActions{padding:17px}
+  .main .newQuestButton{min-width:140px;min-height:45px;padding:10px 13px!important;font-size:13px!important}
+}
