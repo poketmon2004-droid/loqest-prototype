@@ -92,7 +92,7 @@ function getAdminHeaders() {
     };
 }
 
-export default function EditAttractionPage() {
+export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
     const router = useRouter();
     const params = useParams();
 
@@ -421,314 +421,121 @@ export default function EditAttractionPage() {
 
     return (
         <div className={`${styles.page} ${styles.editPage}`}>
+            <AdminBackButton href={`/admin/attractions/${attractionId}?tourId=${encodeURIComponent(originalAttraction.tourId)}`} />
             <header className={styles.header}>
                 <div>
-                    <AdminBackButton />
-                    <p className={styles.eyebrow}>
-                        퀘스트 관리
-                    </p>
-
-                    <h1>퀘스트 정보 수정</h1>
-
+                    <p className={styles.eyebrow}>퀘스트 관리</p>
+                    <h1>{imageMode ? "기준 이미지 관리" : "퀘스트 정보 수정"}</h1>
                     <p className={styles.headerDescription}>
-                        관광지 정보와 기준 이미지를 수정합니다.
+                        {imageMode ? "등록된 기준 이미지를 확인하고 추가하거나 삭제합니다." : "퀘스트 정보와 인증 위치를 수정합니다."}
                     </p>
                 </div>
-
             </header>
-
-            <form
-                className={styles.formLayout}
-                onSubmit={handleSubmit}
-            >
+            <form className={styles.formLayout} onSubmit={handleSubmit}>
                 <section className={styles.formCard}>
-                    <div className={styles.sectionTitle}>
-                        <span>1</span>
-
-                        <div>
-                            <h2>퀘스트 정보 및 위치</h2>
-                            <p>
-                                수정한 내용은 저장 후 목록에 반영됩니다.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className={styles.inputEmphasis}>
-                        <h3>퀘스트 기본 정보</h3>
-                        <div className={styles.fieldGrid}>
-                        <label className={styles.field}>
-                            퀘스트명
-
-                            <input
-                                type="text"
-                                value={form.name}
-                                onChange={(event) =>
-                                    updateForm(
-                                        "name",
-                                        event.target.value
-                                    )
-                                }
-                                required
-                            />
-                        </label>
-
-                        <label className={styles.field}>
-                            카테고리
-
-                            <select
-                                value={form.category}
-                                onChange={(event) =>
-                                    updateForm(
-                                        "category",
-                                        event.target.value
-                                    )
-                                }
-                            >
-                                <option>역사·문화</option>
-                                <option>자연·생태</option>
-                                <option>축제·행사</option>
-                                <option>체험·레저</option>
-                                <option>지역상권</option>
-                                <option>포토 미션</option>
-                            </select>
-                        </label>
-
-
-
-                        <label
-                            className={`${styles.field} ${styles.fullField}`}
-                        >
-                            관광지 소개
-
-                            <textarea
-                                value={form.description}
-                                rows={4}
-                                onChange={(event) =>
-                                    updateForm(
-                                        "description",
-                                        event.target.value
-                                    )
-                                }
-                            />
-                        </label>
-
-                        </div>
-                    </div>
-                    <div className={styles.compactSection}>
-                        <h3>인증 위치 및 운영 설정</h3>
-                        <p className={styles.editSectionHint}>관광객이 인증할 위치와 촬영 조건을 설정합니다.</p>
-                        <div className={styles.fieldGrid}>
-                        <label className={styles.field}>
-                            위도
-
-                            <input
-                                type="number"
-                                step="any"
-                                value={form.latitude}
-                                onChange={(event) =>
-                                    updateForm(
-                                        "latitude",
-                                        event.target.value
-                                    )
-                                }
-                            />
-                        </label>
-
-                        <label className={styles.field}>
-                            경도
-
-                            <input
-                                type="number"
-                                step="any"
-                                value={form.longitude}
-                                onChange={(event) =>
-                                    updateForm(
-                                        "longitude",
-                                        event.target.value
-                                    )
-                                }
-                            />
-                        </label>
-
-                        <label className={styles.field}>
-                            GPS 인증 반경
-
-                            <div className={styles.inputWithUnit}>
-                                <input
-                                    type="number"
-                                    min="10"
-                                    value={form.radius}
-                                    onChange={(event) =>
-                                        updateForm(
-                                            "radius",
-                                            event.target.value
-                                        )
-                                    }
-                                />
-
-                                <span>m</span>
+                    {!imageMode ? (
+                        <>
+                            <div className={styles.inputEmphasis}>
+                                <h3>퀘스트 기본 정보</h3>
+                                <label className={styles.field}>
+                                    퀘스트명
+                                    <input type="text" required value={form.name} onChange={event=>updateForm("name",event.target.value)}
+                                        placeholder="예: 선사유적지 안내판" />
+                                </label>
+                                <label className={styles.field}>
+                                    안내 문구
+                                    <input type="text" required value={form.description} onChange={event=>updateForm("description",event.target.value)}
+                                        placeholder="관광객에게 보여줄 설명을 입력해 주세요." />
+                                </label>
+                                <div className={styles.categorySetting}>
+                                    <label className={styles.field}>
+                                        카테고리
+                                        <select value={form.category} onChange={event=>updateForm("category",event.target.value)}>
+                                            <option>역사·문화</option><option>자연·생태</option><option>축제·행사</option>
+                                            <option>체험·레저</option><option>지역상권</option><option>기타</option>
+                                            {form.category==="포토 미션" && <option>포토 미션</option>}
+                                        </select>
+                                        <small>선택한 카테고리에 맞춰 카드 아이콘이 자동으로 변경됩니다.</small>
+                                    </label>
+                                </div>
                             </div>
-                        </label>
-
-
-
-                        <label className={styles.field}>
-                            랜드마크 인식 기준
-
-                            <div className={styles.rangeHeader}>
-                                <span>인증 기준값</span>
-
-                                <strong>
-                                    {form.landmarkThreshold}%
-                                </strong>
-                            </div>
-
-                            <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                value={form.landmarkThreshold}
-                                onChange={(event) =>
-                                    updateForm(
-                                        "landmarkThreshold",
-                                        event.target.value
-                                    )
-                                }
-                            />
-                        </label>
-
-
-
-                        <label
-                            className={`${styles.field} ${styles.fullField}`}
-                        >
-                            촬영 안내 문구
-
-                            <textarea
-                                value={form.guideMessage}
-                                rows={3}
-                                onChange={(event) =>
-                                    updateForm(
-                                        "guideMessage",
-                                        event.target.value
-                                    )
-                                }
-                            />
-                        </label>
-
-                        </div>
-                    </div>
-                    <div className={styles.uploadArea}>
-                        <div className={styles.sectionTitle}>
-                            <span>2</span>
-                            <div>
-                                <h2>기준 이미지 등록</h2>
-                                <p>기존 이미지를 관리하거나 새로운 이미지를 추가합니다.</p>
-                            </div>
-                        </div>
-                        <div className={styles.fieldGrid}>
-                        <label
-                            className={`${styles.field} ${styles.fullField}`}
-                        >
-                            기준 이미지 추가
-
-                            <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={handleReferenceImages}
-                                disabled={isProcessing}
-                            />
-
-                            <small>
-                                기존 이미지에 새 이미지를 추가할 수 있습니다.
-                            </small>
-                        </label>
-
-                        {isProcessing && (
-                            <p className={styles.uploadCount}>
-                                이미지를 처리하고 있습니다.
-                            </p>
-                        )}
-
-                        {errorMessage && (
-                            <p className={styles.errorMessage}>
-                                {errorMessage}
-                            </p>
-                        )}
-
-                        {referenceImages.length > 0 && (
-                            <div className={styles.imageDisclosure}>
-                              <button type="button" className={styles.imageDisclosureButton}
-                                aria-expanded={showReferenceImages}
-                                onClick={() => setShowReferenceImages(previous => !previous)}>
-                                <span>등록된 기준 이미지 {referenceImages.length}장</span>
-                                <span>{showReferenceImages ? "사진 접기 ↑" : "사진 보기 ↓"}</span>
-                              </button>
-                              {showReferenceImages && (
-                            <div
-                                className={`${styles.fullField} ${styles.imagePreviewGrid}`}
-                            >
-                                {referenceImages.map((image) => (
-                                    <article
-                                        key={image.id}
-                                        className={styles.imagePreviewItem}
-                                    >
-                                        <NextImage
-                                            src={image.dataUrl}
-                                            alt={image.name}
-                                        width={640}
-                                        height={480}
-                                        unoptimized
-                                        />
-
-                                        <div>
-                                            <span title={image.name}>
-                                                {image.name}
-                                            </span>
-
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    removeReferenceImage(image.id)
-                                                }
-                                            >
-                                                삭제
-                                            </button>
+                            <div className={styles.compactSection}>
+                                <div className={styles.locationHeader}>
+                                    <h3>인증 위치</h3>
+                                    <p>관광객이 촬영할 장소의 위치를 설정합니다.</p>
+                                </div>
+                                <div className={styles.fieldGrid}>
+                                    <label className={styles.field}>위도
+                                        <input type="number" step="any" required value={form.latitude}
+                                            onChange={event=>updateForm("latitude",event.target.value)} placeholder="37.560000"/>
+                                    </label>
+                                    <label className={styles.field}>경도
+                                        <input type="number" step="any" required value={form.longitude}
+                                            onChange={event=>updateForm("longitude",event.target.value)} placeholder="127.130000"/>
+                                    </label>
+                                    <label className={styles.field}>GPS 인증 반경
+                                        <div className={styles.inputWithUnit}>
+                                            <input type="number" min="10" required value={form.radius}
+                                                onChange={event=>updateForm("radius",event.target.value)}/>
+                                            <span>m</span>
                                         </div>
-                                    </article>
-                                ))}
+                                        <small>설정한 반경 안에서만 촬영할 수 있습니다.</small>
+                                    </label>
+                                </div>
                             </div>
-                              )}
+                        </>
+                    ) : (
+                        <div className={styles.uploadArea}>
+                            <div className={styles.uploadHeader}>
+                                <div><h3>기준 이미지 등록</h3><p>기존 사진을 관리하거나 새로운 사진을 추가합니다.</p></div>
+                                <strong>{referenceImages.length}장 등록</strong>
                             </div>
-                        )}
-                    </div>
-
-                    </div>
+                            <label className={styles.fileButton}>+ 기준 이미지 선택
+                                <input type="file" accept="image/*" multiple onChange={handleReferenceImages} disabled={isProcessing}/>
+                            </label>
+                            {isProcessing && <p className={styles.uploadCount}>이미지를 처리하고 있습니다.</p>}
+                            {referenceImages.length === 0 ? (
+                                <div className={styles.emptyImageState}>
+                                    <strong>등록된 기준 이미지가 없습니다.</strong>
+                                    <p>기준 이미지를 한 장 이상 추가해 주세요.</p>
+                                </div>
+                            ) : (
+                                <div className={styles.imageDisclosure}>
+                                    <button type="button" className={styles.imageDisclosureButton}
+                                        aria-expanded={showReferenceImages}
+                                        onClick={()=>setShowReferenceImages(previous=>!previous)}>
+                                        <span>등록된 기준 이미지 {referenceImages.length}장</span>
+                                        <span>{showReferenceImages?"사진 접기 ↑":"사진 보기 ↓"}</span>
+                                    </button>
+                                    {showReferenceImages && (
+                                        <div className={styles.imagePreviewGrid}>
+                                            {referenceImages.map(image=>(
+                                                <article key={image.id} className={styles.imagePreviewItem}>
+                                                    <NextImage src={image.dataUrl} alt={image.name} width={640} height={480} unoptimized/>
+                                                    <button type="button" aria-label={`${image.name} 삭제`}
+                                                        onClick={()=>removeReferenceImage(image.id)}>×</button>
+                                                </article>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    {errorMessage && <p className={styles.errorMessage} role="alert">{errorMessage}</p>}
                     <div className={styles.formActions}>
-                        <Link
-                            href={`/admin/attractions?tourId=${originalAttraction.tourId}`}
-                            className={styles.secondaryButton}
-                        >
-                            취소
-                        </Link>
-
-                        <button
-                            type="submit"
-                            className={styles.primaryButton}
-                            disabled={isProcessing}
-                        >
-                            {isProcessing
-                                ? "저장 중..."
-                                : referenceImagesChanged
-                                    ? "저장하고 다시 테스트"
-                                    : "변경사항 저장"}
+                        <Link href={`/admin/attractions/${attractionId}?tourId=${encodeURIComponent(originalAttraction.tourId)}`}
+                            className={styles.secondaryButton}>취소</Link>
+                        <button type="submit" className={styles.primaryButton} disabled={isProcessing}>
+                            {isProcessing?"저장 중...":imageMode?"이미지 변경 저장":"변경사항 저장"}
                         </button>
                     </div>
                 </section>
-
-
             </form>
         </div>
     );
+}
+
+export default function EditAttractionPage() {
+    return <QuestEditView />;
 }
