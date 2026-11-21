@@ -85,6 +85,7 @@ export default function TourEditor({tourId}: {tourId?:string}) {
     {!tourId && <div className={styles.steps}><span className={step===1?styles.current:""}>1　투어 정보 입력</span><span className={step===2?styles.current:""}>2　최종 확인</span></div>}
     <form onSubmit={submit} className={styles.form}>
       {step===1?<div className={styles.fields}>
+        <div className={styles.informationGroup}>
         <section className={styles.blueCard}><h2>1. 투어 기본 정보</h2>
           <label>투어 이름<input required value={form.name} onChange={e=>update("name",e.target.value)} placeholder="예: 암사동 선사유적 투어" maxLength={100}/></label>
           <label>투어 소개 (최대 50자)<textarea required rows={3} maxLength={50} value={form.description} onChange={e=>update("description",e.target.value)} placeholder="투어를 간단하게 소개해 주세요."/></label>
@@ -96,6 +97,7 @@ export default function TourEditor({tourId}: {tourId?:string}) {
             <label>시·군·구<input required value={form.region} onChange={e=>update("region",e.target.value)} placeholder="예: 강동구"/></label>
           </div>
         </section>
+        </div>
         {tourId && <section className={styles.managementCard}>
           <h2>투어 운영 설정</h2>
           <p className={styles.managementHelp}>공개 상태를 변경한 뒤 '변경사항 저장'을 눌러 적용하세요.</p>
