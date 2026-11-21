@@ -326,7 +326,7 @@ export default function NewAttractionPage() {
       }
 
       localStorage.setItem(`loqest_new_quest_${tourId}`, String(result.attraction.id));
-      router.push(`/admin/attractions?tourId=${encodeURIComponent(tourId)}`);
+      router.push(`/landmark-test?attractionId=${encodeURIComponent(String(result.attraction.id))}`);
     } catch (error) {
       setErrorMessage(
         error instanceof Error
