@@ -168,3 +168,26 @@
 /* Final step is a single visual visitor card, without repeated summary table. */
 .confirmCard .reviewPreview{margin-top:0;padding-top:0;border-top:0}
 .confirmCard .reviewPreview h2{margin:0 0 13px;font-size:16px;font-weight:800;color:#526779}
+
+/* Compact realistic tourist card in new-tour step 2; no decorative stock image. */
+.confirmCard{padding:0!important;overflow:hidden}
+.confirmCard .reviewPreview{margin:0!important;padding:0!important;border:0!important}
+.confirmCard .reviewPreview h2{margin:0!important;padding:15px 20px;background:#edf4f8;border-bottom:1px solid #dae6ef;color:#31566e;font-size:16px;font-weight:800;text-align:center}
+.confirmCard .reviewPreviewCard{
+  margin:19px 22px 21px;display:flex;flex-direction:column;align-items:flex-start;
+  gap:0;padding:22px 24px 20px;min-height:0;border:1px solid #d6e7e9;
+  border-radius:19px;background:linear-gradient(135deg,#f9fdfd 0%,#f0f8f7 100%);
+  box-shadow:0 4px 14px rgba(25,62,85,.035)
+}
+.confirmCard .reviewPreviewLocation{display:inline-flex;align-items:center;gap:5px;margin-bottom:13px;padding:6px 10px;background:#e9f3f8;color:#397994;border-radius:8px;font-size:12px;font-weight:750}
+.confirmCard .reviewPreviewCard strong{font-size:23px;line-height:1.35;color:#173d5a;font-weight:850;overflow-wrap:anywhere}
+.confirmCard .reviewPreviewCard p{margin:7px 0 18px;font-size:14px;color:#718ba0;line-height:1.5;overflow-wrap:anywhere}
+.confirmCard .reviewPreviewExplore{display:flex;align-items:center;justify-content:center;gap:9px;box-sizing:border-box;width:100%;min-height:52px;padding:13px 18px;background:linear-gradient(100deg,#234862,#2d5e76);border-radius:14px;color:#fff;font-size:15px;font-weight:800;box-shadow:0 6px 13px rgba(25,62,85,.1);user-select:none;pointer-events:none}
+.confirmCard .reviewPreviewExplore span{font-size:18px;font-weight:500}
+@media(max-width:700px){
+  .confirmCard .reviewPreview h2{padding:13px 15px;font-size:15px}
+  .confirmCard .reviewPreviewCard{margin:14px;padding:18px;border-radius:15px}
+  .confirmCard .reviewPreviewCard strong{font-size:20px}
+  .confirmCard .reviewPreviewCard p{font-size:13px;margin-bottom:15px}
+  .confirmCard .reviewPreviewExplore{min-height:46px;font-size:14px}
+}
