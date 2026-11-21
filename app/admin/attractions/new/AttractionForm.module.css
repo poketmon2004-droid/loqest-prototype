@@ -575,3 +575,82 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Redesigned quest registration: preview first, highlighted input sections */
+.formLayout{display:block!important;max-width:1050px;margin:0 auto}.formCard{width:100%!important;max-width:none!important;box-sizing:border-box}.questPreviewCard{position:relative;display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:#fff!important;border:1px solid #dce5ed!important;box-shadow:none!important;margin-bottom:17px;overflow:hidden;padding-top:65px!important}.questPreviewBanner{position:absolute;top:0;left:0;right:0;height:45px;display:flex;align-items:center;justify-content:center;background:linear-gradient(120deg,#d5eef3,#e8edf8);color:#385e70;font-size:20px;font-weight:800}.questPreviewContent strong{display:block;color:#1f3c55;font-size:19px}.questPreviewContent p{color:#697c89;margin:5px 0}.inputEmphasis{display:grid;gap:14px;background:#edf5fc;padding:23px;border-radius:16px;border:1px solid #d1e4f2;margin-bottom:18px}.inputEmphasis h3{margin:0;font-size:18px}.inputEmphasis .field input,.inputEmphasis .field select{background:#fff!important;border:1px solid #c8d9e7!important;border-radius:9px;padding:12px}.categorySetting{margin:0!important}.compactSection{background:#f0f5fa;border:1px solid #dae5ed;border-radius:16px;padding:22px!important;margin:0 0 18px!important}.reviewCard{display:grid;gap:16px}.reviewDetails{border:1px solid #e3eaf0;border-radius:12px;padding:15px}.reviewDetails p{display:flex;gap:16px;padding:10px;border-bottom:1px solid #edf1f4;margin:0}.reviewDetails b{min-width:110px}.privateNotice{color:#627b8c;background:#edf5fc;padding:14px;border-radius:9px;font-size:13px}
+
+/* Match the approved 3-column registration wizard, not legacy 2-column layout */
+.page{background:#f8fafc!important;padding:32px 28px 80px!important;color:#1c344a!important}
+.header,.stepper,.formLayout{max-width:1100px!important}
+.header{margin:0 auto 22px!important}.header h1{font-size:28px!important;color:#1c344a}
+.eyebrow{color:#0284c7!important;font-weight:800!important;letter-spacing:.03em}
+.headerDescription{font-size:14px!important;color:#768a9d!important}
+.stepper{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important;margin:0 auto 22px!important}
+.stepItem{min-height:63px;box-sizing:border-box;border-radius:11px!important;background:#fff!important;padding:14px!important;color:#77899c!important;border:1px solid #dce7ef!important}
+.stepItem span{background:#e9f0f5!important;border-radius:9px!important;color:#5b7185!important;font-size:13px;font-weight:800}
+.activeStep{border-color:#0284c7!important;color:#075985!important;background:#f4fbff!important}
+.activeStep span{background:#0284c7!important;color:#fff!important}
+.completedStep span{background:#dff4e9!important;color:#14804b!important}
+.formCard{min-height:0!important;padding:27px!important;border:1px solid #e1e9f0!important;border-radius:17px!important;box-shadow:0 2px 12px #163d580a!important}
+.sectionTitle{margin-bottom:20px!important;padding-bottom:17px!important;border-bottom:1px solid #edf1f5!important}
+.sectionTitle>span{background:#0284c7!important}
+.sectionTitle h2{font-size:19px!important;color:#1b405a!important}
+.questPreviewCard{max-width:none!important;box-sizing:border-box;min-height:170px!important;padding:75px 23px 24px!important;margin:0 0 20px!important;gap:17px!important;flex-wrap:nowrap!important;border:1px solid #d9e6ef!important;border-left:1px solid #d9e6ef!important;border-radius:15px!important;background:white!important;box-shadow:none!important}
+.questPreviewBanner{height:46px!important;background:linear-gradient(110deg,#d8f0f4,#e7eef8)!important;color:#2b647c!important;font-size:21px!important}
+.questPreviewIcon{border-radius:13px!important;background:#eaf4fa!important;flex:0 0 60px!important;width:60px!important;height:60px!important;font-size:29px!important}
+.questPreviewContent strong{font-size:19px!important;color:#1e415a!important}
+.questPreviewContent p{font-size:14px!important;color:#7990a1!important}
+.inputEmphasis{background:#edf5fc!important;border-color:#cfe4f3!important;border-radius:14px!important;padding:23px!important;margin:0 0 18px!important}
+.inputEmphasis h3{font-size:18px!important;color:#23445c!important}
+.inputEmphasis .field{font-weight:700}
+.inputEmphasis .field input,.inputEmphasis .field select{padding:13px!important;border:1px solid #c9dbe9!important;background:#fff!important}
+.compactSection{background:#f0f5fa!important;border:1px solid #dce6ee!important;border-radius:14px!important;margin:0!important;padding:23px!important}
+.compactSection .fieldGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.formActions .primaryButton{background:#0284c7!important;border-color:#0284c7!important;color:#fff!important}
+.formActions .secondaryButton{background:#fff!important;border-color:#d1e0eb!important;color:#37546a!important}
+.reviewCard .questPreviewCard{margin-top:12px!important}
+@media(max-width:700px){.page{padding:18px 14px 60px!important}.stepper{gap:5px!important}.stepItem{min-height:62px;padding:9px!important;gap:7px!important}.stepItem strong{font-size:11px!important}.stepItem span{width:25px;height:25px;font-size:11px}.formCard{padding:17px!important}.compactSection .fieldGrid{grid-template-columns:1fr!important}.questPreviewCard{padding:67px 15px 19px!important}.questPreviewIcon{height:47px!important;width:47px!important;flex-basis:47px!important}}
+
+/* Consistent upload controls: LOQEST primary sky blue / neutral outline */
+.uploadArea .fileButton {
+  position: relative;
+  display: inline-flex;
+  box-sizing: border-box;
+  min-height: 46px;
+  padding: 0 19px;
+  border: 1px solid #0284c7;
+  border-radius: 10px;
+  background: #0284c7;
+  color: #fff;
+  box-shadow: none;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color .15s, border-color .15s;
+}
+.uploadArea .fileButton:hover {
+  background: #036fa7;
+  border-color: #036fa7;
+}
+.uploadArea .fileButton:focus-within {
+  outline: 3px solid #b5e1f6;
+  outline-offset: 2px;
+}
+.uploadArea .fileButton:has(input:disabled) {
+  opacity: .55;
+  cursor: not-allowed;
+}
+.uploadArea .uploadHeader strong,
+.uploadArea .uploadCount {
+  background: #edf7fd;
+  color: #036b9a;
+  border: 1px solid #d1e6f4;
+}
+.uploadArea .emptyImageState {
+  background: #f8fbfd;
+  border: 1px dashed #cbdce9;
+}
+.uploadArea .imagePreviewItem {
+  border: 1px solid #d8e6ef;
+  background: #f0f6fa;
+}

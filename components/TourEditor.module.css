@@ -1,0 +1,154 @@
+.page{max-width:1100px;padding:35px 34px 70px;margin:0 auto;color:#1d3348}
+.heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:25px}.heading h1{margin:4px 0 6px;font-size:28px}.heading p{margin:0;color:#63778d}.eyebrow{font-size:11px!important;letter-spacing:.1em;color:#0284c7!important;font-weight:800}.cancelTop{border:1px solid #d6e2ed;border-radius:9px;padding:10px 15px;color:#526679;text-decoration:none;background:#fff}
+.steps{display:flex;gap:18px;margin:0 0 22px}.steps span{border-bottom:3px solid #d6e2ed;padding:12px 20px;font-weight:700;color:#7f8b97}.steps .current{border-color:#0284c7;color:#075985}
+.form{display:grid;gap:20px}.previewBox,.confirmCard{background:#fff;border:1px solid #dce5ed;border-radius:18px;padding:25px}.previewBox h2,.fields h2,.confirmCard h2{font-size:18px;margin:0 0 18px}
+.previewCard{background:linear-gradient(120deg,#eaf7fa,#f4f8ff);border:1px solid #d1e5f0;border-radius:17px;padding:27px;min-height:150px}.previewCard h3{font-size:26px;margin:8px 0}.previewCard p{margin:4px 0;color:#667d8e}.previewCard .explore{background:#244960;border-radius:10px;color:white;padding:12px 20px;margin-top:19px;width:fit-content;font-weight:750}
+.fields{display:grid;gap:17px}.blueCard,.grayCard{border-radius:16px;border:1px solid #d4e3f0;padding:24px;display:grid;gap:13px}.blueCard{background:#edf5fc}.grayCard{background:#f0f5fa}.fields label{display:grid;gap:8px;font-size:13px;font-weight:800;color:#2d4f68}.fields input,.fields textarea,.fields select{width:100%;box-sizing:border-box;border:1px solid #cbd9e6;background:white;border-radius:10px;padding:13px;font:inherit;font-weight:400;color:#1e3c51}.regionGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.counter{text-align:right;margin:-8px 0 0;color:#607d96;font-size:12px}
+.confirmCard dl{margin:0}.confirmCard dl div{display:grid;grid-template-columns:150px 1fr;border-bottom:1px solid #e6edf3;padding:15px 0;gap:10px}.confirmCard dt{color:#6b7c8e}.confirmCard dd{margin:0;font-weight:700}
+.actions{display:flex;justify-content:flex-end;gap:10px;padding-top:10px}.actions button,.actions a{display:inline-flex;align-items:center;justify-content:center;border-radius:10px;padding:14px 24px;font-weight:800;font-size:14px;text-decoration:none;cursor:pointer}.secondary{background:#fff;border:1px solid #cbd9e6;color:#304e62}.primary{background:#0284c7;color:#fff;border:0}.primary:disabled{opacity:.55;cursor:not-allowed}.error{padding:13px;background:#fff1f1;color:#ad3131;border-radius:8px}
+.modalBackdrop{position:fixed;inset:0;background:#0b203d99;display:grid;place-items:center;z-index:50;padding:20px}.modal{border-radius:18px;max-width:420px;width:100%;padding:32px;text-align:center;background:#fff;box-shadow:0 18px 60px #12223d33}.modal h2{font-size:22px}.modal p{color:#64748b}.modal button{display:block;width:100%;border:0;border-radius:10px;padding:15px;background:#0284c7;color:#fff;font-weight:800;cursor:pointer}.modal a{display:inline-block;margin-top:18px;color:#386984}.successIcon{display:grid;place-items:center;background:#dcfce7;color:#168341;border-radius:100%;width:50px;height:50px;margin:auto;font-size:26px}
+@media(max-width:700px){.page{padding:22px 15px}.heading h1{font-size:23px}.regionGrid{grid-template-columns:1fr}.previewBox,.blueCard,.grayCard{padding:18px}.confirmCard dl div{grid-template-columns:1fr}.actions button,.actions a{padding:12px 16px}}
+
+.statusActions{display:flex;gap:10px;margin-top:14px}.statusActions button{border-radius:9px;padding:12px 20px;cursor:pointer;font-weight:800;border:1px solid #d0dae5}.published{background:#0284c7;color:white}.hidden{background:#d97706;color:white}.danger{margin-right:auto;background:#fff1f1;color:#b42318;border:1px solid #efb4b4!important}
+
+/* Approved tour editor compact desktop layout: preserve vertical sequence but fit a desktop viewport */
+@media(min-width:901px){
+.page{width:min(100%,1150px);box-sizing:border-box;padding:19px 24px 26px}
+.heading{margin-bottom:13px}.heading h1{font-size:24px;margin:2px 0 3px}.heading p{font-size:13px}.eyebrow{font-size:10px!important}.cancelTop{padding:8px 12px;font-size:13px}
+.steps{gap:8px;margin:0 0 13px}.steps span{padding:9px 15px;font-size:13px}
+.form{gap:11px}.previewBox,.confirmCard{padding:15px 21px;border-radius:14px}.previewBox h2,.fields h2,.confirmCard h2{font-size:16px;margin-bottom:10px}
+.previewCard{padding:17px 23px;min-height:0;border-radius:13px}.previewCard h3{font-size:23px;margin:5px 0}.previewCard p{font-size:13px;margin:2px 0}.previewCard .explore{padding:8px 17px;font-size:12px;margin-top:9px;border-radius:9px}
+.fields{gap:10px}.blueCard,.grayCard{padding:14px 20px;border-radius:13px;gap:8px}.fields label{gap:5px;font-size:12px}.fields input,.fields textarea,.fields select{padding:9px 12px;font-size:13px;border-radius:8px}.fields textarea{height:56px;min-height:56px;resize:vertical}.regionGrid{gap:12px}.counter{font-size:11px;margin:-7px 0 0}
+.actions{padding-top:0}.actions a,.actions button{padding:10px 19px;font-size:13px}.confirmCard dl div{padding:10px 0}
+}
+@media(min-width:901px) and (max-height:780px){.page{padding-top:12px}.heading{margin-bottom:8px}.form{gap:8px}.previewCard{padding:11px 18px}.previewCard h3{font-size:20px}.blueCard,.grayCard{padding:10px 16px}.fields textarea{height:45px;min-height:45px}.fields input,.fields select{padding:7px 10px}}
+
+/* Existing tour only: operating controls immediately under input fields */
+.managementCard {
+  box-sizing: border-box;
+  border: 1px solid #d4e3f0;
+  border-radius: 14px;
+  padding: 20px 22px;
+  background: #fff;
+}
+.managementCard h2 { margin: 0 0 6px; font-size: 17px; color: #1d3a50; }
+.managementHelp { margin: 0 0 10px; font-size: 12px; color: #708698; }
+.managementSetting {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid #e7edf3;
+}
+.managementSetting > div:first-child { min-width: 0; }
+.managementSetting strong { display: block; color: #25435c; font-size: 14px; }
+.managementSetting p { margin: 5px 0 0; color: #72899b; font-size: 12px; line-height: 1.5; }
+.managementSetting .statusActions { display: flex; flex-shrink: 0; margin: 0; gap: 8px; }
+.managementSetting .statusActions button {
+  min-width: 88px;
+  min-height: 40px;
+  padding: 9px 15px;
+  border-radius: 9px;
+  font-weight: 800;
+  font-size: 13px;
+}
+.managementSetting .danger {
+  flex-shrink: 0;
+  min-height: 40px;
+  margin: 0;
+  padding: 9px 18px;
+  border: 1px solid #efb4b4;
+  border-radius: 9px;
+  background: #fff2f2;
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.managementSetting .danger:hover:not(:disabled) { background: #ffe5e5; border-color: #d98f8f; }
+.managementSetting .danger:disabled { opacity: .5; cursor: not-allowed; }
+@media (min-width:901px) {
+  .managementCard { padding: 11px 20px; }
+  .managementCard h2 { font-size: 15px; }
+  .managementHelp { font-size: 11px; margin-bottom: 7px; }
+  .managementSetting { padding: 9px 0; }
+  .managementSetting p { margin-top: 3px; }
+  .managementSetting .statusActions button,
+  .managementSetting .danger { min-height: 35px; padding: 7px 13px; }
+}
+@media(max-width:620px) {
+  .managementCard { padding: 16px; }
+  .managementSetting { align-items: flex-start; flex-direction: column; }
+  .managementSetting .statusActions { width: 100%; }
+  .managementSetting .statusActions button { flex: 1; }
+}
+
+/* Existing-tour management: one horizontal action row */
+.managementSetting{display:block;padding:14px 0 2px}
+.managementActions{display:flex;align-items:center;justify-content:space-between;gap:18px;width:100%}
+.managementActions .statusActions{display:flex;align-items:center;gap:12px;margin:0}
+.managementActions .statusActions button{
+  min-width:132px!important;min-height:49px!important;
+  padding:13px 22px!important;font-size:15px!important;border-radius:10px!important;
+  border:1px solid #ccd9e6;
+}
+.managementActions .statusActions button.published{background:#0284c7;color:#fff;border-color:#0284c7}
+.managementActions .statusActions button.hidden{background:#d97706;color:#fff;border-color:#d97706}
+.managementActions .danger{
+  display:inline-flex;align-items:center;justify-content:center;min-width:150px!important;
+  min-height:49px!important;padding:13px 23px!important;font-size:15px!important;
+  font-weight:800;border-radius:10px!important;margin:0!important;
+}
+@media(max-width:620px){
+  .managementSetting{display:block}
+  .managementActions{align-items:stretch;gap:9px}
+  .managementActions .statusActions{width:auto;flex:1;min-width:0;gap:7px}
+  .managementActions .statusActions button{min-width:0!important;flex:1;padding:11px 8px!important;font-size:12px!important}
+  .managementActions .danger{min-width:0!important;flex:0 0 auto;padding:11px 10px!important;font-size:12px!important}
+}
+
+/* Consistent quest-style tour editing, matching approved preview */
+.page{max-width:1120px;margin:0 auto;padding:22px 30px 45px;box-sizing:border-box;color:#21394d}
+.heading{display:block;margin:0 0 18px}.heading h1{font-size:28px;margin:0;color:#19364d;font-weight:800}
+.form{gap:13px}.fields{gap:13px}
+.previewBox{padding:0!important;overflow:hidden;border:1px solid #dce7ef;border-radius:16px;background:#fff}
+.previewBanner{height:46px;display:flex;align-items:center;justify-content:center;background:linear-gradient(120deg,#d5eef3,#e8edf8);color:#365d70;font-size:20px;font-weight:800}
+.previewPadding{padding:19px 22px}
+.previewCard{padding:20px 23px!important;min-height:0!important;background:linear-gradient(135deg,#fbfefe 0%,#f3faf9 100%)!important;border:1px solid #d8e9e9!important;border-radius:16px!important;box-shadow:none}
+.previewCard .previewLocation{color:#3c839b;font-size:12px;margin:0 0 8px}
+.previewCard h3{color:#1c435f;font-size:24px;font-weight:800;margin:3px 0 8px}
+.previewCard .previewDescription{color:#72899c;font-size:13px;margin:0 0 20px}
+.previewCard .explore{display:block;box-sizing:border-box;width:100%!important;text-align:center;background:linear-gradient(100deg,#244a64,#306079);color:white;padding:15px 12px!important;border-radius:15px;margin-top:0!important;font-size:14px;font-weight:800}
+.blueCard,.grayCard,.managementCard{padding:20px 23px!important;border:1px solid #dce7ef!important;border-radius:16px!important;background:#fff!important;box-shadow:none}
+.fields h2{font-size:18px!important;font-weight:800;margin:0 0 16px!important;color:#1c3b53}
+.fields label{font-size:12px;color:#416179;gap:6px}
+.fields input,.fields textarea,.fields select{padding:11px 12px!important;box-sizing:border-box;border:1px solid #cbdae7;border-radius:9px;font-size:13px;color:#2a4960;background:white}
+.fields textarea{height:65px!important;min-height:65px!important}
+.regionGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.regionGrid input,.regionGrid select{height:44px!important;min-height:44px!important;max-height:44px!important}
+.managementCard{display:block}
+.managementHelp{color:#8192a2;font-size:12px!important;margin:-6px 0 16px!important}
+.managementActions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px!important;border-top:1px solid #e8edf2;padding-top:17px}
+.managementActions button{box-sizing:border-box;min-width:0!important;min-height:59px!important;width:100%;border-radius:12px!important;font:inherit;font-size:16px!important;font-weight:800;cursor:pointer}
+.managementActions .publishAction{background:#0284c7;border:1px solid #0284c7;color:#fff}
+.managementActions .hideAction{background:#d97706;border:1px solid #d97706;color:#fff}
+.managementActions .deleteAction{background:#fff3f3;border:2px solid #e1a1a1;color:#b42318}
+.managementActions button:disabled{opacity:.55;cursor:not-allowed}
+.actions{padding:4px 0 0}.actions button,.actions a{border-radius:9px;font-size:13px;padding:12px 19px}
+@media(min-width:901px){.page{max-width:1120px;padding:22px 30px 45px}.heading{margin:0 0 18px}.heading h1{font-size:28px}.form{gap:13px}.previewPadding{padding:19px 22px}.previewCard{padding:20px 23px!important}.previewCard h3{font-size:24px}.previewCard .explore{padding:15px 12px!important}.blueCard,.grayCard,.managementCard{padding:20px 23px!important}.fields{gap:13px}.fields h2{font-size:18px!important}.fields label{font-size:12px}.fields input,.fields textarea,.fields select{padding:11px 12px!important}.fields textarea{height:65px!important}.managementCard h2{font-size:18px!important}.managementHelp{font-size:12px!important}.managementActions button{min-height:59px!important;font-size:16px!important}}
+@media(min-width:901px) and (max-height:780px){.page{padding-top:20px}.form{gap:13px}.previewCard{padding:20px 23px!important}.blueCard,.grayCard,.managementCard{padding:20px 23px!important}.fields textarea{height:65px!important}.fields input,.fields select{padding:11px 12px!important}}
+@media(max-width:700px){.page{padding:18px 14px 32px}.previewPadding{padding:15px}.previewCard{padding:17px!important}.previewCard h3{font-size:21px}.blueCard,.grayCard,.managementCard{padding:17px!important}.regionGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.managementActions{gap:8px!important}.managementActions button{font-size:13px!important;min-height:53px!important}}
+
+/* Distinguish the two editable sections while keeping their inputs white */
+.fields .blueCard{background:#edf5fc!important;border-color:#d3e4f2!important}
+.fields .grayCard{background:#f0f5fa!important;border-color:#d9e4ee!important}
+.fields .blueCard input,.fields .blueCard textarea,
+.fields .grayCard input,.fields .grayCard select{background:#fff!important}
+
+/* Quiet, consistent preview heading for tour and quest admin screens */
+.previewBanner{background:#f4f7fa;color:#526779;border-bottom:1px solid #e3eaf0;font-size:17px;font-weight:750}
+
+/* Group the two tour-information sections without changing their inputs */
+.informationGroup{display:grid;gap:13px;padding:15px;background:#fff;border:1px solid #dce7ef;border-radius:17px}
+@media(max-width:700px){.informationGroup{padding:10px;gap:10px}}

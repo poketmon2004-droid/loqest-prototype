@@ -14,6 +14,7 @@ type Tour = {
 export default function TourSelector() {
   const [tours, setTours] = useState<Tour[]>([]);
   const [search, setSearch] = useState("");
+  const [regionFilter,setRegionFilter] = useState("all");
   const [loaded, setLoaded] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -78,84 +79,36 @@ export default function TourSelector() {
     );
   }, [tours, search]);
 
+  const visibleTours=filteredTours.filter(t=>regionFilter==="all"||t.region.startsWith(regionFilter));
+  const regions=[...new Set(tours.map(t=>t.region.split(" ")[0]).filter(Boolean))].sort();
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <p>LOQEST Admin</p>
-          <h1>투어 목록</h1>
-          <span>관리할 투어를 선택해주세요.</span>
+      <div className={styles.eyebrow}>TOUR MANAGEMENT</div>
+      <h1 className={styles.homeTitle}>관리할 투어를 선택하세요</h1>
+      <p className={styles.homeSub}>기존 투어를 찾아 관리하거나 새로운 투어를 등록할 수 있어요.</p>
+      <Link href="/admin/tours/new" className={styles.createFeature}>
+        <span aria-hidden="true" className={styles.featureIcon}>+</span>
+        <span className={styles.featureText}>
+          <strong>새로운 투어를 등록하시겠어요?</strong>
+          <small>새로운 지역의 여행 코스를 만들고, 퀘스트를 등록해 보세요.</small>
+          <span className={styles.featureLink}>+ 새 투어 등록하기</span>
+        </span>
+      </Link>
+      <section className={styles.searchPanel}>
+        <h2 className={styles.searchTitle}>기존 투어 관리</h2>
+        <p className={styles.searchSub}>지역을 선택하거나 투어명을 검색하세요.</p>
+        <div className={styles.regionFilters} role="group" aria-label="지역 필터">
+          <button type="button" className={regionFilter==="all"?styles.regionFilterActive:styles.regionFilter} onClick={()=>setRegionFilter("all")}>전체</button>
+          {regions.map(region=><button type="button" key={region} className={regionFilter===region?styles.regionFilterActive:styles.regionFilter} onClick={()=>setRegionFilter(region)}>{region}</button>)}
         </div>
-
-        <Link href="/admin/tours/new" className={styles.addButton}>
-          + 새 투어 등록
-        </Link>
-      </header>
-
-      <section className={styles.card}>
-        <div className={styles.controls}>
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="투어명 또는 지역 검색"
-            aria-label="투어 검색"
-          />
-        </div>
-
-        {errorMessage ? (
-          <div className={styles.empty}>
-            <strong>불러오지 못했습니다.</strong>
-            <p>{errorMessage}</p>
-          </div>
-        ) : !loaded ? (
-          <div className={styles.empty}>
-            <p>투어 목록을 불러오는 중입니다.</p>
-          </div>
-        ) : filteredTours.length === 0 ? (
-          <div className={styles.empty}>
-            <strong>조건에 맞는 투어가 없습니다.</strong>
-            <p>다른 투어명이나 지역을 검색해주세요.</p>
-          </div>
-        ) : (
-          <div className={styles.tableWrapper}>
-            <table>
-              <thead>
-                <tr>
-                  <th>투어명</th>
-                  <th>지역</th>
-                  <th>관리</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {filteredTours.map((tour) => (
-                  <tr key={tour.id}>
-                    <td>
-                      <strong>{tour.name}</strong>
-                    </td>
-
-                    <td>{tour.region || "미입력"}</td>
-
-                    <td>
-                      <Link
-                        href={`/admin/tours/${tour.id}`}
-                        className={styles.selectButton}
-                        onClick={() =>
-                          localStorage.setItem(
-                            "loqest_active_tour_id",
-                            tour.id,
-                          )
-                        }
-                      >
-                        관리하기
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <input className={styles.searchbox} value={search} type="search" onChange={e=>setSearch(e.target.value)} placeholder="투어명 또는 지역 검색" aria-label="투어 검색"/>
+        <div className={styles.listHead}><strong>투어 목록</strong><small>{visibleTours.length}개 투어</small></div>
+        {errorMessage?<p className={styles.empty}>{errorMessage}</p>:!loaded?<p className={styles.empty}>투어 목록을 불러오는 중입니다.</p>:visibleTours.length===0?<p className={styles.empty}>조건에 맞는 투어가 없습니다.</p>:
+          <div>{visibleTours.map(tour=><article className={styles.tourRow} key={tour.id}>
+            <span className={styles.tourPin} aria-hidden="true">⌖</span>
+            <div className={styles.tourDesc}><strong>{tour.name}</strong><small>{tour.region||"지역 미입력"}</small></div>
+            <Link className={styles.openTour} href={`/admin/tours/${encodeURIComponent(tour.id)}`}>관리하기</Link>
+          </article>)}</div>}
       </section>
     </main>
   );
