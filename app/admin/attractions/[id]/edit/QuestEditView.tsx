@@ -357,6 +357,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
             }
 
             if (referenceImagesChanged) {
+                localStorage.removeItem(`loqest_previously_published_${attractionId}`);
                 const recognitionRecords = JSON.parse(
                     localStorage.getItem(
                         "loqest_recognition_test_records"
