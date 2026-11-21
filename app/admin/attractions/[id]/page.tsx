@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { clearAdminApiKey, getAdminApiKey } from "@/lib/adminApiKey";
@@ -55,7 +54,6 @@ export default function AttractionDetailPage() {
         useState<RecognitionTestRecord | null>(null);
     const [referenceImages, setReferenceImages] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
-    const [detailsOpen, setDetailsOpen] = useState(false);
 
     useEffect(() => {
         const loadAttraction = async () => {
@@ -255,20 +253,35 @@ export default function AttractionDetailPage() {
           {!hasImages&&<Link href={`/admin/attractions/${attraction.id}/images`} className={styles.primaryButton}>기준 이미지 등록</Link>}
         </section>}
         <section className={styles.simpleCard}>
-          <div className={styles.simpleCardHeader}><h2>퀘스트 기본 정보</h2>
+          <div className={styles.simpleCardHeader}>
+            <h2>퀘스트 기본 정보</h2>
             <Link href={`/admin/attractions/${attraction.id}/edit`} className={styles.blueEditButton}>정보 수정</Link>
           </div>
-          <dl className={styles.simpleDetails}>
-            <div><dt>카테고리</dt><dd>{attraction.category}</dd></div>
-            <div><dt>안내 문구</dt><dd>{attraction.description||"-"}</dd></div>
-            <div><dt>위도 · 경도</dt><dd>{attraction.latitude??"-"} · {attraction.longitude??"-"}</dd></div>
-            <div><dt>GPS 인증 반경</dt><dd>{attraction.radius}m</dd></div>
-            <div><dt>기준 이미지</dt><dd>{referenceImages.length}장 등록 <Link href={`/admin/attractions/${attraction.id}/images`} className={styles.moreLink}>이미지 관리</Link> <button type="button" className={styles.moreLink} onClick={()=>setDetailsOpen(open=>!open)}>{detailsOpen?"접기 ↑":"자세히 보기 ↓"}</button></dd></div>
-          </dl>
-          {detailsOpen&&<div className={styles.imagePanel}>
-            <div className={styles.simpleCardHeader}><h3>등록된 기준 이미지</h3><Link href={`/admin/attractions/${attraction.id}/images`} className={styles.blueEditButton}>이미지 관리</Link></div>
-            {referenceImages.length>0?<div className={styles.simpleImageGrid}>{referenceImages.map((source,index)=><Image key={index} src={source} alt={`기준 이미지 ${index+1}`} width={200} height={150} unoptimized/>)}</div>:<p>등록된 이미지가 없습니다.</p>}
-          </div>}
+          <div className={styles.questOverview}>
+            <div className={styles.questOverviewIcon} aria-hidden="true">{icons[attraction.category]||"📍"}</div>
+            <div className={styles.questOverviewCopy}>
+              <span className={styles.questCategory}>{attraction.category}</span>
+              <h3>{attraction.name}</h3>
+              <p>{attraction.description||"등록된 안내 문구가 없습니다."}</p>
+            </div>
+          </div>
+          <div className={styles.questStats}>
+            <div className={styles.questStat}>
+              <span className={styles.statCaption}>인증 위치</span>
+              <strong>{attraction.latitude??"-"}, {attraction.longitude??"-"}</strong>
+            </div>
+            <div className={styles.questStat}>
+              <span className={styles.statCaption}>GPS 인증 반경</span>
+              <strong>{attraction.radius}m</strong>
+            </div>
+          </div>
+          <div className={styles.questImagesRow}>
+            <div className={styles.questImagesText}>
+              <strong>기준 이미지 {referenceImages.length}장</strong>
+              <span>등록된 인식 기준 사진</span>
+            </div>
+            <Link href={`/admin/attractions/${attraction.id}/images`} className={styles.imageManageButton}>이미지 관리</Link>
+          </div>
         </section>
         <section className={styles.simpleCard}>
           <div className={styles.simpleCardHeader}><h2>인식 테스트 결과</h2><span className={hasPassedTest?styles.passedLabel:styles.pendingLabel}>{testRecord?.lastResult||"미실시"}</span></div>
