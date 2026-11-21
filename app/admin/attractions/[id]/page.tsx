@@ -164,7 +164,7 @@ export default function AttractionDetailPage() {
                     "loqest_admin_notice",
                     `'${attraction.name}' 관광지가 홈페이지에 공개되었습니다.`
                 );
-                router.push(`/admin/attractions?tourId=${attraction.tourId}`);
+                router.push(`/admin/tours/${encodeURIComponent(attraction.tourId)}`);
                 return;
             }
             setAttraction({ ...attraction, status: nextStatus });
@@ -198,7 +198,7 @@ export default function AttractionDetailPage() {
         }
 
         if (response.ok) {
-            router.push(`/admin/attractions?tourId=${attraction.tourId}`);
+            router.push(`/admin/tours/${encodeURIComponent(attraction.tourId)}`);
         } else {
             window.alert("관광지를 삭제하지 못했습니다.");
         }
@@ -241,7 +241,7 @@ export default function AttractionDetailPage() {
       <main className={styles.simplePage}>
         <header className={styles.simpleHeader}>
           <div>
-            <Link href={`/admin/attractions?tourId=${encodeURIComponent(attraction.tourId)}`} className={styles.simpleBack}>← 퀘스트 목록</Link>
+            <Link href={`/admin/tours/${encodeURIComponent(attraction.tourId)}`} className={styles.simpleBack}>← 투어 대시보드</Link>
             <p className={styles.eyebrow}>퀘스트 관리</p>
             <h1>{attraction.name}</h1>
             <span className={`${styles.statusBadge} ${attraction.status==="공개"?styles.publishedBadge:styles.unpublishedBadge}`}>{attraction.status}</span>
