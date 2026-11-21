@@ -145,3 +145,6 @@
 .fields .grayCard{background:#f0f5fa!important;border-color:#d9e4ee!important}
 .fields .blueCard input,.fields .blueCard textarea,
 .fields .grayCard input,.fields .grayCard select{background:#fff!important}
+
+/* Quiet, consistent preview heading for tour and quest admin screens */
+.previewBanner{background:#f4f7fa;color:#526779;border-bottom:1px solid #e3eaf0;font-size:17px;font-weight:750}
