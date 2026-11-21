@@ -237,7 +237,7 @@ export default function AttractionDetailPage() {
           <div>
             <Link href={`/admin/attractions?tourId=${encodeURIComponent(attraction.tourId)}`} className={styles.simpleBack}>← 퀘스트 목록</Link>
             <p className={styles.eyebrow}>퀘스트 관리</p>
-            <h1>{icons[attraction.category]||"📍"} {attraction.name}</h1>
+            <h1>{attraction.name}</h1>
             <span className={styles.statusBadge}>{attraction.status}</span>
           </div>
         </header>
