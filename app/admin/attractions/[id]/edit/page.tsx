@@ -237,8 +237,6 @@ export default function EditAttractionPage() {
             return;
         }
 
-        if (!window.confirm(`"${form.name.trim()}" 퀘스트의 변경사항을 저장하시겠습니까?${referenceImagesChanged ? "\n기준 이미지 변경으로 비공개 상태가 되고 재테스트가 필요합니다." : ""}`)) return;
-
         setErrorMessage("");
         setIsProcessing(true);
 
@@ -306,6 +304,8 @@ export default function EditAttractionPage() {
             setErrorMessage("랜드마크 인식 기준은 0~100 사이로 입력해주세요.");
             return;
         }
+
+        if (!window.confirm(`"${form.name.trim()}" 퀘스트의 변경사항을 저장하시겠습니까?${referenceImagesChanged ? "\n기준 이미지 변경으로 비공개 상태가 되고 재테스트가 필요합니다." : ""}`)) return;
 
         setErrorMessage("");
         setIsProcessing(true);
