@@ -115,20 +115,15 @@ export default function TourEditor({tourId}: {tourId?:string}) {
       </div>:<section className={styles.confirmCard}>
         <h2>등록 정보를 확인해 주세요</h2>
         <dl><div><dt>투어 이름</dt><dd>{form.name}</dd></div><div><dt>투어 소개</dt><dd>{form.description}</dd></div><div><dt>운영 지역</dt><dd>{fullRegion}</dd></div>{tourId&&<div><dt>공개 상태</dt><dd>{status}</dd></div>}</dl>
-      </section>}
-      {!tourId && (
-      <section className={styles.previewBox} aria-label="관광객 화면 미리보기">
-        <div className={styles.previewBanner}>미리보기</div>
-        <div className={styles.previewPadding}>
-          <div className={styles.previewCard}>
-            <p className={styles.previewLocation}>{fullRegion||"지역을 선택해 주세요"}</p>
-            <h3>{form.name||"새 투어 이름"}</h3>
-            <p className={styles.previewDescription}>{form.description||"관광객에게 보여줄 투어 소개가 여기에 표시됩니다."}</p>
-            <div className={styles.explore}>탐험하기 →</div>
+        {!tourId && <div className={styles.reviewPreview}>
+          <h3>관광객 화면 미리보기</h3>
+          <div className={styles.reviewPreviewCard}>
+            <span className={styles.reviewPreviewLocation}>{fullRegion}</span>
+            <strong>{form.name}</strong>
+            <p>{form.description}</p>
           </div>
-        </div>
-      </section>
-      )}
+        </div>}
+      </section>}
       {error&&<p className={styles.error} role="alert">{error}</p>}
       <footer className={styles.actions}>
         {(tourId||step===1)?<Link className={styles.secondary} href={cancelHref}>취소</Link>:<button type="button" className={styles.secondary} onClick={()=>setStep(1)}>이전단계</button>}
