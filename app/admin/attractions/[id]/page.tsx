@@ -238,7 +238,7 @@ export default function AttractionDetailPage() {
             <Link href={`/admin/attractions?tourId=${encodeURIComponent(attraction.tourId)}`} className={styles.simpleBack}>← 퀘스트 목록</Link>
             <p className={styles.eyebrow}>퀘스트 관리</p>
             <h1>{attraction.name}</h1>
-            <span className={styles.statusBadge}>{attraction.status}</span>
+            <span className={`${styles.statusBadge} ${attraction.status==="공개"?styles.publishedBadge:styles.unpublishedBadge}`}>{attraction.status}</span>
           </div>
         </header>
         {needsAction && <section className={`${styles.actionNotice} ${hasImages && hasPassedTest ? styles.actionSuccess : styles.actionPending}`}>
@@ -266,12 +266,6 @@ export default function AttractionDetailPage() {
           <div className={styles.simpleCardHeader}><h2>인식 테스트 결과</h2><span className={hasPassedTest?styles.passedLabel:styles.pendingLabel}>{testRecord?.lastResult||"미실시"}</span></div>
           <div className={styles.testSummary}><span>전체 {testRecord?.totalTests||0}회</span><span>성공 {testRecord?.successfulTests||0}회</span><span>실패 {testRecord?.failedTests||0}회</span><span>최근 {formatDate(testRecord?.lastTestedAt)}</span></div>
           <Link href={`/landmark-test?attractionId=${attraction.id}`} className={styles.secondaryButton}>인식 테스트 진행하기</Link>
-        </section>
-        <section className={styles.visitorPreview}>
-          <div className={styles.previewBanner}>미리보기</div>
-          <div className={styles.previewInside}><span className={styles.previewIcon}>{icons[attraction.category]||"📍"}</span>
-            <div><strong>{attraction.name}</strong><p>{attraction.description||"등록된 안내 문구가 없습니다."}</p></div>
-          </div>
         </section>
         <section className={styles.largeActions}>
           <button type="button" className={attraction.status==="공개"?styles.hideAction:styles.publishAction} onClick={toggleStatus} aria-disabled={attraction.status!=="공개"&&!hasPassedTest}>
