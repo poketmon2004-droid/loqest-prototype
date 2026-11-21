@@ -679,3 +679,10 @@
 .editPage .formActions{margin-top:22px}
 .editPage .formActions .primaryButton{min-width:140px}
 @media(max-width:700px){.editPage .formCard{padding:17px}.editPage .uploadArea{padding:16px}.editPage .inputEmphasis .fieldGrid{grid-template-columns:1fr}}
+
+/* Edit-only compact image library: thumbnails are hidden until requested */
+.editPage .imageDisclosure{grid-column:1/-1;min-width:0}
+.editPage .imageDisclosureButton{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border:1px solid #cbdde9;border-radius:10px;background:#fff;color:#31546d;font:inherit;font-size:13px;font-weight:750;text-align:left;cursor:pointer}
+.editPage .imageDisclosureButton:hover{background:#f2f8fc;border-color:#a7cbdf}
+.editPage .imageDisclosureButton:focus-visible{outline:3px solid #b5e1f6;outline-offset:2px}
+.editPage .imageDisclosure .imagePreviewGrid{grid-column:1/-1;margin-top:12px}
