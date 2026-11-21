@@ -244,7 +244,7 @@ export default function AttractionDetailPage() {
         {needsAction && <section className={`${styles.actionNotice} ${hasImages && hasPassedTest ? styles.actionSuccess : styles.actionPending}`}>
           <div><strong>{needsAction}</strong><p>{explanation}</p></div>
           {hasImages&&!hasPassedTest&&<Link href={`/landmark-test?attractionId=${attraction.id}`} className={styles.primaryButton}>인식 테스트하기</Link>}
-          {!hasImages&&<Link href={`/admin/attractions/${attraction.id}/edit`} className={styles.primaryButton}>기준 이미지 등록</Link>}
+          {!hasImages&&<Link href={`/admin/attractions/${attraction.id}/images`} className={styles.primaryButton}>기준 이미지 등록</Link>}
         </section>}
         <section className={styles.simpleCard}>
           <div className={styles.simpleCardHeader}><h2>퀘스트 기본 정보</h2>
@@ -255,10 +255,10 @@ export default function AttractionDetailPage() {
             <div><dt>안내 문구</dt><dd>{attraction.description||"-"}</dd></div>
             <div><dt>위도 · 경도</dt><dd>{attraction.latitude??"-"} · {attraction.longitude??"-"}</dd></div>
             <div><dt>GPS 인증 반경</dt><dd>{attraction.radius}m</dd></div>
-            <div><dt>기준 이미지</dt><dd>{referenceImages.length}장 등록 <button type="button" className={styles.moreLink} onClick={()=>setDetailsOpen(open=>!open)}>{detailsOpen?"접기 ↑":"자세히 보기 ↓"}</button></dd></div>
+            <div><dt>기준 이미지</dt><dd>{referenceImages.length}장 등록 <Link href={`/admin/attractions/${attraction.id}/images`} className={styles.moreLink}>이미지 관리</Link> <button type="button" className={styles.moreLink} onClick={()=>setDetailsOpen(open=>!open)}>{detailsOpen?"접기 ↑":"자세히 보기 ↓"}</button></dd></div>
           </dl>
           {detailsOpen&&<div className={styles.imagePanel}>
-            <div className={styles.simpleCardHeader}><h3>등록된 기준 이미지</h3><Link href={`/admin/attractions/${attraction.id}/edit`} className={styles.blueEditButton}>이미지 관리</Link></div>
+            <div className={styles.simpleCardHeader}><h3>등록된 기준 이미지</h3><Link href={`/admin/attractions/${attraction.id}/images`} className={styles.blueEditButton}>이미지 관리</Link></div>
             {referenceImages.length>0?<div className={styles.simpleImageGrid}>{referenceImages.map((source,index)=><Image key={index} src={source} alt={`기준 이미지 ${index+1}`} width={200} height={150} unoptimized/>)}</div>:<p>등록된 이미지가 없습니다.</p>}
           </div>}
         </section>
