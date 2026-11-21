@@ -686,3 +686,13 @@
 .editPage .imageDisclosureButton:hover{background:#f2f8fc;border-color:#a7cbdf}
 .editPage .imageDisclosureButton:focus-visible{outline:3px solid #b5e1f6;outline-offset:2px}
 .editPage .imageDisclosure .imagePreviewGrid{grid-column:1/-1;margin-top:12px}
+
+/* Image management: keep upload and disclosure controls in distinct rows */
+.editPage .uploadArea{display:flex;flex-direction:column;align-items:stretch;gap:16px}
+.editPage .uploadArea .uploadHeader{margin:0;align-items:center}
+.editPage .uploadArea .fileButton{align-self:flex-start;flex-shrink:0;margin:0;white-space:nowrap}
+.editPage .uploadArea .imageDisclosure{width:100%;min-width:0;margin:0}
+.editPage .uploadArea .imageDisclosureButton{box-sizing:border-box;min-height:48px}
+.editPage .uploadArea .imageDisclosure .imagePreviewGrid{margin-top:14px;max-height:330px;overflow-y:auto}
+.editPage .uploadArea .imagePreviewItem button{position:absolute;top:7px;right:7px;z-index:1;left:auto;bottom:auto}
+@media(max-width:700px){.editPage .uploadArea{gap:13px}.editPage .uploadArea .uploadHeader{align-items:flex-start}.editPage .uploadArea .imageDisclosureButton{gap:10px}}
