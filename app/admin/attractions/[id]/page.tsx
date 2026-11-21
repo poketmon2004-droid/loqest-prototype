@@ -247,7 +247,7 @@ export default function AttractionDetailPage() {
             <div><strong>{attraction.name}</strong><p>{attraction.description||"등록된 안내 문구가 없습니다."}</p></div>
           </div>
         </section>
-        {needsAction && <section className={styles.actionNotice}>
+        {needsAction && <section className={`${styles.actionNotice} ${hasImages && hasPassedTest ? styles.actionSuccess : styles.actionPending}`}>
           <div><strong>{needsAction}</strong><p>{explanation}</p></div>
           {hasImages&&!hasPassedTest&&<Link href={`/landmark-test?attractionId=${attraction.id}`} className={styles.primaryButton}>인식 테스트하기</Link>}
           {!hasImages&&<Link href={`/admin/attractions/${attraction.id}/edit`} className={styles.primaryButton}>기준 이미지 등록</Link>}
