@@ -505,8 +505,8 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                                     <button type="button" className={styles.imageDisclosureButton}
                                         aria-expanded={showReferenceImages}
                                         onClick={()=>setShowReferenceImages(previous=>!previous)}>
-                                        <span>등록된 기준 이미지 {referenceImages.length}장</span>
-                                        <span>{showReferenceImages?"사진 접기 ↑":"사진 보기 ↓"}</span>
+                                        <span>기존 사진 확인</span>
+                                        <span>{showReferenceImages?"접기 ↑":"사진 보기 ↓"}</span>
                                     </button>
                                     {showReferenceImages && (
                                         <div className={styles.imagePreviewGrid}>
