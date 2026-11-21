@@ -164,3 +164,7 @@
 .confirmCard .reviewPreviewCard strong{font-size:21px;font-weight:800;line-height:1.35;color:#1c435f;overflow-wrap:anywhere}
 .confirmCard .reviewPreviewCard p{margin:0;color:#73899a;font-size:13px;line-height:1.55;overflow-wrap:anywhere}
 @media(max-width:700px){.confirmCard .reviewPreview{margin-top:16px;padding-top:14px}.confirmCard .reviewPreviewCard{padding:15px}.confirmCard .reviewPreviewCard strong{font-size:18px}}
+
+/* Final step is a single visual visitor card, without repeated summary table. */
+.confirmCard .reviewPreview{margin-top:0;padding-top:0;border-top:0}
+.confirmCard .reviewPreview h2{margin:0 0 13px;font-size:16px;font-weight:800;color:#526779}
