@@ -132,11 +132,6 @@ export default function AdminDashboardPage() {
           </div>
         </header>
 
-        <section className={styles.tourActions}>
-          <div><strong>투어 운영 관리</strong><p>현재 투어의 정보를 수정하고 퀘스트를 관리하세요.</p></div>
-          <Link href={`/admin/tours/${tourId}/edit`} className={styles.tourEdit}>투어 정보 수정</Link>
-        </section>
-
         <section className={styles.metrics}>
           <article className={styles.metricCard}>
             <span>전체 퀘스트</span>
@@ -160,6 +155,11 @@ export default function AdminDashboardPage() {
                 : "테스트 또는 이미지 점검 필요"}
             </p>
           </article>
+        </section>
+
+        <section className={styles.tourActions}>
+          <div><strong>투어 운영 관리</strong><p>현재 투어의 정보를 수정하고 퀘스트를 관리하세요.</p></div>
+          <Link href={`/admin/tours/${tourId}/edit`} className={styles.tourEdit}>투어 정보 수정</Link>
         </section>
 
         <section className={styles.questListSection}>
