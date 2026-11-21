@@ -116,7 +116,7 @@ export default function AttractionDetailPage() {
             requiresRetest ||
             (!previouslyPublished && !hasSuccessfulTest)
         )) {
-            window.alert("기준 이미지 등록 후 인식 테스트를 통과해야 공개할 수 있습니다.");
+            window.alert("랜드마크 이미지 등록 후 인식 테스트를 통과해야 공개할 수 있습니다.");
             return;
         }
 
@@ -233,8 +233,8 @@ export default function AttractionDetailPage() {
     const isRetestRequired=attraction.quality==="재테스트 필요";
     const hasPublicationApproval=typeof window!=="undefined" && localStorage.getItem(`loqest_previously_published_${attraction.id}`)==="true";
     const readyForPublish=hasImages && !isRetestRequired && (hasPassedTest || hasPublicationApproval);
-    const needsAction = !hasImages ? "기준 이미지가 필요해요" : !readyForPublish ? "인식 테스트가 필요해요" : attraction.status!=="공개" ? "공개할 준비가 끝났어요" : "";
-    const explanation=!hasImages ? "퀘스트 기준 이미지를 한 장 이상 등록해주세요." : !hasPassedTest ? "기준 이미지를 확인하고 실제 사진으로 인식 테스트를 진행해주세요." : "테스트를 통과했습니다. 관광객에게 공개할 수 있습니다.";
+    const needsAction = !hasImages ? "랜드마크 이미지가 필요해요" : !readyForPublish ? "인식 테스트가 필요해요" : attraction.status!=="공개" ? "공개할 준비가 끝났어요" : "";
+    const explanation=!hasImages ? "랜드마크 이미지를 한 장 이상 등록해주세요." : !hasPassedTest ? "랜드마크 이미지를 확인하고 실제 사진으로 인식 테스트를 진행해주세요." : "테스트를 통과했습니다. 관광객에게 공개할 수 있습니다.";
     const icons:Record<string,string>={"역사·문화":"🗺️","자연·생태":"🌿","축제·행사":"🎉","체험·레저":"🎯","지역상권":"🛍️","기타":"✨"};
 
     return (
@@ -250,7 +250,7 @@ export default function AttractionDetailPage() {
         {needsAction && <section className={`${styles.actionNotice} ${readyForPublish ? styles.actionSuccess : styles.actionPending}`}>
           <div><strong>{needsAction}</strong><p>{explanation}</p></div>
           {hasImages&&!readyForPublish&&<Link href={`/landmark-test?attractionId=${attraction.id}`} className={styles.primaryButton}>인식 테스트하기</Link>}
-          {!hasImages&&<Link href={`/admin/attractions/${attraction.id}/images`} className={styles.primaryButton}>기준 이미지 등록</Link>}
+          {!hasImages&&<Link href={`/admin/attractions/${attraction.id}/images`} className={styles.primaryButton}>랜드마크 이미지 등록</Link>}
         </section>}
         <section className={styles.simpleCard}>
           <div className={styles.simpleCardHeader}>
@@ -277,8 +277,8 @@ export default function AttractionDetailPage() {
           </div>
           <div className={styles.questImagesRow}>
             <div className={styles.questImagesText}>
-              <strong>기준 이미지 {referenceImages.length}장</strong>
-              <span>등록된 인식 기준 사진</span>
+              <strong>랜드마크 이미지 {referenceImages.length}장</strong>
+              <span>등록된 랜드마크 사진</span>
             </div>
             <Link href={`/admin/attractions/${attraction.id}/images`} className={styles.imageManageButton}>이미지 관리</Link>
           </div>
