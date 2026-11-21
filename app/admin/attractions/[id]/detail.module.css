@@ -350,7 +350,8 @@
 .actionPending{background:#fff8e8;border-color:#f3d79a}
 .actionPending strong{color:#8c570e}
 .actionPending p{color:#956c39}
-.actionPending .primaryButton{background:#0284c7;color:#fff;border:1px solid #0284c7}
+.actionPending .primaryButton{background:#b7791f;color:#fff;border:1px solid #b7791f}
+.actionPending .primaryButton:hover{background:#945d16;border-color:#945d16}
 .actionSuccess{background:#ecf8f0;border-color:#bee7cc}
 .actionSuccess strong{color:#176444}
 .actionSuccess p{color:#47765b}
