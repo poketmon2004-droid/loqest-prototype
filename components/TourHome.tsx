@@ -28,14 +28,22 @@ export default function TourHome<T extends TourLandmark>({
   progressPercent, tourCompleted, onSelectLandmark,
   goToQuestList, resetProgress, goToMainHome, styles,
 }: TourHomeProps<T>) {
-  const visitedPath = completedLandmarks
-    .map((id) => landmarks.find((landmark) => landmark.id === id))
-    .filter((landmark): landmark is T => Boolean(landmark))
-    .map((landmark) => `${landmark.mapPosition.x},${landmark.mapPosition.y}`)
-    .join(" ");
-  const visitedCount = completedLandmarks.filter((id) =>
-    landmarks.some((landmark) => landmark.id === id)
-  ).length;
+  // Keep visual quest positions independent of stored landmark coordinates.
+  // Each quest gets its own row to prevent marker labels from overlapping.
+  const mapHeight = Math.max(260, 210 + Math.max(0, landmarks.length - 1) * 155);
+  const mapPoints = landmarks.map((landmark, index) => ({
+    id: landmark.id,
+    x: landmarks.length === 1 ? 180 : (index % 2 === 0 ? 96 : 264),
+    y: landmarks.length === 1 ? 130 : 105 + index * 155,
+  }));
+  const curveBetween = (start: { x: number; y: number }, end: { x: number; y: number }) => {
+    const middleY = (start.y + end.y) / 2;
+    return `M ${start.x} ${start.y} C ${start.x} ${middleY}, ${end.x} ${middleY}, ${end.x} ${end.y}`;
+  };
+  const routeSegments = mapPoints.slice(1).map((point, index) => ({
+    path: curveBetween(mapPoints[index], point),
+    complete: completedLandmarks.includes(mapPoints[index].id) && completedLandmarks.includes(point.id),
+  }));
 
   return (
       <main style={styles.main}>
@@ -92,7 +100,7 @@ export default function TourHome<T extends TourLandmark>({
 
           <div
             className="exploration-map"
-            style={{ height: "430px" }}
+            style={{ height: `${mapHeight}px` }}
           >
             <div className="map-decoration map-tree-one">♧</div>
             <div className="map-decoration map-tree-two">♧</div>
@@ -101,15 +109,19 @@ export default function TourHome<T extends TourLandmark>({
 
             <svg
               className="map-route"
-              viewBox="0 0 360 520"
+              viewBox={`0 0 360 ${mapHeight}`}
+              preserveAspectRatio="none"
               aria-hidden="true"
             >
-              {visitedCount >= 2 && (
-                <polyline
-                  className="map-route-visited"
-                  points={visitedPath}
-                />
-              )}
+              {routeSegments.map((segment, index) => (
+                <g key={index}>
+                  <path d={segment.path} className="map-route-underlay" />
+                  <path d={segment.path} className="map-route-trail" />
+                  {segment.complete && (
+                    <path d={segment.path} className="map-route-visited" />
+                  )}
+                </g>
+              ))}
             </svg>
 
             {landmarks.map((landmark) => {
@@ -125,8 +137,8 @@ export default function TourHome<T extends TourLandmark>({
                   className={`map-place ${completed ? "map-place-completed" : ""
                     }`}
                   style={{
-                    left: `${(landmark.mapPosition.x / 360) * 100}%`,
-                    top: `${(landmark.mapPosition.y / 520) * 100}%`,
+                    left: `${(mapPoints.find((point) => point.id === landmark.id)?.x ?? 180) / 360 * 100}%`,
+                    top: `${(mapPoints.find((point) => point.id === landmark.id)?.y ?? 130) / mapHeight * 100}%`,
                   }}
                   onClick={() => {
                     if (!completed) {
