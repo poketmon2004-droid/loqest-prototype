@@ -67,14 +67,14 @@ export default function MainHome({
             style={{
               padding: "19px 17px 17px",
               marginBottom: "20px",
-              background: "#F5F7F9",
-              border: "1px solid #DCE4EA",
+              background: "linear-gradient(145deg, #f4fafb, #eef7f8)",
+              border: "1px solid #d5e4e7",
               borderRadius: "20px",
             }}
           >
             <h2 style={{
               margin: "0 0 17px",
-              color: "#263E54",
+              color: "#23445d",
               fontSize: "21px",
               fontWeight: 800,
               letterSpacing: "-0.025em",
@@ -86,12 +86,12 @@ export default function MainHome({
               gap: "11px",
               padding: "6px 10px 6px 13px",
               background: "#FFFFFF",
-              border: "1px solid #DEE7ED",
+              border: "1px solid #d5e4e7",
               borderRadius: "14px",
               marginBottom: "15px",
             }}>
               <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
-                fill="none" stroke="#8596A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                fill="none" stroke="#4c91a8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                 style={{flexShrink: 0}}>
                 <circle cx="10.8" cy="10.8" r="6.8" />
                 <path d="m16 16 5 5" />
@@ -109,10 +109,10 @@ export default function MainHome({
                   minHeight: "43px",
                   marginBottom: 0,
                   borderRadius: "999px",
-                  border: "1px solid #D7E0E7",
+                  border: "1px solid #ccdfe4",
                   padding: "10px 16px",
                   background: "#FFFFFF",
-                  color: "#263E54",
+                  color: "#23445d",
                 }}
               />
             </div>
@@ -137,9 +137,9 @@ export default function MainHome({
                       minHeight: "39px",
                       padding: "8px 16px",
                       borderRadius: "999px",
-                      borderColor: active ? "#29475E" : "#DCE4EA",
-                      background: active ? "#29475E" : "#FFFFFF",
-                      color: active ? "#FFFFFF" : "#708394",
+                      borderColor: active ? "#315f78" : "#cadde2",
+                      background: active ? "#315f78" : "#FFFFFF",
+                      color: active ? "#FFFFFF" : "#527080",
                     }}
                   >
                     {province}
@@ -149,15 +149,7 @@ export default function MainHome({
             </div>
           </section>
 
-          {!hasTourSearch ? (
-            <div style={styles.emptyDestination}>
-              <strong>어디로 떠나볼까요?</strong>
-              <p>
-                여행지명이나 지역을 검색하면
-                이용 가능한 관광지가 표시됩니다.
-              </p>
-            </div>
-          ) : filteredTours.length === 0 ? (
+          {!hasTourSearch ? null : filteredTours.length === 0 ? (
             <div style={styles.emptyDestination}>
               <strong>조건에 맞는 여행지가 없습니다.</strong>
               <p>
