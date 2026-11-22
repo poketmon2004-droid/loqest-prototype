@@ -7,6 +7,8 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
+import NextImage from "next/image";
+import { resizeImage } from "@/lib/image/resizeImage";
 import {
   clearAdminApiKey,
   getAdminApiKey,
@@ -14,7 +16,7 @@ import {
 import AdminBackButton from "@/components/AdminBackButton";
 import styles from "./AttractionForm.module.css";
 
-type Step = 1 | 2;
+type Step = 1 | 2 | 3;
 
 type AttractionFormData = {
   name: string;
@@ -43,7 +45,8 @@ const initialForm: AttractionFormData = {
 
 const steps = [
   { number: 1, title: "퀘스트 정보 및 위치" },
-  { number: 2, title: "기준 이미지 등록" },
+  { number: 2, title: "랜드마크 이미지 등록" },
+  { number: 3, title: "최종 확인" },
 ];
 const CATEGORY_ICONS: Record<string, string> = {
   "역사·문화": "🗺️",
@@ -51,55 +54,8 @@ const CATEGORY_ICONS: Record<string, string> = {
   "축제·행사": "🎉",
   "체험·레저": "🎯",
   "지역상권": "🛍️",
+  "기타": "✨",
 };
-
-const resizeImage = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      const image = new Image();
-
-      image.onload = () => {
-        const maxSize = 1000;
-        const scale = Math.min(
-          1,
-          maxSize / Math.max(image.width, image.height),
-        );
-
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.round(image.width * scale);
-        canvas.height = Math.round(image.height * scale);
-
-        const context = canvas.getContext("2d");
-
-        if (!context) {
-          reject(new Error("이미지 처리에 실패했습니다."));
-          return;
-        }
-
-        context.drawImage(
-          image,
-          0,
-          0,
-          canvas.width,
-          canvas.height,
-        );
-
-        resolve(canvas.toDataURL("image/jpeg", 0.72));
-      };
-
-      image.onerror = () =>
-        reject(new Error("이미지를 불러오지 못했습니다."));
-
-      image.src = String(reader.result);
-    };
-
-    reader.onerror = () =>
-      reject(new Error("파일을 읽지 못했습니다."));
-
-    reader.readAsDataURL(file);
-  });
 
 export default function NewAttractionPage() {
   const router = useRouter();
@@ -124,7 +80,9 @@ export default function NewAttractionPage() {
       localStorage.getItem("loqest_active_tour_id") ||
       "amsa";
 
-    setTourId(selectedTourId);
+    const frameId = window.requestAnimationFrame(() => {
+      setTourId(selectedTourId);
+    });
 
     localStorage.setItem(
       "loqest_active_tour_id",
@@ -132,27 +90,29 @@ export default function NewAttractionPage() {
     );
 
     const adminKey = getAdminApiKey();
-    if (!adminKey) return;
-
-    void fetch(
-      `/api/tours/${selectedTourId}?includeHidden=true`,
-      {
-        headers: {
-          "x-admin-api-key": adminKey,
+    if (adminKey) {
+      void fetch(
+        `/api/tours/${selectedTourId}?includeHidden=true`,
+        {
+          headers: {
+            "x-admin-api-key": adminKey,
+          },
+          cache: "no-store",
         },
-        cache: "no-store",
-      },
-    ).then(async (response) => {
-      if (!response.ok) return;
+      ).then(async (response) => {
+        if (!response.ok) return;
 
-      const result = (await response.json()) as {
-        tour?: { name: string };
-      };
+        const result = (await response.json()) as {
+          tour?: { name: string };
+        };
 
-      if (result.tour) {
-        setTourName(result.tour.name);
-      }
-    });
+        if (result.tour) {
+          setTourName(result.tour.name);
+        }
+      });
+    }
+
+    return () => window.cancelAnimationFrame(frameId);
   }, []);
 
   const updateForm = (
@@ -217,6 +177,7 @@ export default function NewAttractionPage() {
       return;
     }
 
+    if (!form.latitude.trim() || !form.longitude.trim()) { setErrorMessage("인증 위치의 위도와 경도를 입력해주세요.");return; }
     const latitude = Number(form.latitude);
     const longitude = Number(form.longitude);
     const radius = Number(form.radius);
@@ -255,9 +216,11 @@ export default function NewAttractionPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const goReview = () => {if(referenceImages.length===0){setErrorMessage("랜드마크 이미지를 한 장 이상 등록해주세요.");return;}setErrorMessage("");setStep(3);window.scrollTo({top:0,behavior:"smooth"});};
+
   const goPrevious = () => {
     setErrorMessage("");
-    setStep(1);
+    setStep(previous => previous === 3 ? 2 : 1);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -265,18 +228,23 @@ export default function NewAttractionPage() {
     event: FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
+    if(step===1){goNext();return;}
+    if(step===2){goReview();return;}
 
     if (referenceImages.length === 0) {
       setErrorMessage(
-        "인식 테스트에 사용할 기준 이미지를 한 장 이상 등록해주세요.",
+        "인식 테스트에 사용할 랜드마크 이미지를 한 장 이상 등록해주세요.",
       );
       return;
     }
+
+    if (!window.confirm(`"${form.name.trim()}" 퀘스트를 등록하시겠습니까?\n등록 후 비공개 상태로 저장됩니다.`)) return;
 
     const newAttraction = {
       tourId,
       name: form.name.trim(),
       category: form.category,
+      icon: CATEGORY_ICONS[form.category] || "📍",
 
       // 화면에서 입력받지 않고 자동 적용
       address: "",
@@ -310,9 +278,14 @@ export default function NewAttractionPage() {
         JSON.stringify(newAttraction),
       );
 
-      referenceImages.forEach((image) => {
-        requestBody.append("images", image.file);
-      });
+      // 미리보기에서 축소한 이미지를 실제 업로드에도 사용합니다.
+      for (const image of referenceImages) {
+        const compressedImage = await fetch(image.dataUrl).then((result) =>
+          result.blob(),
+        );
+        const jpegName = image.name.replace(/\.[^.]+$/, "") + ".jpg";
+        requestBody.append("images", compressedImage, jpegName);
+      }
 
       const response = await fetch("/api/attractions", {
         method: "POST",
@@ -322,10 +295,20 @@ export default function NewAttractionPage() {
         body: requestBody,
       });
 
-      const result = (await response.json()) as {
-        attraction?: { id: number };
-        message?: string;
-      };
+      const responseText = await response.text();
+      let result: { attraction?: { id: number }; message?: string } = {};
+      try {
+        result = JSON.parse(responseText);
+      } catch {
+        if (!response.ok) {
+          throw new Error(
+            response.status === 413
+              ? "랜드마크 이미지 용량이 서버 업로드 제한을 초과했습니다. 이미지 수를 줄여 다시 시도해주세요."
+              : `서버가 정상적인 응답을 보내지 않았습니다. (HTTP ${response.status})`,
+          );
+        }
+        throw new Error("서버 응답을 확인할 수 없습니다.");
+      }
 
       if (response.status === 401) {
         clearAdminApiKey();
@@ -342,9 +325,8 @@ export default function NewAttractionPage() {
         );
       }
 
-      router.push(
-        `/landmark-test?attractionId=${result.attraction.id}`,
-      );
+      localStorage.setItem(`loqest_new_quest_${tourId}`, String(result.attraction.id));
+      router.push(`/landmark-test?attractionId=${encodeURIComponent(String(result.attraction.id))}`);
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -411,49 +393,18 @@ export default function NewAttractionPage() {
               </div>
 
               <div className={styles.questPreviewCard}>
-                <div className={styles.questPreviewIcon}>
-                  {CATEGORY_ICONS[form.category] || "📍"}
-                </div>
-
-                <div className={styles.questPreviewContent}>
-                  <label className={styles.previewInputWrapper}>
-                    <span className={styles.previewNumber}>1</span>
-
-                    <input
-                      type="text"
-                      className={styles.previewNameInput}
-                      value={form.name}
-                      placeholder="퀘스트명을 입력해주세요."
-                      onChange={(event) =>
-                        updateForm("name", event.target.value)
-                      }
-                      aria-label="퀘스트명"
-                      required
-                    />
-                  </label>
-
-                  <label className={styles.previewInputWrapper}>
-                    <span
-                      className={`${styles.previewNumber} ${styles.secondNumber}`}
-                    >
-                      2
-                    </span>
-
-                    <input
-                      type="text"
-                      className={styles.previewDescriptionInput}
-                      value={form.description}
-                      placeholder="예: 유적지 지도를 찾아보세요"
-                      onChange={(event) =>
-                        updateForm("description", event.target.value)
-                      }
-                      aria-label="퀘스트 설명"
-                      required
-                    />
-                  </label>
-                </div>
+                <div className={styles.questPreviewBanner}>미리보기</div>
+                <div className={styles.questPreviewIcon}>{CATEGORY_ICONS[form.category] || "📍"}</div>
+                <div className={styles.questPreviewContent}><strong>{form.name || "퀘스트명을 입력해주세요."}</strong><p>{form.description || "퀘스트 설명이 표시됩니다."}</p></div>
               </div>
-
+              <div className={styles.inputEmphasis}>
+                <h3>퀘스트 기본 정보</h3>
+                <label className={styles.field}>퀘스트명
+                  <input type="text" value={form.name} onChange={event=>updateForm("name",event.target.value)} placeholder="예: 선사유적지 안내판" required/>
+                </label>
+                <label className={styles.field}>안내 문구
+                  <input type="text" value={form.description} onChange={event=>updateForm("description",event.target.value)} placeholder="관광객에게 보여줄 설명을 입력해 주세요." required/>
+                </label>
               <div className={styles.categorySetting}>
                 <label className={styles.field}>
                   카테고리
@@ -468,6 +419,7 @@ export default function NewAttractionPage() {
                     <option>축제·행사</option>
                     <option>체험·레저</option>
                     <option>지역상권</option>
+                    <option>기타</option>
                   </select>
 
                   <small>
@@ -475,6 +427,8 @@ export default function NewAttractionPage() {
                     변경됩니다.
                   </small>
                 </label>
+              </div>
+
               </div>
 
           <div className={styles.compactSection}>
@@ -555,7 +509,7 @@ export default function NewAttractionPage() {
               <span>2</span>
 
               <div>
-                <h2>기준 이미지 등록</h2>
+                <h2>랜드마크 이미지 등록</h2>
                 <p>
                   실제 촬영 사진과 비교할 이미지를
                   등록합니다.
@@ -579,7 +533,7 @@ export default function NewAttractionPage() {
               </div>
 
               <label className={styles.fileButton}>
-                + 기준 이미지 선택
+                + 랜드마크 이미지 선택
                 <input
                   type="file"
                   accept="image/*"
@@ -616,10 +570,13 @@ export default function NewAttractionPage() {
                         styles.imagePreviewItem
                       }
                     >
-                      <img
+                      <NextImage
                         src={image.dataUrl}
                         alt={image.name}
-                      />
+                      width={640}
+                                        height={480}
+                                        unoptimized
+                                        />
 
                       <button
                         type="button"
@@ -638,6 +595,22 @@ export default function NewAttractionPage() {
           </>
         )}
 
+        {step === 3 && (
+          <section className={styles.reviewCard}>
+            <h2>최종 확인</h2>
+            <div className={styles.questPreviewCard}>
+              <div className={styles.questPreviewBanner}>미리보기</div>
+              <div className={styles.questPreviewIcon}>{CATEGORY_ICONS[form.category]||"📍"}</div>
+              <div className={styles.questPreviewContent}><strong>{form.name}</strong><p>{form.description}</p></div>
+            </div>
+            <div className={styles.reviewDetails}>
+              <p><b>카테고리</b>{form.category}</p><p><b>인증 위치</b>{form.latitude}, {form.longitude}</p>
+              <p><b>인증 반경</b>{form.radius}m</p><p><b>랜드마크 이미지</b>{referenceImages.length}장</p>
+            </div>
+            <p className={styles.privateNotice}>등록된 퀘스트는 비공개 상태로 저장됩니다. 인식 테스트를 마친 뒤 공개할 수 있습니다.</p>
+          </section>
+        )}
+
         {errorMessage && (
           <p className={styles.errorMessage}>
             {errorMessage}
@@ -654,7 +627,7 @@ export default function NewAttractionPage() {
               onClick={goPrevious}
               disabled={isProcessing}
             >
-              이전
+              이전단계
             </button>
           )}
 
@@ -664,8 +637,10 @@ export default function NewAttractionPage() {
               className={styles.primaryButton}
               onClick={goNext}
             >
-              다음 단계
+              다음단계
             </button>
+          ) : step === 2 ? (
+            <button type="button" className={styles.primaryButton} onClick={goReview} disabled={isProcessing || referenceImages.length === 0}>다음단계</button>
           ) : (
             <button
               type="submit"
@@ -677,7 +652,7 @@ export default function NewAttractionPage() {
             >
               {isProcessing
                 ? "저장 중..."
-                : "저장하고 인식 테스트하기"}
+                : "퀘스트 등록하기"}
             </button>
           )}
         </div>

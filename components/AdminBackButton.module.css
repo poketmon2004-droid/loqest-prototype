@@ -2,28 +2,33 @@
   display: inline-flex;
   min-height: 42px;
   margin-bottom: 16px;
-  padding: 9px 14px;
+  padding: 10px 16px;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  border: 1px solid #b6c8eb;
-  border-radius: 9px;
-  background: #eef2fb;
-  color: #203a8f;
+  gap: 8px;
+  border: 1px solid #cfdeea;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #31546d;
   font: inherit;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   white-space: nowrap;
+  box-shadow: none;
   cursor: pointer;
+  transition: background-color .15s, border-color .15s, color .15s;
 }
-
 .backButton:hover {
-  border-color: #8fa9db;
-  background: #e3eafb;
+  border-color: #0284c7;
+  background: #edf7fd;
+  color: #0284c7;
 }
-
+.backButton:focus-visible {
+  outline: 3px solid #b5e1f6;
+  outline-offset: 2px;
+}
 .backButton span {
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 400;
 }

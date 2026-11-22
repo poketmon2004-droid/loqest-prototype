@@ -310,3 +310,79 @@
     width: 100%;
   }
 }
+.simplePage{max-width:1120px;margin:0 auto;padding:35px 32px 80px;color:#21394d}.simpleHeader{margin-bottom:23px}.simpleHeader h1{font-size:28px;margin:10px 0}.simpleBack{font-size:13px;color:#4c7290;text-decoration:none}.visitorPreview,.simpleCard{background:#fff;border:1px solid #dce7ef;border-radius:16px;overflow:hidden;margin-bottom:18px}.visitorPreview{padding-bottom:22px}.previewBanner{background:linear-gradient(120deg,#d5eef3,#e8edf8);height:46px;display:grid;place-items:center;color:#365d70;font-size:20px;font-weight:800}.previewInside{display:flex;align-items:center;gap:18px;padding:22px 24px 0}.previewIcon{display:grid;place-items:center;background:#eef5fa;width:60px;height:60px;border-radius:14px;font-size:29px}.previewInside strong{font-size:21px}.previewInside p{color:#6d8492;font-size:14px;margin:6px 0}
+.actionNotice{background:#edf5fc;border:1px solid #beddee;border-radius:14px;padding:23px;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}.actionNotice strong{font-size:17px;color:#075985}.actionNotice p{font-size:13px;color:#58758c;margin:8px 0 0}.actionNotice .primaryButton{background:#0284c7;border:0;padding:14px 20px;white-space:nowrap}
+.simpleCard{padding:24px}.simpleCardHeader{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:14px}.simpleCardHeader h2,.simpleCardHeader h3{margin:0;font-size:18px}.blueEditButton{background:#0284c7;color:#fff;padding:11px 19px;font-size:13px;font-weight:800;text-decoration:none;border-radius:9px;white-space:nowrap}
+.simpleDetails{display:grid;margin:0}.simpleDetails>div{display:grid;grid-template-columns:170px minmax(0,1fr);gap:14px;border-bottom:1px solid #ebeff3;padding:14px 0;font-size:14px}.simpleDetails dt{color:#788a9a}.simpleDetails dd{margin:0;font-weight:600;color:#314e61}.moreLink{background:transparent;border:0;color:#0284c7;font-weight:800;cursor:pointer;margin-left:12px;font-size:13px}
+.imagePanel{border-top:1px solid #dbe6ee;margin-top:16px;padding-top:22px}.simpleImageGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-top:12px}.simpleImageGrid img{width:100%;height:120px;object-fit:cover;border-radius:10px;border:1px solid #dce5ec}
+.passedLabel,.pendingLabel{border-radius:999px;padding:6px 11px;font-size:12px;font-weight:800}.passedLabel{background:#e1f7e9;color:#167249}.pendingLabel{background:#fff4e5;color:#ae6a12}.testSummary{display:flex;gap:18px;flex-wrap:wrap;color:#6e8393;font-size:13px;padding:12px 0 18px}.simpleCard .secondaryButton{display:inline-flex;background:#fff;border:1px solid #c6dce9;color:#0284c7;padding:12px 16px;font-size:14px}
+.largeActions{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:25px 0}.largeActions button{min-height:65px;border-radius:12px;font:inherit;font-size:17px;font-weight:800;cursor:pointer}.publishAction{background:#0284c7;color:#fff;border:1px solid #0284c7}.hideAction{background:#d97706;color:#fff;border:1px solid #d97706}.deleteAction{background:#fff3f3;color:#b42318;border:2px solid #e1a1a1}
+@media(max-width:700px){.simplePage{padding:22px 15px}.simpleDetails>div{grid-template-columns:120px 1fr}.simpleCard{padding:16px}.actionNotice{flex-direction:column;align-items:flex-start}.largeActions{gap:8px}.largeActions button{font-size:13px}}
+
+/* Shared neutral outline navigation treatment */
+.simpleHeader .simpleBack {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 10px 16px;
+  margin-bottom: 13px;
+  border: 1px solid #cfdeea;
+  border-radius: 10px;
+  background: #fff;
+  color: #31546d;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  box-shadow: none;
+  transition: background-color .15s, border-color .15s, color .15s;
+}
+.simpleHeader .simpleBack:hover {
+  background: #edf7fd;
+  color: #0284c7;
+  border-color: #0284c7;
+}
+.simpleHeader .simpleBack:focus-visible {outline: 3px solid #b5e1f6;outline-offset: 2px}
+
+/* Quest lifecycle notices: warm amber requires action, green marks completion */
+.actionPending{background:#fff8e8;border-color:#f3d79a}
+.actionPending strong{color:#8c570e}
+.actionPending p{color:#956c39}
+.actionPending .primaryButton{background:#b7791f;color:#fff;border:1px solid #b7791f}
+.actionPending .primaryButton:hover{background:#945d16;border-color:#945d16}
+.actionSuccess{background:#ecf8f0;border-color:#bee7cc}
+.actionSuccess strong{color:#176444}
+.actionSuccess p{color:#47765b}
+
+/* Quiet, consistent preview heading for tour and quest admin screens */
+.previewBanner{background:#f4f7fa;color:#526779;border-bottom:1px solid #e3eaf0;font-size:17px;font-weight:750}
+
+/* Harmonized quest management metadata and status chips */
+.simpleHeader .eyebrow{color:#49748b;font-weight:750;letter-spacing:.01em}
+.simpleHeader .statusBadge{display:inline-flex;align-items:center;margin-top:8px;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:800}
+.simpleHeader .publishedBadge{background:#e4f5ec;color:#197349}
+.simpleHeader .unpublishedBadge{background:#edf2f6;color:#586c7c}
+
+/* Quest detail overview: visitor-style identity with compact admin metrics */
+.questOverview{display:flex;align-items:center;gap:17px;padding:18px 20px;margin:18px 0 13px;background:#f5fafc;border:1px solid #d9e8f0;border-radius:14px}
+.questOverviewIcon{display:grid;place-items:center;flex:0 0 58px;width:58px;height:58px;border-radius:13px;background:#e7f2f8;font-size:27px}
+.questOverviewCopy{min-width:0}
+.questCategory{display:block;color:#54859c;font-size:12px;font-weight:750}
+.questOverviewCopy h3{margin:5px 0 4px;color:#193e59;font-size:20px;font-weight:800;line-height:1.35;overflow-wrap:anywhere}
+.questOverviewCopy p{margin:0;color:#73899a;font-size:13px;line-height:1.55;overflow-wrap:anywhere}
+.questStats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 13px}
+.questStat{display:grid;align-content:center;gap:7px;min-width:0;min-height:75px;padding:15px 17px;background:#f6f8fb;border-radius:12px}
+.statCaption{color:#73899a;font-size:12px}
+.questStat strong{font-size:15px;color:#1d415a;overflow-wrap:anywhere}
+.questImagesRow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 17px;background:#f8fafc;border-radius:12px}
+.questImagesText{display:grid;gap:5px}
+.questImagesText strong{color:#1d415a;font-size:14px}
+.questImagesText span{color:#73899a;font-size:12px}
+.imageManageButton{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;min-height:40px;padding:9px 15px;border:1px solid #bad4e5;border-radius:8px;background:#fff;color:#0278b5;font-size:13px;font-weight:800;text-decoration:none;transition:background .15s,border-color .15s}
+.imageManageButton:hover{background:#edf7fd;border-color:#0284c7}
+.imageManageButton:focus-visible{outline:3px solid #b5e1f6;outline-offset:2px}
+@media(max-width:520px){.questOverview{padding:15px;gap:12px}.questOverviewIcon{width:48px;height:48px;flex-basis:48px;font-size:23px}.questOverviewCopy h3{font-size:17px}.questStats{gap:8px}.questStat{padding:12px}.questStat strong{font-size:13px}.questImagesRow{padding:13px}.imageManageButton{padding:9px 11px;font-size:12px}}
+
+.coordinateHint{font-size:11px;font-weight:400;color:#92a2af;margin-left:3px}

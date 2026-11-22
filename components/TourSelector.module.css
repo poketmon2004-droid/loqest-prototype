@@ -46,3 +46,36 @@
 .empty strong { color: #344052; }
 .empty p { margin: 7px 0 0; color: #84909c; font-size: 13px; }
 @media (max-width: 700px) { .page { padding: 24px 16px; } .header { flex-direction: column; } .addButton { width: 100%; box-sizing: border-box; text-align: center; } .controls { grid-template-columns: 1fr; } }
+
+/* New administrator tour selection */
+.page{max-width:1220px;margin:0 auto;padding:35px 34px 65px;min-height:100vh;box-sizing:border-box}.header{max-width:none;margin:0 0 25px}.header h1{font-size:30px}.eyebrow{font-size:12px;color:#0284c7!important;font-weight:800!important;letter-spacing:.1em}
+.createBanner{display:flex;align-items:center;gap:19px;padding:25px 27px;margin-bottom:24px;background:#edf7fd;border:1px solid #addbf1;border-radius:17px;color:#173c56;text-decoration:none;box-shadow:0 3px 8px #16476c0b}.createBanner strong{display:block;font-size:21px;margin:0 0 8px}.createBanner small{display:block;font-size:13px;color:#638296}.createPlus{display:grid;place-items:center;width:54px;height:54px;background:#0284c7;color:white;border-radius:14px;font-size:29px}.createArrow{margin-left:auto;border-radius:10px;padding:13px 19px;background:#0284c7;color:#fff;font-size:14px;font-weight:800}
+.card{max-width:none!important;padding:26px!important;border-radius:17px}.listHeader{display:flex;justify-content:space-between;align-items:center}.listHeader h2{font-size:19px;margin:0 0 7px}.listHeader p,.listHeader span{color:#74899b;font-size:13px;margin:0}.controls{display:flex;gap:12px;margin:22px 0!important}.controls select,.controls input{border:1px solid #ccdbe7;border-radius:10px;padding:12px;background:#fff;color:#334e63;font:inherit;font-size:14px}.controls input{flex:1}.tourList{display:grid;gap:12px}.tourItem{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #e1eaf1;border-radius:12px;padding:19px;background:#fff}.tourItem strong{font-size:16px;color:#203a51}.tourItem p{font-size:13px;color:#7b8d9d;margin:8px 0 0}.selectButton{white-space:nowrap;text-decoration:none;background:#0284c7;color:#fff;border-radius:9px;padding:12px 19px;font-size:13px;font-weight:800}
+@media(max-width:700px){.page{padding:24px 15px}.createBanner{padding:17px;gap:10px}.createBanner strong{font-size:17px}.createArrow{display:none}.createPlus{height:45px;width:45px}.controls{flex-direction:column}.tourItem{padding:14px}.selectButton{padding:10px}}
+
+/* Approved HTML layout: exact homepage visual language */
+.page{max-width:1080px!important;margin:0 auto!important;padding:36px 35px 95px!important;min-height:auto!important}
+.eyebrow{font-size:11px!important;font-weight:800!important;color:#0284c7!important;letter-spacing:1.5px!important}
+.homeTitle{font-size:28px;margin:7px 0;letter-spacing:-1px;color:#243348}
+.homeSub{font-size:13px;color:#8190a1;margin:0}
+.createFeature{width:100%;text-align:left;border:1px solid #a7d7f2;background:linear-gradient(112deg,#e8f5ff,#f5fbff);border-radius:16px;display:flex;align-items:center;gap:19px;padding:23px 26px;margin:26px 0;box-shadow:0 9px 25px #1c64810d;text-decoration:none;color:inherit}
+.createFeature:hover{border-color:#0284c7}
+.featureIcon{width:60px;height:60px;border-radius:14px;background:#0284c7;display:grid;place-items:center;flex-shrink:0;color:white;font-size:36px}
+.featureText strong{font-size:18px;color:#164d74;display:block;margin-bottom:7px}
+.featureText small{font-size:12px;color:#64859d;display:block;margin-bottom:13px}
+.featureLink{font-size:14px;color:#0369a1;font-weight:800}
+.searchPanel{background:white;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 4px 20px #14203308;padding:23px}
+.searchTitle{font-size:17px;font-weight:800;margin:0 0 6px}
+.searchSub{font-size:12px;color:#8392a3;margin:0 0 19px}
+.regionFilters{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.regionFilter,.regionFilterActive{border:1px solid #dce5ee;background:#fff;border-radius:8px;padding:9px 17px;color:#566779;font-size:12px;font-weight:700;cursor:pointer}
+.regionFilterActive{background:#0284c7;color:white;border-color:#0284c7}
+.searchbox{border:1px solid #d8e0e9;border-radius:9px;padding:13px 15px;font-size:13px;width:100%;margin-bottom:22px;box-sizing:border-box}
+.listHead{border-bottom:1px solid #e9eef3;padding:0 0 11px;display:flex;justify-content:space-between;align-items:center}
+.listHead strong{font-size:14px}.listHead small{font-size:12px;color:#94a3b8}
+.tourRow{display:flex;align-items:center;gap:13px;padding:18px 2px;border-bottom:1px solid #edf1f5}
+.tourRow:last-child{border-bottom:0}.tourPin{width:43px;height:43px;flex-shrink:0;display:grid;place-items:center;border-radius:10px;background:#edf6fc;color:#0284c7;font-size:23px}
+.tourDesc{min-width:0;flex:1}.tourDesc strong{font-size:14px;display:block;margin-bottom:6px;color:#243348}.tourDesc small{font-size:11px;color:#8794a3}
+.openTour{border:1px solid #ccd9e6!important;background:white!important;border-radius:8px;color:#36516a!important;font-size:12px;font-weight:800;padding:9px 12px;text-decoration:none}
+.openTour:hover{border-color:#0284c7!important;color:#0284c7!important}
+@media(max-width:780px){.page{padding:23px 16px 60px!important}.homeTitle{font-size:24px}.createFeature{padding:18px 15px;gap:13px}.featureIcon{width:47px;height:47px;font-size:29px}.featureText strong{font-size:15px}.searchPanel{padding:17px}.tourRow{gap:8px}.openTour{padding:9px 8px;white-space:nowrap;font-size:11px}}
