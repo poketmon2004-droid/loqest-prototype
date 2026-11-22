@@ -61,36 +61,93 @@ export default function MainHome({
             </p>
           </header>
 
-          <h2 style={styles.destinationHeading}>여행지 목록</h2>
+          {/* 검색과 지역 필터를 하나의 카드로 묶어 화면 구역을 명확히 구분합니다. */}
+          <section
+            aria-label="여행지 찾기"
+            style={{
+              padding: "19px 17px 17px",
+              marginBottom: "20px",
+              background: "#F5F7F9",
+              border: "1px solid #DCE4EA",
+              borderRadius: "20px",
+            }}
+          >
+            <h2 style={{
+              margin: "0 0 17px",
+              color: "#263E54",
+              fontSize: "21px",
+              fontWeight: 800,
+              letterSpacing: "-0.025em",
+            }}>여행지 찾기</h2>
 
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="여행지명 또는 지역을 검색해보세요"
-            aria-label="여행지 검색"
-            style={styles.destinationSearch}
-          />
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "11px",
+              padding: "6px 10px 6px 13px",
+              background: "#FFFFFF",
+              border: "1px solid #DEE7ED",
+              borderRadius: "14px",
+              marginBottom: "15px",
+            }}>
+              <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24"
+                fill="none" stroke="#8596A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                style={{flexShrink: 0}}>
+                <circle cx="10.8" cy="10.8" r="6.8" />
+                <path d="m16 16 5 5" />
+              </svg>
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="여행지 또는 지역 검색"
+                aria-label="여행지 검색"
+                style={{
+                  ...styles.destinationSearch,
+                  flex: 1,
+                  minWidth: 0,
+                  minHeight: "43px",
+                  marginBottom: 0,
+                  borderRadius: "999px",
+                  border: "1px solid #D7E0E7",
+                  padding: "10px 16px",
+                  background: "#FFFFFF",
+                  color: "#263E54",
+                }}
+              />
+            </div>
 
-          <div style={styles.provinceFilters}>
-            {["전체", ...availableProvinces].map((province) => {
-              const active = selectedProvince === province;
+            <div style={{
+              ...styles.provinceFilters,
+              marginBottom: 0,
+              paddingBottom: "2px",
+              gap: "9px",
+            }}>
+              {["전체", ...availableProvinces].map((province) => {
+                const active = selectedProvince === province;
 
-              return (
-                <button
-                  key={province}
-                  type="button"
-                  onClick={() => setSelectedProvince(province)}
-                  style={{
-                    ...styles.provinceFilterButton,
-                    ...(active ? styles.activeProvinceFilterButton : {}),
-                  }}
-                >
-                  {province}
-                </button>
-              );
-            })}
-          </div>
+                return (
+                  <button
+                    key={province}
+                    type="button"
+                    onClick={() => setSelectedProvince(province)}
+                    style={{
+                      ...styles.provinceFilterButton,
+                      ...(active ? styles.activeProvinceFilterButton : {}),
+                      minHeight: "39px",
+                      padding: "8px 16px",
+                      borderRadius: "999px",
+                      borderColor: active ? "#29475E" : "#DCE4EA",
+                      background: active ? "#29475E" : "#FFFFFF",
+                      color: active ? "#FFFFFF" : "#708394",
+                    }}
+                  >
+                    {province}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
 
           {!hasTourSearch ? (
             <div style={styles.emptyDestination}>
