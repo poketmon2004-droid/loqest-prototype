@@ -407,3 +407,36 @@
   outline:3px solid #efadca;
   outline-offset:2px;
 }
+
+/* Subtle blue halo prompts publishing only after landmark recognition approval. */
+.publishReadyGlow {
+  position: relative;
+  border-color: #56c4ff;
+  box-shadow: 0 0 0 2px rgba(100, 198, 248, .28), 0 0 12px rgba(2, 132, 199, .22);
+  animation: publishReadyPulse 3.1s ease-in-out infinite;
+  transition: box-shadow .2s ease, border-color .2s ease;
+}
+.publishReadyGlow:hover {
+  border-color: #9bddff;
+  box-shadow: 0 0 0 3px rgba(108, 204, 255, .45), 0 0 24px rgba(2, 132, 199, .5);
+}
+.publishReadyGlow:focus-visible {
+  outline: 3px solid #90daff;
+  outline-offset: 4px;
+}
+.publishReadyGlow:disabled {
+  animation: none;
+  opacity: .68;
+  box-shadow: none;
+}
+@keyframes publishReadyPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 1px rgba(76, 179, 235, .3), 0 0 9px rgba(2, 132, 199, .14);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(116, 207, 255, .43), 0 0 21px rgba(2, 132, 199, .42);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .publishReadyGlow { animation: none; }
+}
