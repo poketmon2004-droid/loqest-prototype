@@ -114,6 +114,23 @@ export async function PUT(request: NextRequest, context: Context) {
     const referenceImages = Array.isArray(body.referenceImages)
       ? (body.referenceImages as ReferenceImageInput[])
       : [];
+    // Enforce publishing approval on the server, not only the admin UI.
+    if (body.status === "공개") {
+      const { data: current, error: currentError } = await load(id);
+      if (currentError || !current) {
+        return NextResponse.json({ message: "퀘스트를 찾지 못했습니다." }, { status: 404 });
+      }
+      const { data: testRecord, error: testError } = await supabaseAdmin
+        .from("recognition_test_records").select("approved").eq("attraction_id", Number(id)).maybeSingle();
+      if (testError) {
+        return NextResponse.json({ message: "테스트 기록을 확인할 수 없습니다." }, { status: 503 });
+      }
+      if (body.referenceImagesChanged || current.quality === "재테스트 필요" ||
+          !testRecord?.approved || (current.attraction_reference_images ?? []).length === 0) {
+        return NextResponse.json({ message: "이미지 인식 테스트를 통과한 뒤 공개할 수 있습니다." }, { status: 409 });
+      }
+    }
+
 
     const { data: attraction, error: updateError } = await supabaseAdmin
       .from("attractions")
@@ -254,6 +271,18 @@ export async function PUT(request: NextRequest, context: Context) {
           { message: insertError.message },
           { status: 500 }
         );
+      }
+    }
+
+    // Invalidate the approval whenever the reference images are changed.
+    if (body.referenceImagesChanged) {
+      const { error: resetError } = await supabaseAdmin
+        .from("recognition_test_records")
+        .update({ approved: false, updated_at: new Date().toISOString() })
+        .eq("attraction_id", Number(id));
+      if (resetError) {
+        console.error("Recognition approval invalidation failed", resetError);
+        return NextResponse.json({ message: "이미지는 수정되었지만 테스트 승인 초기화에 실패했습니다." }, { status: 500 });
       }
     }
 
