@@ -3,6 +3,7 @@
 import { ChangeEvent, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
+import loadingStyles from "./LandmarkTest.module.css";
 import cvReadyPromise from "@techstark/opencv-js";
 import {
   clearAdminApiKey,
@@ -184,6 +185,7 @@ export default function LandmarkTestPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<ComparisonResult[]>([]);
   const [savedTestMessage, setSavedTestMessage] = useState("");
+  const [saveFailed, setSaveFailed] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -331,6 +333,7 @@ export default function LandmarkTestPage() {
     setSelectedImage(previewUrl);
     setResults([]);
     setSavedTestMessage("");
+    setSaveFailed(false);
     setStatus("사진을 선택했습니다. 분석 버튼을 눌러 주세요.");
   }
 
@@ -340,6 +343,7 @@ export default function LandmarkTestPage() {
     setSelectedFile(null);
     setResults([]);
     setSavedTestMessage("");
+    setSaveFailed(false);
     setStatus(opencvReady
       ? "준비 완료! 테스트 사진을 선택해 주세요."
       : "OpenCV를 불러오는 중입니다.");
@@ -380,6 +384,8 @@ export default function LandmarkTestPage() {
 
     setAnalyzing(true);
     setResults([]);
+    setSaveFailed(false);
+    setSavedTestMessage("");
     setStatus(
       `${landmarkName} 기준 사진 ${referenceImages.length}장과 특징점을 비교하고 있습니다.`
     );
@@ -429,6 +435,7 @@ export default function LandmarkTestPage() {
         setStatus("분석 및 서버 저장이 완료되었습니다.");
       } catch (saveError) {
         setSavedTestMessage("");
+        setSaveFailed(true);
         setStatus(saveError instanceof Error
           ? `분석은 완료되었지만 ${saveError.message}`
           : "분석은 완료되었지만 서버 저장에 실패했습니다.");
@@ -476,11 +483,12 @@ export default function LandmarkTestPage() {
         </div>
 
         <label style={styles.fileLabel}>
-          테스트 사진 선택
+          {selectedImage ? "테스트 사진 변경" : "테스트 사진 선택"}
           <input
             type="file"
             accept="image/*"
             onChange={handleFileChange}
+            disabled={analyzing}
             style={styles.hiddenInput}
           />
         </label>
@@ -495,7 +503,7 @@ export default function LandmarkTestPage() {
           </div>
         )}
 
-        {selectedImage && (
+        {selectedImage && results.length === 0 && (
         <button
           type="button"
           onClick={analyzeImage}
@@ -592,7 +600,7 @@ export default function LandmarkTestPage() {
           </section>
         )}
 
-        {selectedImage ? (
+        {selectedImage && !bestResult ? (
           <button
             type="button"
             onClick={returnToTestStart}
@@ -618,6 +626,7 @@ export default function LandmarkTestPage() {
           </button>
         )}
       </section>
+      {analyzing && <div className={loadingStyles.backdrop} role="dialog" aria-modal="true" aria-label="이미지 인식 테스트 진행 중" aria-live="polite"><div className={loadingStyles.modal}><div className={loadingStyles.spinner} aria-hidden="true" /><h2>랜드마크 이미지를 분석하고 있어요</h2><p>기준 이미지와 비교하고 결과를 저장하고 있습니다. 잠시만 기다려 주세요.</p></div></div>}
     </main>
   );
 }
@@ -733,7 +742,7 @@ const styles: Record<string, CSSProperties> = {
     marginTop: "16px",
     border: 0,
     borderRadius: "14px",
-    background: "#203f58",
+    background: "#0284c7",
     color: "#ffffff",
     fontSize: "15px",
     fontWeight: 900,
