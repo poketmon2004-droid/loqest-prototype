@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
         name: image.original_name,
         path: image.storage_path,
         url: imageUrl(image.storage_path),
+        isRepresentative: Boolean((image as { is_representative?: boolean }).is_representative),
       })),
     attraction_reference_images: undefined,
   }));
@@ -58,6 +59,11 @@ export async function POST(request: NextRequest) {
   }
 
   const input = JSON.parse(raw);
+  const files = formData.getAll("images").filter((value): value is File => value instanceof File);
+  const representativeImageIndex = Number(input.representativeImageIndex);
+  if (!Number.isSafeInteger(representativeImageIndex) || representativeImageIndex < 0 || representativeImageIndex >= files.length) {
+    return NextResponse.json({ message: "랜드마크 이미지 중 대표 이미지를 1장 지정해주세요." }, { status: 400 });
+  }
   const recognitionKey = String(input.recognitionKey || `landmark-${Date.now()}`)
     .toLowerCase().replace(/[^a-z0-9-]/g, "-");
 
@@ -106,7 +112,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: error?.message || "관광지를 저장하지 못했습니다." }, { status: 500 });
   }
 
-  const files = formData.getAll("images").filter((value): value is File => value instanceof File);
   const uploadedPaths: string[] = [];
 
   try {
@@ -123,6 +128,7 @@ export async function POST(request: NextRequest) {
         storage_path: path,
         original_name: file.name,
         sort_order: index,
+        is_representative: index === representativeImageIndex,
       });
       if (imageError) throw imageError;
     }
