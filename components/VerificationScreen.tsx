@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import CameraCapture from "./CameraCapture";
+import type { GuideShape } from "./GuideShapeSelector";
 import type { PublicTour } from "./MainHome";
 
 type VerificationLandmark = {
@@ -17,6 +18,7 @@ type VerificationLandmark = {
   radius: number;
   referenceImages: string[];
   representativeImage: string | null;
+  guideShape: GuideShape;
   goodMatchesThreshold: number;
   matchRatioThreshold: number;
 };
@@ -145,6 +147,7 @@ export default function VerificationScreen({
                 }
                 allowedRadius={selectedLandmark.radius}
                 referenceImages={selectedLandmark.referenceImages}
+                guideShape={selectedLandmark.guideShape}
                 goodMatchesThreshold={
                   selectedLandmark.goodMatchesThreshold
                 }
