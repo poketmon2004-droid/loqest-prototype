@@ -4,6 +4,7 @@ import {
   ChangeEvent,
   FormEvent,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
@@ -69,6 +70,10 @@ export default function NewAttractionPage() {
 
   const [errorMessage, setErrorMessage] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  // A synchronous lock prevents rapid submissions before React disables the button.
+  const submitLocked = useRef(false);
+  // Stable request identity is reused if registration needs to be retried.
+  const registrationId = useRef<string | null>(null);
 
   const [tourId, setTourId] = useState("amsa");
   const [tourName, setTourName] =
@@ -228,6 +233,7 @@ export default function NewAttractionPage() {
     event: FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
+    if (submitLocked.current) return;
     if(step===1){goNext();return;}
     if(step===2){goReview();return;}
 
@@ -240,7 +246,11 @@ export default function NewAttractionPage() {
 
     if (!window.confirm(`"${form.name.trim()}" 퀘스트를 등록하시겠습니까?\n등록 후 비공개 상태로 저장됩니다.`)) return;
 
+    submitLocked.current = true;
+    registrationId.current ??= crypto.randomUUID();
+
     const newAttraction = {
+      recognitionKey: `quest-${registrationId.current}`,
       tourId,
       name: form.name.trim(),
       category: form.category,
@@ -328,6 +338,7 @@ export default function NewAttractionPage() {
       localStorage.setItem(`loqest_new_quest_${tourId}`, String(result.attraction.id));
       router.push(`/landmark-test?attractionId=${encodeURIComponent(String(result.attraction.id))}`);
     } catch (error) {
+      submitLocked.current = false;
       setErrorMessage(
         error instanceof Error
           ? error.message
