@@ -646,3 +646,27 @@
   .main .tourActions{padding:17px}
   .main .newQuestButton{min-width:140px;min-height:45px;padding:10px 13px!important;font-size:13px!important}
 }
+
+/* Keep every quest awaiting image approval highlighted, not just the newest. */
+.main .questListRow.newQuestRow {
+  background:#fff1f5;
+  border:1px solid #f3b8cb;
+  border-radius:11px;
+  padding:14px 16px;
+}
+.main .questListRow.newQuestRow:last-child { border-bottom:1px solid #f3b8cb; }
+.questRowActions { display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-shrink:0; }
+.main .questTestLink {
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:42px;box-sizing:border-box;padding:10px 15px;
+  background:#fce0e9;border:1px solid #f1a9c0;
+  border-radius:9px;color:#a23d65;text-decoration:none;
+  font-size:13px;font-weight:800;white-space:nowrap;
+}
+.main .questTestLink:hover { background:#f8cad9;border-color:#e78cab; }
+.main .questTestLink:focus-visible { outline:3px solid #efadca;outline-offset:2px; }
+@media(max-width:680px) {
+  .main .questListRow.newQuestRow {padding:12px;}
+  .questRowActions {flex-wrap:wrap;gap:6px;max-width:58%; }
+  .main .questTestLink,.main .questManageLink {min-height:38px;padding:9px 10px;font-size:11px;}
+}
