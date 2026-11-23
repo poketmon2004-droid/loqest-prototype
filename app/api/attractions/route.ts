@@ -61,6 +61,28 @@ export async function POST(request: NextRequest) {
   const recognitionKey = String(input.recognitionKey || `landmark-${Date.now()}`)
     .toLowerCase().replace(/[^a-z0-9-]/g, "-");
 
+  // A retry of the same registration must not create another attraction.
+  // New registrations send a stable quest-UUID identity; ordinary names are not
+  // deduplicated because distinct quests can legitimately share a name.
+  if (typeof input.recognitionKey === "string" &&
+      /^quest-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(recognitionKey)) {
+    const { data: existing, error: lookupError } = await supabaseAdmin
+      .from("attractions")
+      .select("id, tour_id")
+      .eq("recognition_key", recognitionKey)
+      .maybeSingle();
+
+    if (lookupError) {
+      return NextResponse.json({ message: "기존 등록 요청을 확인하지 못했습니다." }, { status: 500 });
+    }
+    if (existing) {
+      if (existing.tour_id !== (input.tourId || "amsa")) {
+        return NextResponse.json({ message: "등록 요청 식별자가 다른 투어에 사용되었습니다." }, { status: 409 });
+      }
+      return NextResponse.json({ attraction: { id: existing.id }, reused: true }, { status: 200 });
+    }
+  }
+
   const { data: attraction, error } = await supabaseAdmin.from("attractions").insert({
     tour_id: input.tourId || "amsa",
     recognition_key: recognitionKey,
