@@ -249,7 +249,7 @@ export default function AttractionDetailPage() {
           <Link href={`/landmark-test?attractionId=${attraction.id}`} className={styles.secondaryButton}>인식 테스트 진행하기</Link>
         </section>
         <section className={styles.largeActions}>
-          <button type="button" className={attraction.status==="공개"?styles.hideAction:styles.publishAction} onClick={toggleStatus} disabled={operation !== null} aria-disabled={attraction.status!=="공개"&&!readyForPublish}>
+          <button type="button" className={attraction.status === "공개" ? styles.hideAction : readyForPublish ? `${styles.publishAction} ${styles.publishReadyGlow}` : styles.publishAction} onClick={toggleStatus} disabled={operation !== null} aria-disabled={attraction.status!=="공개"&&!readyForPublish}>
             {attraction.status==="공개"?"비공개로 전환":"공개하기"}
           </button>
           <button type="button" className={styles.deleteAction} onClick={deleteAttraction} disabled={operation !== null}>퀘스트 삭제</button>
