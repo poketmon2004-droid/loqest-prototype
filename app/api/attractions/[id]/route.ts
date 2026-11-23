@@ -112,6 +112,7 @@ export async function PUT(request: NextRequest, context: Context) {
   try {
     const { id } = await context.params;
     const body = await request.json();
+    const guideShape = ["rectangle", "triangle", "circle"].includes(body.guideShape) ? body.guideShape : "rectangle";
     const referenceImages = Array.isArray(body.referenceImages)
       ? (body.referenceImages as ReferenceImageInput[])
       : [];
@@ -152,6 +153,7 @@ export async function PUT(request: NextRequest, context: Context) {
         available_time: body.availableTime || "상시",
         landmark_threshold: Number(body.landmarkThreshold),
         guide_message: body.guideMessage || "",
+        guide_shape: guideShape,
         status: body.status,
         quality: body.referenceImagesChanged ? "재테스트 필요" : body.quality,
         updated_at: new Date().toISOString(),
