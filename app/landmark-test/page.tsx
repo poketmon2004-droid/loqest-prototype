@@ -381,9 +381,7 @@ export default function LandmarkTestPage() {
     if (result.passed && !result.record?.approved) {
       throw new Error("테스트 통과 승인 저장을 확인하지 못했습니다.");
     }
-    setSavedTestMessage(
-      result.passed ? "테스트를 통과해 공개 승인이 저장되었습니다." : ""
-    );
+    setSavedTestMessage("");
   }
 
   async function analyzeImage() {
