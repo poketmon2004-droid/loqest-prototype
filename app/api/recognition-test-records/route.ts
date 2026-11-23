@@ -3,34 +3,14 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const dynamic = "force-dynamic";
 
-type RecordRow = {
-  attraction_id: number;
-  total_tests: number;
-  successful_tests: number;
-  failed_tests: number;
-  recent_results: boolean[];
-  last_result: "통과" | "실패" | null;
-  last_tested_at: string | null;
-  quality: string;
-  approved: boolean;
-};
+type ApprovalRow = { attraction_id: number; approved: boolean };
 
-function serialize(row: RecordRow) {
-  return {
-    attractionId: row.attraction_id,
-    totalTests: row.total_tests,
-    successfulTests: row.successful_tests,
-    failedTests: row.failed_tests,
-    recentResults: row.recent_results,
-    lastResult: row.last_result,
-    lastTestedAt: row.last_tested_at,
-    quality: row.quality,
-    approved: row.approved,
-  };
+function serialize(row: ApprovalRow) {
+  return { attractionId: row.attraction_id, approved: row.approved };
 }
 
-// NOTE: Admin authentication is currently in temporary public-access mode across
-// the existing project. Lock down all admin routes before public production use.
+// NOTE: All existing admin routes use temporary public-access authentication.
+// Secure the admin API before production use.
 export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get("attractionId");
   const tourId = request.nextUrl.searchParams.get("tourId");
@@ -39,24 +19,31 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: "퀘스트 또는 투어를 지정해주세요." }, { status: 400 });
   }
 
-  let query = supabaseAdmin.from("recognition_test_records").select("*");
+  let query = supabaseAdmin.from("recognition_test_records").select("attraction_id, approved");
   if (id) {
-    if (!/^\d+$/.test(id)) return NextResponse.json({ message: "잘못된 퀘스트 번호입니다." }, { status: 400 });
+    if (!/^\d+$/.test(id)) {
+      return NextResponse.json({ message: "잘못된 퀘스트 번호입니다." }, { status: 400 });
+    }
     query = query.eq("attraction_id", Number(id));
   } else {
-    const { data: quests, error } = await supabaseAdmin.from("attractions").select("id").eq("tour_id", tourId!);
-    if (error) return NextResponse.json({ message: "투어 퀘스트를 불러오지 못했습니다." }, { status: 500 });
-    const ids = (quests ?? []).map((quest) => quest.id);
+    const { data: quests, error } = await supabaseAdmin
+      .from("attractions").select("id").eq("tour_id", tourId!);
+    if (error) {
+      return NextResponse.json({ message: "투어 퀘스트를 불러오지 못했습니다." }, { status: 500 });
+    }
+    const ids = (quests ?? []).map(quest => quest.id);
     if (ids.length === 0) return NextResponse.json({ records: {} });
     query = query.in("attraction_id", ids);
   }
 
   const { data, error } = await query;
   if (error) {
-    console.error("Recognition records fetch failed", error);
-    return NextResponse.json({ message: "서버 테스트 기록을 불러오지 못했습니다. Supabase 마이그레이션을 확인해주세요." }, { status: 503 });
+    console.error("Recognition approval fetch failed", error);
+    return NextResponse.json({ message: "테스트 승인 상태를 불러오지 못했습니다." }, { status: 503 });
   }
-  const records = Object.fromEntries(((data ?? []) as RecordRow[]).map(row => [String(row.attraction_id), serialize(row)]));
+  const records = Object.fromEntries(
+    ((data ?? []) as ApprovalRow[]).map(row => [String(row.attraction_id), serialize(row)])
+  );
   return NextResponse.json({ records });
 }
 
@@ -83,46 +70,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "퀘스트를 찾지 못했습니다." }, { status: 404 });
   }
 
-  // The existing ORB UI requires 45 good matches and uses the quest's ratio threshold.
-  const passed = goodMatches >= 45 && matchRatio >= (Number(attraction.landmark_threshold) || 30);
-  const { data: existing, error: lookupError } = await supabaseAdmin
-    .from("recognition_test_records").select("*").eq("attraction_id", attractionId).maybeSingle();
-  if (lookupError) {
-    console.error("Recognition record lookup failed", lookupError);
-    return NextResponse.json({ message: "테스트 기록 테이블을 확인해주세요." }, { status: 503 });
+  // The ORB test is evaluated in the browser; retain the existing thresholds.
+  const passed = goodMatches >= 45 &&
+    matchRatio >= (Number(attraction.landmark_threshold) || 30);
+
+  // Failed admin tests do not change the existing approval or create test logs.
+  if (!passed) {
+    return NextResponse.json({ passed: false });
   }
-  const previous = existing as RecordRow | null;
-  const recentResults = [...(Array.isArray(previous?.recent_results) ? previous.recent_results : []), passed].slice(-3);
-  const failures = recentResults.filter(result => !result).length;
-  const quality = failures >= 2 ? "기준 이미지 개선" : passed ? "정상" : "확인 필요";
-  const now = new Date().toISOString();
-  const { data: saved, error: saveError } = await supabaseAdmin
+
+  const { error: saveError } = await supabaseAdmin
     .from("recognition_test_records")
-    .upsert({
-      attraction_id: attractionId,
-      total_tests: (previous?.total_tests ?? 0) + 1,
-      successful_tests: (previous?.successful_tests ?? 0) + (passed ? 1 : 0),
-      failed_tests: (previous?.failed_tests ?? 0) + (passed ? 0 : 1),
-      recent_results: recentResults,
-      last_result: passed ? "통과" : "실패",
-      last_tested_at: now,
-      quality,
-      approved: Boolean(previous?.approved) || passed,
-      updated_at: now,
-    }, { onConflict: "attraction_id" }).select("*").single();
-
-  if (saveError || !saved) {
-    console.error("Recognition record save failed", saveError);
-    return NextResponse.json({ message: "서버에 테스트 결과를 저장하지 못했습니다." }, { status: 503 });
+    .upsert(
+      { attraction_id: attractionId, approved: true, updated_at: new Date().toISOString() },
+      { onConflict: "attraction_id" }
+    );
+  if (saveError) {
+    console.error("Recognition approval save failed", saveError);
+    return NextResponse.json({ message: "테스트 통과 승인을 저장하지 못했습니다." }, { status: 503 });
   }
 
-  if (passed && attraction.quality === "재테스트 필요") {
-    const { error: qualityError } = await supabaseAdmin.from("attractions")
-      .update({ quality: "정상" }).eq("id", attractionId);
+  if (attraction.quality === "재테스트 필요") {
+    const { error: qualityError } = await supabaseAdmin
+      .from("attractions").update({ quality: "정상" }).eq("id", attractionId);
     if (qualityError) {
-      console.error("Recognition approval quality update failed", qualityError);
-      return NextResponse.json({ message: "테스트 기록은 저장되었지만 재테스트 상태를 변경하지 못했습니다." }, { status: 500 });
+      console.error("Recognition retest status reset failed", qualityError);
+      return NextResponse.json({ message: "테스트는 통과했지만 재테스트 상태 변경에 실패했습니다." }, { status: 500 });
     }
   }
-  return NextResponse.json({ passed, record: serialize(saved as RecordRow) });
+  return NextResponse.json({ passed: true, record: { attractionId, approved: true } });
 }
