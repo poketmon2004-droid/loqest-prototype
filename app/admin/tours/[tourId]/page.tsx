@@ -32,6 +32,8 @@ export default function AdminDashboardPage() {
   const [tour, setTour] = useState<Tour | null>(null);
   const [attractions, setAttractions] = useState<Attraction[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [statusSaving, setStatusSaving] = useState(false);
+  const [statusError, setStatusError] = useState("");
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -98,6 +100,40 @@ export default function AdminDashboardPage() {
     void loadDashboardData();
   }, [tourId]);
 
+  async function toggleTourStatus() {
+    if (!tour || statusSaving) return;
+    const nextStatus = tour.status === "공개" ? "비공개" : "공개";
+    const description = nextStatus === "공개"
+      ? "이 투어를 공개할까요? 공개된 퀘스트가 관광객 화면에 표시됩니다."
+      : "이 투어를 비공개로 전환할까요? 관광객의 투어 목록에서 보이지 않게 됩니다.";
+    if (!window.confirm(description)) return;
+
+    setStatusError("");
+    setStatusSaving(true);
+    try {
+      const adminKey = getAdminApiKey();
+      if (!adminKey) throw new Error("관리자 API 키가 없습니다. 관리자 화면을 새로고침해 주세요.");
+      const response = await fetch(`/api/tours/${encodeURIComponent(tourId)}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json", "x-admin-api-key": adminKey },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const result = await response.json() as { tour?: { status: string }; message?: string };
+      if (response.status === 401) {
+        clearAdminApiKey();
+        throw new Error("관리자 API 키가 올바르지 않습니다.");
+      }
+      if (!response.ok || result.tour?.status !== nextStatus) {
+        throw new Error(result.message || "공개 상태를 변경하지 못했습니다.");
+      }
+      setTour((previous) => previous ? { ...previous, status: nextStatus } : previous);
+    } catch (error) {
+      setStatusError(error instanceof Error ? error.message : "공개 상태를 변경하지 못했습니다.");
+    } finally {
+      setStatusSaving(false);
+    }
+  }
+
   const totalCount = attractions.length;
   const publicCount = attractions.filter((item) => item.status === "공개").length;
   const alerts = attractions.filter((item) => item.needsImageTest);
@@ -138,8 +174,27 @@ export default function AdminDashboardPage() {
         </section>
 
         <section className={styles.tourActions}>
-          <div><strong>투어 운영 관리</strong><p>현재 투어의 정보를 수정하고 퀘스트를 관리하세요.</p></div>
-          <Link href={`/admin/tours/${tourId}/edit`} className={styles.tourEdit}>투어 정보 수정</Link>
+          <div className={styles.tourActionsSummary}>
+            <strong>투어 운영 관리</strong>
+            <p>투어의 공개 상태를 확인하고 바로 변경할 수 있어요.</p>
+            <div className={styles.tourStatusRow} aria-live="polite">
+              <span className={styles.tourStatusLabel}>현재 공개 상태</span>
+              {tour ? (
+                <span className={`${styles.tourStatusBadge} ${tour.status === "공개" ? styles.tourStatusPublic : styles.tourStatusPrivate}`}>
+                  <span className={styles.tourStatusDot} aria-hidden="true" />
+                  {tour.status === "공개" ? "공개 중" : "비공개"}
+                </span>
+              ) : <span className={styles.tourStatusLabel}>불러오는 중</span>}
+            </div>
+            {statusError && <p className={styles.tourStatusError} role="alert">{statusError}</p>}
+          </div>
+          <div className={styles.tourActionButtons}>
+            <button type="button" className={`${styles.tourStatusButton} ${tour?.status === "공개" ? styles.tourHideButton : styles.tourPublishButton}`}
+              onClick={toggleTourStatus} disabled={!tour || !loaded || statusSaving}>
+              {statusSaving ? "변경 중..." : tour?.status === "공개" ? "비공개로 전환" : "투어 공개하기"}
+            </button>
+            <Link href={`/admin/tours/${encodeURIComponent(tourId)}/edit`} className={styles.tourEdit}>투어 정보 수정</Link>
+          </div>
         </section>
 
         <section className={styles.questListSection}>
