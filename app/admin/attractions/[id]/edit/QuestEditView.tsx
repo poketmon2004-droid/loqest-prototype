@@ -23,6 +23,7 @@ type ReferenceImage = {
     name: string;
     dataUrl: string;
     path?: string;
+    isRepresentative?: boolean;
 };
 
 type Attraction = {
@@ -110,7 +111,8 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
     const [loading, setLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [showReferenceImages, setShowReferenceImages] = useState(false);
+    const [showReferenceImages, setShowReferenceImages] = useState(true);
+    const [representativeImageId, setRepresentativeImageId] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState("");
     const [
         referenceImagesChanged,
@@ -178,6 +180,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
 
                 setOriginalAttraction(attraction);
                 setReferenceImages(images);
+                setRepresentativeImageId(images.find(image => image.isRepresentative)?.id ?? null);
                 setForm({
                     name: attraction.name,
                     category: attraction.category,
@@ -273,6 +276,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
             previous.filter((image) => image.id !== id)
         );
 
+        setRepresentativeImageId(current => current === id ? null : current);
         setReferenceImagesChanged(true);
     };
 
@@ -287,6 +291,11 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
 
         if (referenceImages.length === 0) {
             setErrorMessage("랜드마크 판별에 사용할 랜드마크 이미지를 한 장 이상 남겨주세요.");
+            return;
+        }
+        if (imageMode && (!representativeImageId || !referenceImages.some(image => image.id === representativeImageId))) {
+            setErrorMessage("대표 이미지를 1장 지정해야 저장할 수 있습니다.");
+            setShowReferenceImages(true);
             return;
         }
 
@@ -337,6 +346,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                             : form.status,
                         quality: originalAttraction.quality,
                         referenceImages,
+                        ...(imageMode ? { representativeImageClientId: representativeImageId } : {}),
                         referenceImagesChanged,
                     }),
                 }
@@ -519,9 +529,14 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                                     {showReferenceImages && (
                                         <div className={styles.imagePreviewGrid}>
                                             {referenceImages.map(image=>(
-                                                <article key={image.id} className={styles.imagePreviewItem}>
+                                                <article key={image.id} className={`${styles.imagePreviewItem} ${representativeImageId === image.id ? styles.representativeImage : ""}`}>
                                                     <NextImage src={image.dataUrl} alt={image.name} width={640} height={480} unoptimized/>
-                                                    <button type="button" aria-label={`${image.name} 삭제`}
+                                                    <button type="button" className={`${styles.representativeButton} ${representativeImageId === image.id ? styles.representativeSelected : ""}`}
+                                                        aria-pressed={representativeImageId === image.id}
+                                                        onClick={() => { setRepresentativeImageId(image.id); setErrorMessage(""); }}>
+                                                        {representativeImageId === image.id ? "✓ 대표" : "대표 지정"}
+                                                    </button>
+                                                    <button type="button" className={styles.removeImageButton} aria-label={`${image.name} 삭제`}
                                                         onClick={()=>removeReferenceImage(image.id)}>×</button>
                                                 </article>
                                             ))}
@@ -529,6 +544,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                                     )}
                                 </div>
                             )}
+                            {referenceImages.length > 0 && <p className={styles.representativeHint}>{representativeImageId ? "✓ 대표 이미지 1장이 지정되었습니다." : "대표 이미지를 1장 지정해주세요."}</p>}
                         </div>
                     )}
                     {errorMessage && <p className={styles.errorMessage} role="alert">{errorMessage}</p>}
