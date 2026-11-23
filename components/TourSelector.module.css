@@ -79,3 +79,20 @@
 .openTour{border:1px solid #ccd9e6!important;background:white!important;border-radius:8px;color:#36516a!important;font-size:12px;font-weight:800;padding:9px 12px;text-decoration:none}
 .openTour:hover{border-color:#0284c7!important;color:#0284c7!important}
 @media(max-width:780px){.page{padding:23px 16px 60px!important}.homeTitle{font-size:24px}.createFeature{padding:18px 15px;gap:13px}.featureIcon{width:47px;height:47px;font-size:29px}.featureText strong{font-size:15px}.searchPanel{padding:17px}.tourRow{gap:8px}.openTour{padding:9px 8px;white-space:nowrap;font-size:11px}}
+
+/* Match the stronger dashboard button hierarchy in existing tour management. */
+.openTour {
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:50px;min-width:112px;box-sizing:border-box;
+  padding:12px 20px!important;border-radius:11px!important;
+  font-size:15px!important;font-weight:800!important;
+  border:1px solid #cddde9!important;background:#fff!important;
+  color:#294760!important;white-space:nowrap;text-decoration:none;
+  box-shadow:0 4px 10px rgba(30,58,85,.09);
+  transition:border-color .15s,color .15s,box-shadow .15s,transform .15s;
+}
+.openTour:hover {transform:translateY(-1px);box-shadow:0 6px 14px rgba(30,58,85,.14);}
+.openTour:focus-visible {outline:3px solid #b5e1f6;outline-offset:2px;}
+@media(max-width:780px) {
+  .openTour {min-width:92px;min-height:44px;padding:10px 13px!important;font-size:12px!important;}
+}
