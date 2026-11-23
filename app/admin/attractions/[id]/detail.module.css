@@ -408,21 +408,25 @@
   outline-offset:2px;
 }
 
-/* Subtle blue halo prompts publishing only after landmark recognition approval. */
+/* Thick, softly pulsing white neon halo only when publishing is ready. */
 .publishReadyGlow {
   position: relative;
-  border-color: #56c4ff;
-  box-shadow: 0 0 0 2px rgba(100, 198, 248, .28), 0 0 12px rgba(2, 132, 199, .22);
+  border-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, .95),
+    0 0 0 6px rgba(255, 255, 255, .55),
+    0 0 16px 5px rgba(255, 255, 255, .5);
   animation: publishReadyPulse 3.1s ease-in-out infinite;
   transition: box-shadow .2s ease, border-color .2s ease;
 }
 .publishReadyGlow:hover {
-  border-color: #9bddff;
-  box-shadow: 0 0 0 3px rgba(108, 204, 255, .45), 0 0 24px rgba(2, 132, 199, .5);
+  border-color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 1),
+    0 0 0 8px rgba(255, 255, 255, .65),
+    0 0 24px 8px rgba(255, 255, 255, .75);
 }
 .publishReadyGlow:focus-visible {
-  outline: 3px solid #90daff;
-  outline-offset: 4px;
+  outline: 3px solid #ffffff;
+  outline-offset: 7px;
 }
 .publishReadyGlow:disabled {
   animation: none;
@@ -431,10 +435,14 @@
 }
 @keyframes publishReadyPulse {
   0%, 100% {
-    box-shadow: 0 0 0 1px rgba(76, 179, 235, .3), 0 0 9px rgba(2, 132, 199, .14);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, .84),
+      0 0 0 5px rgba(255, 255, 255, .35),
+      0 0 13px 3px rgba(255, 255, 255, .38);
   }
   50% {
-    box-shadow: 0 0 0 3px rgba(116, 207, 255, .43), 0 0 21px rgba(2, 132, 199, .42);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 1),
+      0 0 0 8px rgba(255, 255, 255, .7),
+      0 0 23px 8px rgba(255, 255, 255, .78);
   }
 }
 @media (prefers-reduced-motion: reduce) {
