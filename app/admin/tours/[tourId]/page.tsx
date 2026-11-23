@@ -15,22 +15,10 @@ type Attraction = {
   firstSuccess: number | null;
   status: string;
   quality: string;
-  lastTestResult?: "통과" | "실패" | "미실시";
-  testCount?: number;
-  lastTestedAt?: string | null;
   needsImageTest?: boolean;
 };
 
-type RecognitionTestRecord = {
-  totalTests: number;
-  successfulTests: number;
-  failedTests: number;
-  recentResults: boolean[];
-  lastResult: "통과" | "실패";
-  lastTestedAt: string;
-  quality: string;
-  approved: boolean;
-};
+type RecognitionTestRecord = { approved: boolean };
 
 type ApiAttraction = Omit<Attraction, "referenceImages"> & {
   referenceImages?: unknown[];
@@ -95,11 +83,8 @@ export default function AdminDashboardPage() {
                 ? attraction.referenceImages.length
                 : 0,
               firstSuccess: null,
-              quality: requiresRetest ? attraction.quality : (record?.quality ?? attraction.quality),
+              quality: attraction.quality,
               needsImageTest: !hasImages || !isTestApproved,
-              lastTestResult: record?.lastResult ?? "미실시",
-              testCount: record?.totalTests ?? 0,
-              lastTestedAt: record?.lastTestedAt ?? null,
             };
           })
         );
