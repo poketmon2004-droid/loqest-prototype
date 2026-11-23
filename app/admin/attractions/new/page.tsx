@@ -16,7 +16,7 @@ import {
 } from "@/lib/adminApiKey";
 import AdminBackButton from "@/components/AdminBackButton";
 import styles from "./AttractionForm.module.css";
-import savingStyles from "@/components/TourEditor.module.css";
+import AdminOperationOverlay from "@/components/AdminOperationOverlay";
 
 type Step = 1 | 2 | 3;
 
@@ -673,15 +673,7 @@ export default function NewAttractionPage() {
         </div>
       </section>
     </form >
-    {isSaving && (
-      <div className={savingStyles.modalBackdrop} role="dialog" aria-modal="true" aria-label="퀘스트 등록 중" aria-live="polite">
-        <div className={savingStyles.modal}>
-          <div className={savingStyles.savingSpinner} aria-hidden="true" />
-          <h2>퀘스트를 등록하고 있어요</h2>
-          <p>잠시만 기다려 주세요. 등록이 끝나면 해당 투어 관리 화면으로 자동 이동합니다.</p>
-        </div>
-      </div>
-    )}
+    {isSaving && <AdminOperationOverlay title="퀘스트를 등록하고 있어요" description="등록 중입니다. 완료되면 해당 투어 관리 화면으로 이동합니다." />}
     </div >
   );
 }
