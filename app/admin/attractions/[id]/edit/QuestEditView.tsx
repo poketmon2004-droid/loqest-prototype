@@ -509,7 +509,6 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                                     </label>
                                 </div>
                             </div>
-                            <GuideShapeSelector value={form.guideShape} onChange={value => updateForm("guideShape", value)} disabled={isProcessing} />
                         </>
                     ) : (
                         <div className={styles.uploadArea}>
