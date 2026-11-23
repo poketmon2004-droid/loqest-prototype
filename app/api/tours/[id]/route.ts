@@ -122,6 +122,38 @@ export async function PUT(
   });
 }
 
+// Change only publication status from the tour dashboard.
+// Do not overwrite the tour's name, region, badge, or description.
+export async function PATCH(request: NextRequest, context: Context) {
+  if (!authorized(request)) {
+    return NextResponse.json({ message: "관리자 인증에 실패했습니다." }, { status: 401 });
+  }
+
+  const { id } = await context.params;
+  let input: { status?: unknown };
+  try {
+    input = await request.json();
+  } catch {
+    return NextResponse.json({ message: "잘못된 요청입니다." }, { status: 400 });
+  }
+  if (input.status !== "공개" && input.status !== "비공개") {
+    return NextResponse.json({ message: "공개 상태를 올바르게 선택해주세요." }, { status: 400 });
+  }
+
+  const { data: tour, error } = await supabaseAdmin
+    .from("tours")
+    .update({ status: input.status, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select("id, status")
+    .single();
+
+  if (error || !tour) {
+    return NextResponse.json({ message: error?.message || "투어 공개 상태를 변경하지 못했습니다." }, { status: 500 });
+  }
+
+  return NextResponse.json({ tour });
+}
+
 export async function DELETE(
   request: NextRequest,
   context: Context,
