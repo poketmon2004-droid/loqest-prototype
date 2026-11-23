@@ -18,6 +18,7 @@ import AdminBackButton from "@/components/AdminBackButton";
 import styles from "./AttractionForm.module.css";
 import AdminOperationOverlay from "@/components/AdminOperationOverlay";
 import GuideShapeSelector, { type GuideShape, guideShapeLabels } from "@/components/GuideShapeSelector";
+import GuidePhotoPreview from "@/components/GuidePhotoPreview";
 
 type Step = 1 | 2 | 3;
 
@@ -586,6 +587,16 @@ export default function NewAttractionPage() {
                 </p>
               )}
 
+              <div className={styles.representativePreviewSection}>
+                <h3>대표 이미지 촬영 예시</h3>
+                <GuidePhotoPreview
+                  src={referenceImages.find(image => image.id === representativeImageId)?.dataUrl}
+                  name={referenceImages.find(image => image.id === representativeImageId)?.name}
+                  shape={guideShape}
+                />
+                <GuideShapeSelector value={guideShape} onChange={setGuideShape} disabled={isProcessing} />
+              </div>
+              {referenceImages.length > 0 && <h3 className={styles.referenceGalleryTitle}>등록된 사진 · 대표사진 선택</h3>}
               {referenceImages.length === 0 ? (
                 <div className={styles.emptyImageState}>
                   <strong>
@@ -636,7 +647,6 @@ export default function NewAttractionPage() {
                   ))}
                 </div>
               )}
-              <GuideShapeSelector value={guideShape} onChange={setGuideShape} disabled={isProcessing} />
               {referenceImages.length > 0 && (
                 <p className={styles.representativeHint}>
                   {representativeImageId ? "✓ 대표 이미지 1장이 지정되었습니다." : "다음 단계로 넘어가려면 대표 이미지를 1장 지정해주세요."}
