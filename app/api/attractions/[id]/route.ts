@@ -115,6 +115,12 @@ export async function PUT(request: NextRequest, context: Context) {
     const referenceImages = Array.isArray(body.referenceImages)
       ? (body.referenceImages as ReferenceImageInput[])
       : [];
+    const hasRepresentativeSelection = Object.prototype.hasOwnProperty.call(body, "representativeImageClientId");
+    const chosenClientId = hasRepresentativeSelection ? String(body.representativeImageClientId ?? "") : null;
+    if (hasRepresentativeSelection && (!chosenClientId || referenceImages.filter(image => String(image.id) === chosenClientId).length !== 1)) {
+      return NextResponse.json({ message: "랜드마크 이미지 중 대표 이미지를 1장 지정해주세요." }, { status: 400 });
+    }
+    let representativeSavedId: number | null = null;
     // Enforce publishing approval on the server, not only the admin UI.
     if (body.status === "공개") {
       const { data: current, error: currentError } = await load(id);
@@ -220,6 +226,7 @@ export async function PUT(request: NextRequest, context: Context) {
 
     for (const [index, image] of referenceImages.entries()) {
       if (image.path && image.id) {
+        if (hasRepresentativeSelection && String(image.id) === chosenClientId) representativeSavedId = Number(image.id);
         const { error: orderError } = await supabaseAdmin
           .from("attraction_reference_images")
           .update({ sort_order: index })
@@ -254,25 +261,42 @@ export async function PUT(request: NextRequest, context: Context) {
         );
       }
 
-      const { error: insertError } = await supabaseAdmin
+      const { data: insertedImage, error: insertError } = await supabaseAdmin
         .from("attraction_reference_images")
         .insert({
           attraction_id: Number(id),
           original_name: image.name || "image.jpg",
           storage_path: storagePath,
           sort_order: index,
-        });
+        })
+        .select("id").single();
 
-      if (insertError) {
+      if (insertError || !insertedImage) {
         await supabaseAdmin.storage
           .from("landmark-references")
           .remove([storagePath]);
 
         return NextResponse.json(
-          { message: insertError.message },
+          { message: insertError?.message ?? "기준 이미지 등록 결과를 확인하지 못했습니다." },
           { status: 500 }
         );
       }
+      if (hasRepresentativeSelection && String(image.id) === chosenClientId) representativeSavedId = Number(insertedImage.id);
+    }
+
+    if (hasRepresentativeSelection) {
+      if (!representativeSavedId || !Number.isSafeInteger(representativeSavedId)) {
+        return NextResponse.json({ message: "대표 이미지를 저장하지 못했습니다. 다시 선택해주세요." }, { status: 400 });
+      }
+      // Clear the previous representative before assigning a new one: the partial
+      // unique index guarantees there can never be two representatives.
+      const { error: clearError } = await supabaseAdmin.from("attraction_reference_images")
+        .update({ is_representative: false }).eq("attraction_id", Number(id)).eq("is_representative", true);
+      if (clearError) return NextResponse.json({ message: "기존 대표 이미지 설정을 변경하지 못했습니다." }, { status: 500 });
+      const { data: selected, error: markError } = await supabaseAdmin.from("attraction_reference_images")
+        .update({ is_representative: true }).eq("attraction_id", Number(id)).eq("id", representativeSavedId)
+        .select("id").single();
+      if (markError || !selected) return NextResponse.json({ message: "대표 이미지를 저장하지 못했습니다." }, { status: 500 });
     }
 
     // Invalidate the approval whenever the reference images are changed.
