@@ -68,6 +68,7 @@ export default function NewAttractionPage() {
 
   const [referenceImages, setReferenceImages] =
     useState<ReferenceImage[]>([]);
+  const [representativeImageId, setRepresentativeImageId] = useState<string | null>(null);
 
   const [errorMessage, setErrorMessage] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -169,9 +170,8 @@ export default function NewAttractionPage() {
   };
 
   const removeReferenceImage = (id: string) => {
-    setReferenceImages((previous) =>
-      previous.filter((image) => image.id !== id),
-    );
+    setReferenceImages((previous) => previous.filter((image) => image.id !== id));
+    setRepresentativeImageId((current) => current === id ? null : current);
   };
 
   const goNext = () => {
@@ -223,7 +223,19 @@ export default function NewAttractionPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const goReview = () => {if(referenceImages.length===0){setErrorMessage("랜드마크 이미지를 한 장 이상 등록해주세요.");return;}setErrorMessage("");setStep(3);window.scrollTo({top:0,behavior:"smooth"});};
+  const goReview = () => {
+    if (referenceImages.length === 0) {
+      setErrorMessage("랜드마크 이미지를 한 장 이상 등록해주세요.");
+      return;
+    }
+    if (!representativeImageId || !referenceImages.some((image) => image.id === representativeImageId)) {
+      setErrorMessage("대표 이미지를 1장 선택해야 다음 단계로 넘어갈 수 있습니다.");
+      return;
+    }
+    setErrorMessage("");
+    setStep(3);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const goPrevious = () => {
     setErrorMessage("");
@@ -243,6 +255,12 @@ export default function NewAttractionPage() {
       setErrorMessage(
         "인식 테스트에 사용할 랜드마크 이미지를 한 장 이상 등록해주세요.",
       );
+      return;
+    }
+
+    if (!representativeImageId || !referenceImages.some((image) => image.id === representativeImageId)) {
+      setErrorMessage("대표 이미지를 1장 지정해주세요.");
+      setStep(2);
       return;
     }
 
@@ -266,6 +284,7 @@ export default function NewAttractionPage() {
       radius: Number(form.radius),
       availableTime: "상시",
       landmarkThreshold: 70,
+      representativeImageIndex: referenceImages.findIndex((image) => image.id === representativeImageId),
       guideMessage:
         "가이드라인에 맞춰 관광지와 함께 촬영해주세요.",
       status: "비공개",
@@ -581,9 +600,7 @@ export default function NewAttractionPage() {
                   {referenceImages.map((image) => (
                     <article
                       key={image.id}
-                      className={
-                        styles.imagePreviewItem
-                      }
+                      className={`${styles.imagePreviewItem} ${representativeImageId === image.id ? styles.representativeImage : ""}`}
                     >
                       <NextImage
                         src={image.dataUrl}
@@ -592,6 +609,15 @@ export default function NewAttractionPage() {
                                         height={480}
                                         unoptimized
                                         />
+                      <button
+                        type="button"
+                        className={`${styles.representativeButton} ${representativeImageId === image.id ? styles.representativeSelected : ""}`}
+                        aria-pressed={representativeImageId === image.id}
+                        aria-label={`${image.name} 대표 이미지로 지정`}
+                        onClick={() => { setRepresentativeImageId(image.id); setErrorMessage(""); }}
+                      >
+                        {representativeImageId === image.id ? "✓ 대표" : "대표 지정"}
+                      </button>
 
                       <button
                         type="button"
@@ -599,12 +625,18 @@ export default function NewAttractionPage() {
                           removeReferenceImage(image.id)
                         }
                         aria-label={`${image.name} 삭제`}
+                        className={styles.removeImageButton}
                       >
                         ×
                       </button>
                     </article>
                   ))}
                 </div>
+              )}
+              {referenceImages.length > 0 && (
+                <p className={styles.representativeHint}>
+                  {representativeImageId ? "✓ 대표 이미지 1장이 지정되었습니다." : "다음 단계로 넘어가려면 대표 이미지를 1장 지정해주세요."}
+                </p>
               )}
             </div>
           </>
@@ -620,7 +652,7 @@ export default function NewAttractionPage() {
             </div>
             <div className={styles.reviewDetails}>
               <p><b>카테고리</b>{form.category}</p><p><b>인증 위치</b>{form.latitude}, {form.longitude}</p>
-              <p><b>인증 반경</b>{form.radius}m</p><p><b>랜드마크 이미지</b>{referenceImages.length}장</p>
+              <p><b>인증 반경</b>{form.radius}m</p><p><b>랜드마크 이미지</b>{referenceImages.length}장</p><p><b>대표 이미지</b>{referenceImages.find((image) => image.id === representativeImageId)?.name ?? "미지정"}</p>
             </div>
             <p className={styles.privateNotice}>등록된 퀘스트는 비공개 상태로 저장됩니다. 인식 테스트를 마친 뒤 공개할 수 있습니다.</p>
           </section>
