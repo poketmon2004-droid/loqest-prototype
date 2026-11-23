@@ -670,3 +670,30 @@
   .questRowActions {flex-wrap:wrap;gap:6px;max-width:58%; }
   .main .questTestLink,.main .questManageLink {min-height:38px;padding:9px 10px;font-size:11px;}
 }
+
+/* Clear, touch-friendly quest action buttons, visually consistent with large CTAs. */
+.main .questRowActions { gap:10px; }
+.main .questRowActions .questTestLink,
+.main .questRowActions .questManageLink {
+  display:inline-flex;align-items:center;justify-content:center;
+  box-sizing:border-box;min-height:50px;
+  padding:13px 19px;font-size:15px;font-weight:800;
+  border-radius:11px;white-space:nowrap;
+  box-shadow:0 4px 10px rgba(30,58,85,.09);
+  transition:background .15s,border-color .15s,box-shadow .15s,transform .15s;
+}
+.main .questRowActions .questTestLink {
+  background:#fce0e9;border:1px solid #f1a9c0;color:#a23d65;
+  box-shadow:0 4px 10px rgba(171,61,103,.12);
+}
+.main .questRowActions .questManageLink {
+  background:#fff;border:1px solid #cddde9;color:#294760;
+}
+.main .questRowActions a:hover {transform:translateY(-1px);box-shadow:0 6px 14px rgba(30,58,85,.14);}
+@media(max-width:680px) {
+  .main .questRowActions {gap:7px;max-width:60%;}
+  .main .questRowActions .questTestLink,
+  .main .questRowActions .questManageLink {
+    min-height:44px;padding:10px 12px;font-size:12px;
+  }
+}
