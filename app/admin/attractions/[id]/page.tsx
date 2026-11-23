@@ -41,7 +41,8 @@ type RecognitionTestRecord = {
     recentResults: boolean[];
     lastResult: "통과" | "실패";
     lastTestedAt: string;
-    quality: "정상" | "확인 필요" | "기준 이미지 개선";
+    quality: string;
+    approved: boolean;
 };
 
 export default function AttractionDetailPage() {
@@ -60,7 +61,10 @@ export default function AttractionDetailPage() {
             try {
                 const adminKey = getAdminApiKey();
                 if (!adminKey) return;
-                const response = await fetch(`/api/attractions/${attractionId}`, { headers: { "x-admin-api-key": adminKey } });
+                const [response, testResponse] = await Promise.all([
+                    fetch(`/api/attractions/${attractionId}`, { headers: { "x-admin-api-key": adminKey }, cache: "no-store" }),
+                    fetch(`/api/recognition-test-records?attractionId=${attractionId}`, { headers: { "x-admin-api-key": adminKey }, cache: "no-store" }),
+                ]);
                 if (response.status === 401) {
                     clearAdminApiKey();
                     throw new Error("관리자 API 키가 올바르지 않습니다.");
@@ -68,17 +72,16 @@ export default function AttractionDetailPage() {
                 if (!response.ok) throw new Error("관광지를 불러오지 못했습니다.");
                 const result = await response.json();
                 const item = result.attraction;
-                const recognitionRecords = JSON.parse(
-                    localStorage.getItem("loqest_recognition_test_records") || "{}"
-                ) as Record<string, RecognitionTestRecord>;
-                const record = recognitionRecords[String(attractionId)] ?? null;
+                if (!testResponse.ok) throw new Error("서버 테스트 기록을 불러오지 못했습니다.");
+                const { records } = (await testResponse.json()) as { records: Record<string, RecognitionTestRecord> };
+                const record = records[String(attractionId)] ?? null;
                 const mapped: Attraction = {
                     id: item.id, name: item.name, category: item.category, address: item.address,
                     description: item.description, latitude: item.latitude, longitude: item.longitude,
                     radius: item.radius, availableTime: item.available_time,
                     landmarkThreshold: Number(item.landmark_threshold), guideMessage: item.guide_message,
                     referenceImages: item.referenceImages.length, referenceImageData: item.referenceImages,
-                    firstSuccess: null, status: item.status, quality: record?.quality ?? item.quality,
+                    firstSuccess: null, status: item.status, quality: item.quality === "재테스트 필요" ? item.quality : (record?.quality ?? item.quality),
                     tourId: item.tour_id || "amsa",
                 };
                 setAttraction(mapped);
@@ -105,16 +108,13 @@ export default function AttractionDetailPage() {
 
         // Once a quest has been published, hiding it does not invalidate its test.
         // A reference-image change explicitly invalidates this approval.
-        const previouslyPublished = localStorage.getItem(
-            `loqest_previously_published_${attraction.id}`
-        ) === "true";
         const requiresRetest = attraction.quality === "재테스트 필요";
-        const hasSuccessfulTest = (testRecord?.successfulTests ?? 0) > 0;
+        const hasSuccessfulTest = testRecord?.approved === true;
 
         if (nextStatus === "공개" && (
             !referenceImages.length ||
             requiresRetest ||
-            (!previouslyPublished && !hasSuccessfulTest)
+            !hasSuccessfulTest
         )) {
             window.alert("랜드마크 이미지 등록 후 인식 테스트를 통과해야 공개할 수 있습니다.");
             return;
@@ -155,11 +155,7 @@ export default function AttractionDetailPage() {
         }
 
         if (response.ok) {
-            if (nextStatus === "비공개" && attraction.status === "공개") {
-                localStorage.setItem(`loqest_previously_published_${attraction.id}`, "true");
-            }
             if (nextStatus === "공개") {
-                localStorage.setItem(`loqest_previously_published_${attraction.id}`, "true");
                 sessionStorage.setItem(
                     "loqest_admin_notice",
                     `'${attraction.name}' 관광지가 홈페이지에 공개되었습니다.`
@@ -229,10 +225,9 @@ export default function AttractionDetailPage() {
     }
 
     const hasImages = referenceImages.length>0;
-    const hasPassedTest=(testRecord?.successfulTests ?? 0)>0;
+    const hasPassedTest=testRecord?.approved === true;
     const isRetestRequired=attraction.quality==="재테스트 필요";
-    const hasPublicationApproval=typeof window!=="undefined" && localStorage.getItem(`loqest_previously_published_${attraction.id}`)==="true";
-    const readyForPublish=hasImages && !isRetestRequired && (hasPassedTest || hasPublicationApproval);
+    const readyForPublish=hasImages && !isRetestRequired && hasPassedTest;
     const needsAction = !hasImages ? "랜드마크 이미지가 필요해요" : !readyForPublish ? "인식 테스트가 필요해요" : attraction.status!=="공개" ? "공개할 준비가 끝났어요" : "";
     const explanation=!hasImages ? "랜드마크 이미지를 한 장 이상 등록해주세요." : !hasPassedTest ? "랜드마크 이미지를 확인하고 실제 사진으로 인식 테스트를 진행해주세요." : "테스트를 통과했습니다. 관광객에게 공개할 수 있습니다.";
     const icons:Record<string,string>={"역사·문화":"🗺️","자연·생태":"🌿","축제·행사":"🎉","체험·레저":"🎯","지역상권":"🛍️","기타":"✨"};
