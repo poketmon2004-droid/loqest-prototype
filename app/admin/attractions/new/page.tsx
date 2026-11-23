@@ -16,6 +16,7 @@ import {
 } from "@/lib/adminApiKey";
 import AdminBackButton from "@/components/AdminBackButton";
 import styles from "./AttractionForm.module.css";
+import savingStyles from "@/components/TourEditor.module.css";
 
 type Step = 1 | 2 | 3;
 
@@ -70,6 +71,7 @@ export default function NewAttractionPage() {
 
   const [errorMessage, setErrorMessage] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   // A synchronous lock prevents rapid submissions before React disables the button.
   const submitLocked = useRef(false);
   // Stable request identity is reused if registration needs to be retried.
@@ -280,6 +282,7 @@ export default function NewAttractionPage() {
 
       setErrorMessage("");
       setIsProcessing(true);
+      setIsSaving(true);
 
       const requestBody = new window.FormData();
 
@@ -336,9 +339,10 @@ export default function NewAttractionPage() {
       }
 
       localStorage.setItem(`loqest_new_quest_${tourId}`, String(result.attraction.id));
-      router.push(`/landmark-test?attractionId=${encodeURIComponent(String(result.attraction.id))}`);
+      router.replace(`/admin/tours/${encodeURIComponent(tourId)}`);
     } catch (error) {
       submitLocked.current = false;
+      setIsSaving(false);
       setErrorMessage(
         error instanceof Error
           ? error.message
@@ -669,6 +673,15 @@ export default function NewAttractionPage() {
         </div>
       </section>
     </form >
+    {isSaving && (
+      <div className={savingStyles.modalBackdrop} role="dialog" aria-modal="true" aria-label="퀘스트 등록 중" aria-live="polite">
+        <div className={savingStyles.modal}>
+          <div className={savingStyles.savingSpinner} aria-hidden="true" />
+          <h2>퀘스트를 등록하고 있어요</h2>
+          <p>잠시만 기다려 주세요. 등록이 끝나면 해당 투어 관리 화면으로 자동 이동합니다.</p>
+        </div>
+      </div>
+    )}
     </div >
   );
 }
