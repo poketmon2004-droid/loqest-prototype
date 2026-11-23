@@ -42,15 +42,7 @@ type ComparisonResult = {
   matchRatio: number;
 };
 
-type RecognitionTestRecord = {
-  totalTests: number;
-  successfulTests: number;
-  failedTests: number;
-  recentResults: boolean[];
-  lastResult: "통과" | "실패";
-  lastTestedAt: string;
-  quality: "정상" | "확인 필요" | "기준 이미지 개선";
-};
+type RecognitionTestRecord = { approved: boolean };
 
 function loadImage(source: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -365,12 +357,11 @@ export default function LandmarkTestPage() {
   async function saveRecognitionTestResult(goodMatches: number, matchRatio: number) {
     if (!activeAttractionId) return;
 
-    const adminKey = getAdminApiKey();
     const response = await fetch("/api/recognition-test-records", {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-admin-api-key": adminKey || "",
+        "x-admin-api-key": getAdminApiKey() || "",
       },
       body: JSON.stringify({
         attractionId: Number(activeAttractionId),
@@ -379,14 +370,19 @@ export default function LandmarkTestPage() {
       }),
     });
     const result = (await response.json()) as {
+      passed?: boolean;
       record?: RecognitionTestRecord;
       message?: string;
     };
-    if (!response.ok || !result.record) {
-      throw new Error(result.message || "서버에 테스트 기록을 저장하지 못했습니다.");
+    if (!response.ok) {
+      throw new Error(result.message || "테스트 승인 상태를 확인하지 못했습니다.");
+    }
+    // Only a passing test writes approval to the server; failures are not logged.
+    if (result.passed && !result.record?.approved) {
+      throw new Error("테스트 통과 승인 저장을 확인하지 못했습니다.");
     }
     setSavedTestMessage(
-      `서버에 테스트 결과가 저장되었습니다. 총 ${result.record.totalTests}회 테스트`
+      result.passed ? "테스트를 통과해 공개 승인이 저장되었습니다." : ""
     );
   }
 
@@ -448,7 +444,7 @@ export default function LandmarkTestPage() {
 
       try {
         await saveRecognitionTestResult(currentBestResult?.goodMatches ?? 0, currentBestResult?.matchRatio ?? 0);
-        setStatus("분석 및 서버 저장이 완료되었습니다.");
+        setStatus("분석이 완료되었습니다.");
       } catch (saveError) {
         setSavedTestMessage("");
         setSaveFailed(true);
