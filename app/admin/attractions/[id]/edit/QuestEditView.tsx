@@ -15,6 +15,7 @@ import {
     getAdminApiKey,
 } from "@/lib/adminApiKey";
 import styles from "../../new/AttractionForm.module.css";
+import AdminOperationOverlay from "@/components/AdminOperationOverlay";
 import AdminBackButton from "@/components/AdminBackButton";
 
 type ReferenceImage = {
@@ -108,6 +109,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
 
     const [loading, setLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [showReferenceImages, setShowReferenceImages] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [
@@ -310,6 +312,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
 
         setErrorMessage("");
         setIsProcessing(true);
+        setIsSaving(true);
 
         try {
             const response = await fetch(
@@ -387,6 +390,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                     : "관광지 정보를 저장하지 못했습니다."
             );
         } finally {
+            setIsSaving(false);
             setIsProcessing(false);
         }
     };
@@ -533,6 +537,10 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                     </div>
                 </section>
             </form>
+            {isSaving && <AdminOperationOverlay
+                title={imageMode ? "랜드마크 이미지를 저장하고 있어요" : "퀘스트 정보를 수정하고 있어요"}
+                description="변경사항을 저장 중입니다. 잠시만 기다려 주세요."
+            />}
         </div>
     );
 }
