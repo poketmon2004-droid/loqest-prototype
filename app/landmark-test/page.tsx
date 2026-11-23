@@ -334,53 +334,31 @@ export default function LandmarkTestPage() {
     setStatus("사진을 선택했습니다. 분석 버튼을 눌러 주세요.");
   }
 
-  function saveRecognitionTestResult(passed: boolean) {
-    if (!activeAttractionId) {
-      return;
-    }
+  async function saveRecognitionTestResult(goodMatches: number, matchRatio: number) {
+    if (!activeAttractionId) return;
 
-    const savedRecords = JSON.parse(
-      localStorage.getItem("loqest_recognition_test_records") || "{}"
-    ) as Record<string, RecognitionTestRecord>;
-
-    const previousRecord = savedRecords[activeAttractionId];
-    const recentResults = [
-      ...(previousRecord?.recentResults ?? []),
-      passed,
-    ].slice(-3);
-
-    const recentFailureCount = recentResults.filter(
-      (result) => !result
-    ).length;
-
-    let quality: RecognitionTestRecord["quality"] = "정상";
-
-    if (recentFailureCount >= 2) {
-      quality = "기준 이미지 개선";
-    } else if (!passed) {
-      quality = "확인 필요";
-    }
-
-    const nextRecord: RecognitionTestRecord = {
-      totalTests: (previousRecord?.totalTests ?? 0) + 1,
-      successfulTests:
-        (previousRecord?.successfulTests ?? 0) + (passed ? 1 : 0),
-      failedTests: (previousRecord?.failedTests ?? 0) + (passed ? 0 : 1),
-      recentResults,
-      lastResult: passed ? "통과" : "실패",
-      lastTestedAt: new Date().toISOString(),
-      quality,
+    const adminKey = getAdminApiKey();
+    const response = await fetch("/api/recognition-test-records", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-admin-api-key": adminKey || "",
+      },
+      body: JSON.stringify({
+        attractionId: Number(activeAttractionId),
+        goodMatches,
+        matchRatio,
+      }),
+    });
+    const result = (await response.json()) as {
+      record?: RecognitionTestRecord;
+      message?: string;
     };
-
-    savedRecords[activeAttractionId] = nextRecord;
-
-    localStorage.setItem(
-      "loqest_recognition_test_records",
-      JSON.stringify(savedRecords)
-    );
-
+    if (!response.ok || !result.record) {
+      throw new Error(result.message || "서버에 테스트 기록을 저장하지 못했습니다.");
+    }
     setSavedTestMessage(
-      `테스트 결과가 저장되었습니다. 총 ${nextRecord.totalTests}회 테스트`
+      `서버에 테스트 결과가 저장되었습니다. 총 ${result.record.totalTests}회 테스트`
     );
   }
 
@@ -435,8 +413,15 @@ export default function LandmarkTestPage() {
         currentBestResult.goodMatches >= goodMatchesThreshold &&
         currentBestResult.matchRatio >= matchRatioThreshold;
 
-      saveRecognitionTestResult(currentPassed);
-      setStatus("분석이 완료되었습니다.");
+      try {
+        await saveRecognitionTestResult(currentBestResult?.goodMatches ?? 0, currentBestResult?.matchRatio ?? 0);
+        setStatus("분석 및 서버 저장이 완료되었습니다.");
+      } catch (saveError) {
+        setSavedTestMessage("");
+        setStatus(saveError instanceof Error
+          ? `분석은 완료되었지만 ${saveError.message}`
+          : "분석은 완료되었지만 서버 저장에 실패했습니다.");
+      }
     } catch (error) {
       console.error(error);
       setStatus(
