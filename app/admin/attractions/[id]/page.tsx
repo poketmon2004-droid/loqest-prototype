@@ -34,16 +34,7 @@ type Attraction = {
     tourId: string;
 };
 
-type RecognitionTestRecord = {
-    totalTests: number;
-    successfulTests: number;
-    failedTests: number;
-    recentResults: boolean[];
-    lastResult: "통과" | "실패";
-    lastTestedAt: string;
-    quality: string;
-    approved: boolean;
-};
+type RecognitionTestRecord = { approved: boolean };
 
 export default function AttractionDetailPage() {
     const params = useParams();
@@ -81,7 +72,7 @@ export default function AttractionDetailPage() {
                     radius: item.radius, availableTime: item.available_time,
                     landmarkThreshold: Number(item.landmark_threshold), guideMessage: item.guide_message,
                     referenceImages: item.referenceImages.length, referenceImageData: item.referenceImages,
-                    firstSuccess: null, status: item.status, quality: item.quality === "재테스트 필요" ? item.quality : (record?.quality ?? item.quality),
+                    firstSuccess: null, status: item.status, quality: item.quality,
                     tourId: item.tour_id || "amsa",
                 };
                 setAttraction(mapped);
