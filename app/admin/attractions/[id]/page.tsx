@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { clearAdminApiKey, getAdminApiKey } from "@/lib/adminApiKey";
 import styles from "./detail.module.css";
 import AdminBackButton from "@/components/AdminBackButton";
+import AdminOperationOverlay from "@/components/AdminOperationOverlay";
 
 type ReferenceImage = {
     id: string;
@@ -46,6 +47,9 @@ export default function AttractionDetailPage() {
         useState<RecognitionTestRecord | null>(null);
     const [referenceImages, setReferenceImages] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
+    const [operation, setOperation] = useState<"publish" | "hide" | "delete" | null>(null);
+    const [operationError, setOperationError] = useState("");
+    const operationLock = useRef(false);
 
     useEffect(() => {
         const loadAttraction = async () => {
@@ -88,120 +92,91 @@ export default function AttractionDetailPage() {
     }, [attractionId]);
 
     const toggleStatus = async () => {
-        if (!attraction) {
-            return;
-        }
-
-        const nextStatus =
-            attraction.status === "공개"
-                ? "비공개"
-                : "공개";
-
-        // Once a quest has been published, hiding it does not invalidate its test.
-        // A reference-image change explicitly invalidates this approval.
+        if (!attraction || operationLock.current) return;
+        const nextStatus = attraction.status === "공개" ? "비공개" : "공개";
         const requiresRetest = attraction.quality === "재테스트 필요";
-        const hasSuccessfulTest = testRecord?.approved === true;
-
-        if (nextStatus === "공개" && (
-            !referenceImages.length ||
-            requiresRetest ||
-            !hasSuccessfulTest
-        )) {
+        if (nextStatus === "공개" && (!referenceImages.length || requiresRetest || testRecord?.approved !== true)) {
             window.alert("랜드마크 이미지 등록 후 인식 테스트를 통과해야 공개할 수 있습니다.");
             return;
         }
-
-        const adminKey = getAdminApiKey();
-        if (!adminKey) return;
-        const response = await fetch(`/api/attractions/${attraction.id}`, {
-            method: "PUT",
-            headers: {
-                "content-type": "application/json",
-                "x-admin-api-key": adminKey,
-            },
-            body: JSON.stringify({
-                name: attraction.name,
-                category: attraction.category,
-                address: attraction.address ?? "",
-                description: attraction.description ?? "",
-                latitude: attraction.latitude,
-                longitude: attraction.longitude,
-                radius: attraction.radius,
-                availableTime: attraction.availableTime ?? "상시",
-                landmarkThreshold: attraction.landmarkThreshold ?? 70,
-                guideMessage: attraction.guideMessage ?? "",
-                status: nextStatus,
-                quality: attraction.quality,
-                referenceImages: attraction.referenceImageData ?? [],
-                referenceImagesChanged: false,
-            }),
-        });
-
-        if (response.status === 401) {
-            clearAdminApiKey();
-            window.alert(
-                "관리자 API 키가 올바르지 않습니다. 새로고침 후 다시 입력해주세요."
-            );
-            return;
-        }
-
-        if (response.ok) {
-            if (nextStatus === "공개") {
-                sessionStorage.setItem(
-                    "loqest_admin_notice",
-                    `'${attraction.name}' 관광지가 홈페이지에 공개되었습니다.`
-                );
-                router.push(`/admin/tours/${encodeURIComponent(attraction.tourId)}`);
-                return;
+        const key = getAdminApiKey();
+        if (!key) return;
+        operationLock.current = true;
+        setOperation(nextStatus === "공개" ? "publish" : "hide");
+        setOperationError("");
+        let navigating = false;
+        try {
+            const response = await fetch(`/api/attractions/${attraction.id}`, {
+                method: "PUT",
+                headers: { "content-type": "application/json", "x-admin-api-key": key },
+                body: JSON.stringify({
+                    name: attraction.name, category: attraction.category, address: attraction.address ?? "",
+                    description: attraction.description ?? "", latitude: attraction.latitude, longitude: attraction.longitude,
+                    radius: attraction.radius, availableTime: attraction.availableTime ?? "상시",
+                    landmarkThreshold: attraction.landmarkThreshold ?? 70, guideMessage: attraction.guideMessage ?? "",
+                    status: nextStatus, quality: attraction.quality,
+                    referenceImages: attraction.referenceImageData ?? [], referenceImagesChanged: false,
+                }),
+            });
+            if (response.status === 401) {
+                clearAdminApiKey();
+                throw new Error("관리자 API 키가 올바르지 않습니다. 새로고침 후 다시 입력해주세요.");
             }
-            setAttraction({ ...attraction, status: nextStatus });
-        } else {
-            window.alert("공개 상태를 변경하지 못했습니다.");
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.message || "공개 상태를 변경하지 못했습니다.");
+            }
+            if (nextStatus === "공개") {
+                sessionStorage.setItem("loqest_admin_notice",
+                    `\u0027${attraction.name}\u0027 관광지가 홈페이지에 공개되었습니다.`);
+                navigating = true;
+                router.push(`/admin/tours/${encodeURIComponent(attraction.tourId)}`);
+            } else {
+                setAttraction({ ...attraction, status: nextStatus });
+            }
+        } catch (error) {
+            setOperationError(error instanceof Error ? error.message : "공개 상태를 변경하지 못했습니다.");
+        } finally {
+            operationLock.current = false;
+            if (!navigating) setOperation(null);
         }
     };
 
     const deleteAttraction = async () => {
-        if (!attraction) return;
-        const deleteConfirmation = window.prompt(`'${attraction.name}' 퀘스트를 삭제하면 복구할 수 없습니다.\n\n삭제하려면 "삭제"를 정확히 입력해주세요.`);
-        if (deleteConfirmation === null) return;
-        if (deleteConfirmation !== "삭제") {
+        if (!attraction || operationLock.current) return;
+        const confirmation = window.prompt(`\u0027${attraction.name}\u0027 퀘스트를 삭제하면 복구할 수 없습니다.\n\n삭제하려면 "삭제"를 정확히 입력해주세요.`);
+        if (confirmation === null) return;
+        if (confirmation !== "삭제") {
             window.alert("확인 문구가 일치하지 않아 삭제하지 않았습니다.");
             return;
         }
-
-        const adminKey = getAdminApiKey();
-        if (!adminKey) return;
-        const response = await fetch(`/api/attractions/${attraction.id}`, {
-            method: "DELETE",
-            headers: { "x-admin-api-key": adminKey },
-        });
-
-        if (response.status === 401) {
-            clearAdminApiKey();
-            window.alert(
-                "관리자 API 키가 올바르지 않습니다. 새로고침 후 다시 입력해주세요."
-            );
-            return;
-        }
-
-        if (response.ok) {
+        const key = getAdminApiKey();
+        if (!key) return;
+        operationLock.current = true;
+        setOperation("delete");
+        setOperationError("");
+        let navigating = false;
+        try {
+            const response = await fetch(`/api/attractions/${attraction.id}`, {
+                method: "DELETE", headers: { "x-admin-api-key": key },
+            });
+            if (response.status === 401) {
+                clearAdminApiKey();
+                throw new Error("관리자 API 키가 올바르지 않습니다. 새로고침 후 다시 입력해주세요.");
+            }
+            if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.message || "퀘스트를 삭제하지 못했습니다.");
+            }
+            navigating = true;
             router.push(`/admin/tours/${encodeURIComponent(attraction.tourId)}`);
-        } else {
-            window.alert("관광지를 삭제하지 못했습니다.");
+        } catch (error) {
+            setOperationError(error instanceof Error ? error.message : "퀘스트를 삭제하지 못했습니다.");
+        } finally {
+            operationLock.current = false;
+            if (!navigating) setOperation(null);
         }
     };
-
-    const formatDate = (date?: string) => {
-        if (!date) return "미실시";
-        return new Intl.DateTimeFormat("ko-KR", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-        }).format(new Date(date));
-    };
-
     if (loading) return <main className={styles.page}>불러오는 중...</main>;
 
     if (!attraction) {
@@ -270,16 +245,20 @@ export default function AttractionDetailPage() {
           </div>
         </section>
         <section className={styles.simpleCard}>
-          <div className={styles.simpleCardHeader}><h2>인식 테스트 결과</h2><span className={hasPassedTest?styles.passedLabel:styles.pendingLabel}>{testRecord?.lastResult||"미실시"}</span></div>
-          <div className={styles.testSummary}><span>전체 {testRecord?.totalTests||0}회</span><span>성공 {testRecord?.successfulTests||0}회</span><span>실패 {testRecord?.failedTests||0}회</span><span>최근 {formatDate(testRecord?.lastTestedAt)}</span></div>
+          <div className={styles.simpleCardHeader}><h2>인식 테스트 결과</h2><span className={hasPassedTest?styles.passedLabel:styles.pendingLabel}>{readyForPublish ? "테스트 통과" : "테스트 필요"}</span></div>
           <Link href={`/landmark-test?attractionId=${attraction.id}`} className={styles.secondaryButton}>인식 테스트 진행하기</Link>
         </section>
         <section className={styles.largeActions}>
-          <button type="button" className={attraction.status==="공개"?styles.hideAction:styles.publishAction} onClick={toggleStatus} aria-disabled={attraction.status!=="공개"&&!readyForPublish}>
+          <button type="button" className={attraction.status==="공개"?styles.hideAction:styles.publishAction} onClick={toggleStatus} disabled={operation !== null} aria-disabled={attraction.status!=="공개"&&!readyForPublish}>
             {attraction.status==="공개"?"비공개로 전환":"공개하기"}
           </button>
-          <button type="button" className={styles.deleteAction} onClick={deleteAttraction}>퀘스트 삭제</button>
+          <button type="button" className={styles.deleteAction} onClick={deleteAttraction} disabled={operation !== null}>퀘스트 삭제</button>
         </section>
+        {operationError && <p role="alert" style={{ color: "#b42318", marginTop: 14, fontWeight: 700 }}>{operationError}</p>}
+        {operation && <AdminOperationOverlay
+            title={operation === "delete" ? "퀘스트를 삭제하고 있어요" : operation === "publish" ? "퀘스트를 공개하고 있어요" : "퀘스트를 비공개로 전환하고 있어요"}
+            description="변경사항을 서버에 반영하고 있습니다. 잠시만 기다려 주세요."
+        />}
       </main>
     );
 }
