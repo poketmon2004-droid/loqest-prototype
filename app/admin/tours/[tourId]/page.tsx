@@ -168,7 +168,7 @@ export default function AdminDashboardPage() {
             {attractions.length===0?<p className={styles.dashboardEmpty}>아직 등록된 퀘스트가 없습니다. 새 퀘스트를 추가해보세요.</p>:
               [...attractions].sort((a,b)=>b.id-a.id).map(attraction=><article className={`${styles.questListRow} ${attraction.needsImageTest?styles.newQuestRow:""}`} key={attraction.id}>
                 <span className={styles.questCategoryIcon}>{{"역사·문화":"🗺️","자연·생태":"🌿","축제·행사":"🎉","체험·레저":"🎯","지역상권":"🛍️","기타":"✨"}[attraction.category]||"📍"}</span>
-                <div className={styles.questListContent}><strong>{attraction.name}</strong>{attraction.needsImageTest&&<span className={styles.newBadge}>테스트 필요</span>}<p>{attraction.status}{attraction.needsImageTest?" · 테스트 필요":""}</p></div>
+                <div className={styles.questListContent}><strong>{attraction.name}</strong>{attraction.needsImageTest&&<span className={styles.newBadge}>테스트 필요</span>}<p>{attraction.status}</p></div>
                 <div className={styles.questRowActions}>
                   {attraction.needsImageTest&&<Link className={styles.questTestLink} href={`/landmark-test?attractionId=${encodeURIComponent(String(attraction.id))}`}>이미지 인식 테스트</Link>}
                   <Link className={styles.questManageLink} href={`/admin/attractions/${attraction.id}`}>관리하기</Link>
