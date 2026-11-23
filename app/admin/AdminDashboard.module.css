@@ -744,14 +744,15 @@
 }
 .main .tourActions .tourActionButtons .tourEdit:hover {background:#f4f7fa;border-color:#aebfce;}
 .main .tourActions .tourActionButtons .tourPublishButton {
-  background:#e5f6ec;
-  border:1px solid #9dd7b2;
-  color:#176a3c;
-  box-shadow:0 3px 9px rgba(23,106,60,.08);
+  background:#138B5D;
+  border:1px solid #107850;
+  color:#ffffff;
+  box-shadow:0 4px 10px rgba(19,139,93,.18);
 }
 .main .tourActions .tourActionButtons .tourPublishButton:hover {
-  background:#d1efdd;
-  border-color:#76c997;
+  background:#107850;
+  border-color:#0d6744;
+  box-shadow:0 6px 14px rgba(19,139,93,.24);
 }
 .main .tourActions .tourActionButtons .tourHideButton {
   background:#fff3e6;
