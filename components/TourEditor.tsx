@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import AdminBackButton from "@/components/AdminBackButton";
+import AdminOperationOverlay from "@/components/AdminOperationOverlay";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getAdminApiKey, clearAdminApiKey } from "@/lib/adminApiKey";
@@ -70,7 +71,7 @@ export default function TourEditor({tourId}: {tourId?:string}) {
     }
   };
   const deleteTour=async()=>{
-    if(!tourId)return;
+    if(!tourId||saving||deleting)return;
     const deleteConfirmation=window.prompt(`이 투어를 삭제하면 관련 퀘스트, 기준 이미지, 인증 기록도 삭제되고 복구할 수 없습니다.\n\n삭제하려면 "삭제"를 정확히 입력해주세요.`);
     if(deleteConfirmation===null)return;
     if(deleteConfirmation!=="삭제"){window.alert("확인 문구가 일치하지 않아 삭제하지 않았습니다.");return;}
@@ -134,12 +135,10 @@ export default function TourEditor({tourId}: {tourId?:string}) {
         <button className={styles.primary} disabled={saving||deleting||!canContinue}>{saving?"저장 중...":tourId?"변경사항 저장":step===1?"다음단계":"투어 등록하기"}</button>
       </footer>
     </form>
-    {saving&&<div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={tourId?"투어 정보 저장 중":"투어 등록 중"} aria-live="polite">
-      <div className={styles.modal}>
-        <div className={styles.savingSpinner} aria-hidden="true" />
-        <h2>{tourId?"변경사항을 저장하고 있어요":"투어를 등록하고 있어요"}</h2>
-        <p>{tourId?"저장이 완료되면 투어 관리 화면으로 이동합니다.":"잠시만 기다려 주세요. 등록이 끝나면 해당 투어 관리 화면으로 자동 이동합니다."}</p>
-      </div>
-    </div>}
+    {saving && <AdminOperationOverlay
+      title={tourId ? "투어 정보를 수정하고 있어요" : "투어를 등록하고 있어요"}
+      description={tourId ? "변경사항을 저장하고 있습니다. 잠시만 기다려 주세요." : "등록 중입니다. 완료되면 투어 관리 화면으로 이동합니다."}
+    />}
+    {deleting && <AdminOperationOverlay title="투어를 삭제하고 있어요" description="관련 데이터를 정리하고 있습니다. 잠시만 기다려 주세요." />}
   </main>;
 }
