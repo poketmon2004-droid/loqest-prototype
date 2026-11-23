@@ -525,6 +525,7 @@ export default function Home() {
 
   function enterTour(tour: PublicTour) {
     resetVerification();
+    localStorage.setItem(`loqestStartedTour:${tour.id}`, "true");
     setActiveTour(tour);
     setCompletedLandmarks([]);
     setBadgeEarnedAt(null);
@@ -533,6 +534,11 @@ export default function Home() {
 
   function goToQuestList() {
     resetVerification();
+    setScreen("quests");
+  }
+
+  function exploreFromCollection(tour: PublicTour) {
+    enterTour(tour);
     setScreen("quests");
   }
 
@@ -743,14 +749,8 @@ export default function Home() {
   if (screen === "badges") {
     return (
       <BadgeCollection
-        tourCompleted={tourCompleted}
-        activeTour={activeTour}
-        badgeEarnedAt={badgeEarnedAt}
-        completedCount={completedCount}
-        landmarks={landmarks}
-        progressPercent={progressPercent}
-        goToQuestList={goToQuestList}
-        goHome={goHome}
+        tours={tours}
+        onExploreTour={exploreFromCollection}
         goToMainHome={goToMainHome}
         styles={styles}
       />
