@@ -16,6 +16,7 @@ type VerificationLandmark = {
   longitude: number;
   radius: number;
   referenceImages: string[];
+  representativeImage: string | null;
   goodMatchesThreshold: number;
   matchRatioThreshold: number;
 };
@@ -60,6 +61,46 @@ export default function VerificationScreen({
 
               <div style={styles.guideBox}>
                 <strong>촬영 안내</strong>
+
+                {selectedLandmark.representativeImage && (
+                  <figure style={{
+                    margin: "14px 0 12px",
+                    padding: "10px",
+                    borderRadius: "14px",
+                    border: "1px solid #cbdde6",
+                    background: "#ffffff",
+                  }}>
+                    <div style={{
+                      overflow: "hidden",
+                      borderRadius: "10px",
+                      background: "#eef3f7",
+                    }}>
+                      {/* Image comes from the admin-selected, publicly accessible
+                          landmark reference image; avoid cropping the example. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={selectedLandmark.representativeImage}
+                        alt={`${selectedLandmark.name} 촬영 예시 사진`}
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          height: "auto",
+                          maxHeight: "280px",
+                          objectFit: "contain",
+                        }}
+                      />
+                    </div>
+                    <figcaption style={{
+                      marginTop: "9px",
+                      textAlign: "center",
+                      color: "#48687b",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                    }}>
+                      촬영 예시 · 위 사진처럼 랜드마크를 담아주세요
+                    </figcaption>
+                  </figure>
+                )}
 
                 <p>{selectedLandmark.poseGuide}</p>
 
