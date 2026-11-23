@@ -696,10 +696,6 @@ export default function Home() {
     return matchesProvince && matchesSearch;
   });
 
-  const hasTourSearch =
-    searchQuery.trim().length > 0 ||
-    selectedProvince !== "전체";
-
   if (screen === "main-home") {
     return (
       <MainHome
@@ -709,7 +705,6 @@ export default function Home() {
         setSelectedProvince={setSelectedProvince}
         availableProvinces={availableProvinces}
         filteredTours={filteredTours}
-        hasTourSearch={hasTourSearch}
         hasUnreadBadge={hasUnreadBadge}
         enterTour={enterTour}
         goToTestHome={goToTestHome}
