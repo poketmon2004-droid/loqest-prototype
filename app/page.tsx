@@ -8,6 +8,7 @@ import TourHome from "../components/TourHome";
 import CaptureGuide from "../components/CaptureGuide";
 import TestHome from "../components/TestHome";
 import VerificationScreen from "../components/VerificationScreen";
+import type { GuideShape } from "../components/GuideShapeSelector";
 
 type Landmark = {
   id: string;
@@ -25,6 +26,7 @@ type Landmark = {
   radius: number;
   referenceImages: string[];
   representativeImage: string | null;
+  guideShape: GuideShape;
   goodMatchesThreshold: number;
   matchRatioThreshold: number;
   mapPosition: {
@@ -49,6 +51,7 @@ type PublicAttraction = {
   mission?: string;
   landmarkThreshold?: number | string;
   landmark_threshold?: number | string;
+  guide_shape?: GuideShape;
   referenceImages?: Array<{
     dataUrl?: string;
     url?: string;
@@ -95,6 +98,7 @@ const fallbackLandmarks: Landmark[] = [
     radius: 250,
     referenceImages: [],
     representativeImage: null,
+    guideShape: "rectangle",
     goodMatchesThreshold: 45,
     matchRatioThreshold: 40,
     mapPosition: { x: 88, y: 108 },
@@ -118,6 +122,7 @@ const fallbackLandmarks: Landmark[] = [
     radius: 250,
     referenceImages: [],
     representativeImage: null,
+    guideShape: "rectangle",
     goodMatchesThreshold: 45,
     matchRatioThreshold: 45,
     mapPosition: { x: 264, y: 250 },
@@ -141,6 +146,7 @@ const fallbackLandmarks: Landmark[] = [
     radius: 250,
     referenceImages: [],
     representativeImage: null,
+    guideShape: "rectangle",
     goodMatchesThreshold: 45,
     matchRatioThreshold: 45,
     mapPosition: { x: 96, y: 396 },
@@ -206,6 +212,7 @@ function mapPublicAttractions(items: PublicAttraction[], tourId = "amsa"): Landm
       radius: Number(item.radius ?? 50),
       referenceImages,
       representativeImage,
+      guideShape: item.guide_shape === "triangle" || item.guide_shape === "circle" ? item.guide_shape : "rectangle",
       goodMatchesThreshold: 45,
       matchRatioThreshold,
       mapPosition:
@@ -238,6 +245,7 @@ const testLandmarks: Landmark[] = [
     radius: 0,
     referenceImages: [],
     representativeImage: null,
+    guideShape: "rectangle",
     goodMatchesThreshold: 45,
     matchRatioThreshold: 30,
     mapPosition: { x: 180, y: 260 },
