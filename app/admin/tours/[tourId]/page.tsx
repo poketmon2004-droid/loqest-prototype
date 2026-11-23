@@ -18,6 +18,7 @@ type Attraction = {
   lastTestResult?: "통과" | "실패" | "미실시";
   testCount?: number;
   lastTestedAt?: string | null;
+  needsImageTest?: boolean;
 };
 
 type RecognitionTestRecord = {
@@ -42,7 +43,6 @@ export default function AdminDashboardPage() {
   const [tour, setTour] = useState<Tour | null>(null);
   const [attractions, setAttractions] = useState<Attraction[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [newQuestId,setNewQuestId] = useState<number | null>(null);
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -55,15 +55,6 @@ export default function AdminDashboardPage() {
           localStorage.getItem("loqest_recognition_test_records") || "{}"
         ) as Record<string, RecognitionTestRecord>;
 
-        const freshId=Number(localStorage.getItem(`loqest_new_quest_${tourId}`))||null;
-        // Only a passed recognition test completes the new-quest checklist.
-        const freshTest = freshId ? recognitionRecords[String(freshId)] : undefined;
-        if (freshId && freshTest?.lastResult === "통과") {
-          localStorage.removeItem(`loqest_new_quest_${tourId}`);
-          setNewQuestId(null);
-        } else {
-          setNewQuestId(freshId);
-        }
         localStorage.setItem("loqest_active_tour_id", tourId);
         const [tourResponse, attractionsResponse] = await Promise.all([
           fetch(`/api/tours/${tourId}?includeHidden=true`, { headers, cache: "no-store" }),
@@ -93,6 +84,10 @@ export default function AdminDashboardPage() {
         setAttractions(
           apiAttractions.map((attraction) => {
             const record = recognitionRecords[String(attraction.id)];
+            const hasImages = Array.isArray(attraction.referenceImages) && attraction.referenceImages.length > 0;
+            const previouslyPublished = localStorage.getItem(`loqest_previously_published_${attraction.id}`) === "true";
+            const requiresRetest = attraction.quality === "재테스트 필요";
+            const isTestApproved = !requiresRetest && ((record?.successfulTests ?? 0) > 0 || previouslyPublished);
 
             return {
               ...attraction,
@@ -100,7 +95,8 @@ export default function AdminDashboardPage() {
                 ? attraction.referenceImages.length
                 : 0,
               firstSuccess: null,
-              quality: record?.quality ?? attraction.quality,
+              quality: requiresRetest ? attraction.quality : (record?.quality ?? attraction.quality),
+              needsImageTest: !hasImages || !isTestApproved,
               lastTestResult: record?.lastResult ?? "미실시",
               testCount: record?.totalTests ?? 0,
               lastTestedAt: record?.lastTestedAt ?? null,
@@ -119,13 +115,8 @@ export default function AdminDashboardPage() {
 
   const totalCount = attractions.length;
   const publicCount = attractions.filter((item) => item.status === "공개").length;
-  const alerts = attractions.filter(
-    (item) =>
-      item.lastTestResult === "미실시" ||
-      item.lastTestResult === "실패" ||
-      item.quality === "재테스트 필요" ||
-      item.quality === "기준 이미지 개선" ||
-      item.quality === "확인 필요"
+  const alerts = attractions.filter((item) =>
+    item.needsImageTest || item.quality === "기준 이미지 개선" || item.quality === "확인 필요"
   );
 
   return (
@@ -175,10 +166,13 @@ export default function AdminDashboardPage() {
           </div>
           <div className={styles.questListBody}>
             {attractions.length===0?<p className={styles.dashboardEmpty}>아직 등록된 퀘스트가 없습니다. 새 퀘스트를 추가해보세요.</p>:
-              [...attractions].sort((a,b)=>Number(b.id===newQuestId)-Number(a.id===newQuestId)).map(attraction=><article className={`${styles.questListRow} ${attraction.id===newQuestId?styles.newQuestRow:""}`} key={attraction.id}>
+              [...attractions].sort((a,b)=>b.id-a.id).map(attraction=><article className={`${styles.questListRow} ${attraction.needsImageTest?styles.newQuestRow:""}`} key={attraction.id}>
                 <span className={styles.questCategoryIcon}>{{"역사·문화":"🗺️","자연·생태":"🌿","축제·행사":"🎉","체험·레저":"🎯","지역상권":"🛍️","기타":"✨"}[attraction.category]||"📍"}</span>
-                <div className={styles.questListContent}><strong>{attraction.name}</strong>{attraction.id===newQuestId&&<span className={styles.newBadge}>NEW · 테스트 필요</span>}<p>{attraction.category} · {attraction.status} · {attraction.lastTestResult==="통과"?"테스트 통과":"테스트 필요"}</p></div>
-                <Link className={styles.questManageLink} href={`/admin/attractions/${attraction.id}`}>관리하기</Link>
+                <div className={styles.questListContent}><strong>{attraction.name}</strong>{attraction.needsImageTest&&<span className={styles.newBadge}>테스트 필요</span>}<p>{attraction.category} · {attraction.status} · {attraction.needsImageTest?"테스트 필요":"테스트 통과 · 공개 준비 완료"}</p></div>
+                <div className={styles.questRowActions}>
+                  {attraction.needsImageTest&&<Link className={styles.questTestLink} href={`/landmark-test?attractionId=${encodeURIComponent(String(attraction.id))}`}>이미지 인식 테스트</Link>}
+                  <Link className={styles.questManageLink} href={`/admin/attractions/${attraction.id}`}>관리하기</Link>
+                </div>
               </article>)}
           </div>
         </section>
