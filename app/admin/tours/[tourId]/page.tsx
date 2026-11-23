@@ -56,8 +56,14 @@ export default function AdminDashboardPage() {
         ) as Record<string, RecognitionTestRecord>;
 
         const freshId=Number(localStorage.getItem(`loqest_new_quest_${tourId}`))||null;
-        if(freshId && recognitionRecords[String(freshId)]){localStorage.removeItem(`loqest_new_quest_${tourId}`);setNewQuestId(null);}
-        else setNewQuestId(freshId);
+        // Only a passed recognition test completes the new-quest checklist.
+        const freshTest = freshId ? recognitionRecords[String(freshId)] : undefined;
+        if (freshId && freshTest?.lastResult === "통과") {
+          localStorage.removeItem(`loqest_new_quest_${tourId}`);
+          setNewQuestId(null);
+        } else {
+          setNewQuestId(freshId);
+        }
         localStorage.setItem("loqest_active_tour_id", tourId);
         const [tourResponse, attractionsResponse] = await Promise.all([
           fetch(`/api/tours/${tourId}?includeHidden=true`, { headers, cache: "no-store" }),
