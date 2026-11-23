@@ -62,7 +62,7 @@ export default function TourEditor({tourId}: {tourId?:string}) {
       if(!savedId)throw Error("등록된 투어 ID를 확인할 수 없습니다.");
       localStorage.setItem("loqest_active_tour_id",savedId);
       if(tourId){router.push(`/admin/tours/${encodeURIComponent(savedId)}`);router.refresh();}
-      else router.replace(`/admin/attractions/new?tourId=${encodeURIComponent(savedId)}`);
+      else router.replace(`/admin/tours/${encodeURIComponent(savedId)}`);
     }catch(e){
       submitLock.current=false;
       setSaving(false);
@@ -138,7 +138,7 @@ export default function TourEditor({tourId}: {tourId?:string}) {
       <div className={styles.modal}>
         <div className={styles.savingSpinner} aria-hidden="true" />
         <h2>{tourId?"변경사항을 저장하고 있어요":"투어를 등록하고 있어요"}</h2>
-        <p>{tourId?"저장이 완료되면 투어 관리 화면으로 이동합니다.":"잠시만 기다려 주세요. 등록이 끝나면 퀘스트 등록 화면으로 자동 이동합니다."}</p>
+        <p>{tourId?"저장이 완료되면 투어 관리 화면으로 이동합니다.":"잠시만 기다려 주세요. 등록이 끝나면 해당 투어 관리 화면으로 자동 이동합니다."}</p>
       </div>
     </div>}
   </main>;
