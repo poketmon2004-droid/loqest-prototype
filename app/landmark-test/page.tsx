@@ -594,7 +594,7 @@ export default function LandmarkTestPage() {
           )
         )}
       </section>
-      {analyzing && <div className={loadingStyles.backdrop} role="dialog" aria-modal="true" aria-label="이미지 인식 테스트 진행 중" aria-live="polite"><div className={loadingStyles.modal}><div className={loadingStyles.spinner} aria-hidden="true" /><h2>랜드마크 이미지를 분석하고 있어요</h2><p>기준 이미지와 비교하고 결과를 저장하고 있습니다. 잠시만 기다려 주세요.</p></div></div>}
+      {analyzing && <div className={loadingStyles.backdrop} role="dialog" aria-modal="true" aria-label="이미지 인식 테스트 진행 중" aria-live="polite"><div className={loadingStyles.modal}><div className={loadingStyles.spinner} aria-hidden="true" /><h2>랜드마크 이미지를 분석하고 있어요</h2><p>기준 이미지와 비교하고 있습니다. 잠시만 기다려 주세요.</p></div></div>}
     </main>
   );
 }
