@@ -174,18 +174,31 @@ export default function AdminDashboardPage() {
         </section>
 
         <section className={styles.tourActions}>
+          <div
+            className={`${styles.tourVisibilityPanel} ${!tour ? styles.tourVisibilityLoading : tour.status === "공개" ? styles.tourVisibilityPublic : styles.tourVisibilityPrivate}`}
+            role="status"
+            aria-live="polite"
+          >
+            <span className={styles.tourVisibilityIcon} aria-hidden="true">
+              {!tour ? "…" : tour.status === "공개" ? "✓" : "−"}
+            </span>
+            <div className={styles.tourVisibilityContent}>
+              <span className={styles.tourVisibilityLabel}>현재 투어 공개 상태</span>
+              <strong className={styles.tourVisibilityValue}>
+                {!tour ? "상태 확인 중" : tour.status === "공개" ? "공개 중" : "비공개"}
+              </strong>
+              <span className={styles.tourVisibilityDescription}>
+                {!tour
+                  ? "투어 정보를 불러오고 있습니다."
+                  : tour.status === "공개"
+                    ? "관광객이 이 투어를 볼 수 있습니다."
+                    : "관광객의 투어 목록에 표시되지 않습니다."}
+              </span>
+            </div>
+          </div>
           <div className={styles.tourActionsSummary}>
             <strong>투어 운영 관리</strong>
-            <p>투어의 공개 상태를 확인하고 바로 변경할 수 있어요.</p>
-            <div className={styles.tourStatusRow} aria-live="polite">
-              <span className={styles.tourStatusLabel}>현재 공개 상태</span>
-              {tour ? (
-                <span className={`${styles.tourStatusBadge} ${tour.status === "공개" ? styles.tourStatusPublic : styles.tourStatusPrivate}`}>
-                  <span className={styles.tourStatusDot} aria-hidden="true" />
-                  {tour.status === "공개" ? "공개 중" : "비공개"}
-                </span>
-              ) : <span className={styles.tourStatusLabel}>불러오는 중</span>}
-            </div>
+            <p>현재 상태를 확인하고 아래 버튼으로 변경할 수 있어요.</p>
             {statusError && <p className={styles.tourStatusError} role="alert">{statusError}</p>}
           </div>
           <div className={styles.tourActionButtons}>
