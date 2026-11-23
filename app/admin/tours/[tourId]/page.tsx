@@ -28,7 +28,8 @@ type RecognitionTestRecord = {
   recentResults: boolean[];
   lastResult: "통과" | "실패";
   lastTestedAt: string;
-  quality: "정상" | "확인 필요" | "기준 이미지 개선";
+  quality: string;
+  approved: boolean;
 };
 
 type ApiAttraction = Omit<Attraction, "referenceImages"> & {
@@ -51,24 +52,21 @@ export default function AdminDashboardPage() {
         if (!adminKey) return;
 
         const headers = { "x-admin-api-key": adminKey };
-        const recognitionRecords = JSON.parse(
-          localStorage.getItem("loqest_recognition_test_records") || "{}"
-        ) as Record<string, RecognitionTestRecord>;
-
         localStorage.setItem("loqest_active_tour_id", tourId);
-        const [tourResponse, attractionsResponse] = await Promise.all([
+        const [tourResponse, attractionsResponse, recordsResponse] = await Promise.all([
           fetch(`/api/tours/${tourId}?includeHidden=true`, { headers, cache: "no-store" }),
           fetch(`/api/attractions?tourId=${encodeURIComponent(tourId)}&includeHidden=true`, { headers, cache: "no-store" }),
+          fetch(`/api/recognition-test-records?tourId=${encodeURIComponent(tourId)}`, { headers, cache: "no-store" }),
         ]);
 
-        if (tourResponse.status === 401 || attractionsResponse.status === 401) {
+        if (tourResponse.status === 401 || attractionsResponse.status === 401 || recordsResponse.status === 401) {
           clearAdminApiKey();
           throw new Error(
             "관리자 API 키가 올바르지 않습니다. 새로고침 후 다시 입력해주세요."
           );
         }
 
-        if (!tourResponse.ok || !attractionsResponse.ok) {
+        if (!tourResponse.ok || !attractionsResponse.ok || !recordsResponse.ok) {
           throw new Error("대시보드 API 조회에 실패했습니다.");
         }
 
@@ -76,6 +74,8 @@ export default function AdminDashboardPage() {
         const attractionsBody = (await attractionsResponse.json()) as {
           attractions?: ApiAttraction[];
         };
+        const recordsBody = (await recordsResponse.json()) as { records?: Record<string, RecognitionTestRecord> };
+        const recognitionRecords = recordsBody.records ?? {};
         const apiAttractions = Array.isArray(attractionsBody.attractions)
           ? attractionsBody.attractions
           : [];
@@ -85,9 +85,9 @@ export default function AdminDashboardPage() {
           apiAttractions.map((attraction) => {
             const record = recognitionRecords[String(attraction.id)];
             const hasImages = Array.isArray(attraction.referenceImages) && attraction.referenceImages.length > 0;
-            const previouslyPublished = localStorage.getItem(`loqest_previously_published_${attraction.id}`) === "true";
+
             const requiresRetest = attraction.quality === "재테스트 필요";
-            const isTestApproved = !requiresRetest && ((record?.successfulTests ?? 0) > 0 || previouslyPublished);
+            const isTestApproved = !requiresRetest && record?.approved === true;
 
             return {
               ...attraction,
@@ -168,7 +168,7 @@ export default function AdminDashboardPage() {
             {attractions.length===0?<p className={styles.dashboardEmpty}>아직 등록된 퀘스트가 없습니다. 새 퀘스트를 추가해보세요.</p>:
               [...attractions].sort((a,b)=>b.id-a.id).map(attraction=><article className={`${styles.questListRow} ${attraction.needsImageTest?styles.newQuestRow:""}`} key={attraction.id}>
                 <span className={styles.questCategoryIcon}>{{"역사·문화":"🗺️","자연·생태":"🌿","축제·행사":"🎉","체험·레저":"🎯","지역상권":"🛍️","기타":"✨"}[attraction.category]||"📍"}</span>
-                <div className={styles.questListContent}><strong>{attraction.name}</strong>{attraction.needsImageTest&&<span className={styles.newBadge}>테스트 필요</span>}<p>{attraction.category} · {attraction.status} · {attraction.needsImageTest?"테스트 필요":"테스트 통과 · 공개 준비 완료"}</p></div>
+                <div className={styles.questListContent}><strong>{attraction.name}</strong>{attraction.needsImageTest&&<span className={styles.newBadge}>테스트 필요</span>}<p>{attraction.status}{attraction.needsImageTest?" · 테스트 필요":""}</p></div>
                 <div className={styles.questRowActions}>
                   {attraction.needsImageTest&&<Link className={styles.questTestLink} href={`/landmark-test?attractionId=${encodeURIComponent(String(attraction.id))}`}>이미지 인식 테스트</Link>}
                   <Link className={styles.questManageLink} href={`/admin/attractions/${attraction.id}`}>관리하기</Link>
