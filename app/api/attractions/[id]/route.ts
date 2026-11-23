@@ -88,6 +88,7 @@ export async function GET(request: NextRequest, context: Context) {
         name: image.original_name,
         dataUrl: publicUrl(image.storage_path),
         path: image.storage_path,
+        isRepresentative: Boolean((image as { is_representative?: boolean }).is_representative),
       })
     );
 
