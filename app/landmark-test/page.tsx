@@ -334,6 +334,17 @@ export default function LandmarkTestPage() {
     setStatus("사진을 선택했습니다. 분석 버튼을 눌러 주세요.");
   }
 
+  function returnToTestStart() {
+    if (selectedImage) URL.revokeObjectURL(selectedImage);
+    setSelectedImage(null);
+    setSelectedFile(null);
+    setResults([]);
+    setSavedTestMessage("");
+    setStatus(opencvReady
+      ? "준비 완료! 테스트 사진을 선택해 주세요."
+      : "OpenCV를 불러오는 중입니다.");
+  }
+
   async function saveRecognitionTestResult(goodMatches: number, matchRatio: number) {
     if (!activeAttractionId) return;
 
@@ -484,6 +495,7 @@ export default function LandmarkTestPage() {
           </div>
         )}
 
+        {selectedImage && (
         <button
           type="button"
           onClick={analyzeImage}
@@ -506,6 +518,7 @@ export default function LandmarkTestPage() {
         >
           {analyzing ? "분석 중..." : "랜드마크 분석하기"}
         </button>
+        )}
 
         {bestResult && (
           <section
@@ -579,7 +592,16 @@ export default function LandmarkTestPage() {
           </section>
         )}
 
-        {activeAttractionId ? (
+        {selectedImage ? (
+          <button
+            type="button"
+            onClick={returnToTestStart}
+            disabled={analyzing}
+            style={styles.backButton}
+          >
+            ← 뒤로가기
+          </button>
+        ) : activeAttractionId ? (
           <Link
             href={`/admin/attractions/${activeAttractionId}`}
             style={styles.backButton}
