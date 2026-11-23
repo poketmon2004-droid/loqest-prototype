@@ -115,9 +115,7 @@ export default function AdminDashboardPage() {
 
   const totalCount = attractions.length;
   const publicCount = attractions.filter((item) => item.status === "공개").length;
-  const alerts = attractions.filter((item) =>
-    item.needsImageTest || item.quality === "기준 이미지 개선" || item.quality === "확인 필요"
-  );
+  const alerts = attractions.filter((item) => item.needsImageTest);
 
   return (
     <div className={styles.page}>
