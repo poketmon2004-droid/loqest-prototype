@@ -174,6 +174,13 @@ export default function LandmarkTestPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraVideoRef = useRef<HTMLVideoElement>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
+  const cameraRequestIdRef = useRef(0);
+  const selectedImageUrlRef = useRef<string | null>(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraOpening, setCameraOpening] = useState(false);
+  const [cameraError, setCameraError] = useState("");
   const [status, setStatus] = useState("OpenCV를 불러오는 중입니다.");
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<ComparisonResult[]>([]);
@@ -304,6 +311,101 @@ export default function LandmarkTestPage() {
     };
   }, []);
 
+  // Always release the webcam and its resources when leaving the test screen.
+  useEffect(() => {
+    return () => {
+      cameraRequestIdRef.current += 1;
+      cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+      cameraStreamRef.current = null;
+      if (selectedImageUrlRef.current) URL.revokeObjectURL(selectedImageUrlRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!cameraActive || !cameraVideoRef.current || !cameraStreamRef.current) return;
+    const video = cameraVideoRef.current;
+    video.srcObject = cameraStreamRef.current;
+    void video.play().catch(() => setCameraError("카메라 영상을 재생할 수 없습니다. 다시 시도해주세요."));
+    return () => { video.srcObject = null; };
+  }, [cameraActive]);
+
+  function stopLiveCamera() {
+    cameraRequestIdRef.current += 1;
+    cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+    cameraStreamRef.current = null;
+    setCameraActive(false);
+    setCameraOpening(false);
+  }
+
+  async function openLiveCamera() {
+    if (analyzing || cameraOpening) return;
+    stopLiveCamera();
+    setCameraError("");
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError("이 브라우저에서는 실시간 카메라를 지원하지 않습니다. 사진 보관함을 이용해주세요.");
+      return;
+    }
+    const requestId = ++cameraRequestIdRef.current;
+    setCameraOpening(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
+      if (requestId !== cameraRequestIdRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      cameraStreamRef.current = stream;
+      setCameraActive(true);
+      setStatus("카메라에서 랜드마크를 촬영해주세요.");
+    } catch (error) {
+      console.error(error);
+      setCameraError("카메라를 사용할 수 없습니다. 브라우저에서 카메라 권한을 허용하거나 사진 보관함을 이용해주세요.");
+    } finally {
+      if (requestId === cameraRequestIdRef.current) setCameraOpening(false);
+    }
+  }
+
+  function setTestPhoto(file: File) {
+    if (selectedImageUrlRef.current) URL.revokeObjectURL(selectedImageUrlRef.current);
+    const previewUrl = URL.createObjectURL(file);
+    selectedImageUrlRef.current = previewUrl;
+    setSelectedFile(file);
+    setSelectedImage(previewUrl);
+    setResults([]);
+    setSavedTestMessage("");
+    setSaveFailed(false);
+    setStatus("사진을 준비했습니다. 분석 버튼을 눌러 주세요.");
+  }
+
+  async function captureLivePhoto() {
+    const video = cameraVideoRef.current;
+    if (!video || !cameraStreamRef.current || video.videoWidth === 0 || video.videoHeight === 0) {
+      setCameraError("카메라가 아직 준비되지 않았습니다. 잠시 후 다시 촬영해주세요.");
+      return;
+    }
+    const canvas = document.createElement("canvas");
+    const maxDimension = 1600;
+    const scale = Math.min(1, maxDimension / Math.max(video.videoWidth, video.videoHeight));
+    canvas.width = Math.round(video.videoWidth * scale);
+    canvas.height = Math.round(video.videoHeight * scale);
+    const context = canvas.getContext("2d");
+    if (!context) {
+      setCameraError("사진을 처리하지 못했습니다. 다시 시도해주세요.");
+      return;
+    }
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+    if (!blob) {
+      setCameraError("촬영한 사진을 저장하지 못했습니다. 다시 시도해주세요.");
+      return;
+    }
+    stopLiveCamera();
+    setCameraError("");
+    setTestPhoto(new File([blob], `landmark-test-${Date.now()}.jpg`, { type: "image/jpeg" }));
+  }
+
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
 
@@ -316,18 +418,9 @@ export default function LandmarkTestPage() {
       return;
     }
 
-    if (selectedImage) {
-      URL.revokeObjectURL(selectedImage);
-    }
-
-    const previewUrl = URL.createObjectURL(file);
-
-    setSelectedFile(file);
-    setSelectedImage(previewUrl);
-    setResults([]);
-    setSavedTestMessage("");
-    setSaveFailed(false);
-    setStatus("사진을 선택했습니다. 분석 버튼을 눌러 주세요.");
+    stopLiveCamera();
+    setCameraError("");
+    setTestPhoto(file);
   }
 
   function retryWithAnotherPhoto() {
@@ -343,7 +436,9 @@ export default function LandmarkTestPage() {
   }
 
   function returnToTestStart() {
-    if (selectedImage) URL.revokeObjectURL(selectedImage);
+    stopLiveCamera();
+    if (selectedImageUrlRef.current) URL.revokeObjectURL(selectedImageUrlRef.current);
+    selectedImageUrlRef.current = null;
     setSelectedImage(null);
     setSelectedFile(null);
     setResults([]);
@@ -487,17 +582,40 @@ export default function LandmarkTestPage() {
           <p style={styles.statusText}>{status}</p>
         </div>
 
-        <label style={selectedImage ? { ...styles.fileLabel, ...styles.changePhotoLabel } : styles.fileLabel}>
-          {selectedImage ? "테스트 사진 변경" : "테스트 사진 선택"}
-          <input
-            type="file"
-            ref={fileInputRef}
-            accept="image/*"
-            onChange={handleFileChange}
+        <div style={styles.photoSourceActions}>
+          <label style={selectedImage ? { ...styles.fileLabel, ...styles.changePhotoLabel, ...styles.sourceButton } : { ...styles.fileLabel, ...styles.sourceButton }}>
+            {selectedImage ? "사진 보관함에서 변경" : "사진 보관함에서 선택"}
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              onChange={handleFileChange}
+              disabled={analyzing || cameraOpening}
+              style={styles.hiddenInput}
+            />
+          </label>
+          <button
+            type="button"
+            onClick={cameraActive || cameraOpening ? stopLiveCamera : openLiveCamera}
             disabled={analyzing}
-            style={styles.hiddenInput}
-          />
-        </label>
+            style={{ ...styles.cameraStartButton, ...styles.sourceButton }}
+          >
+            {cameraActive ? "카메라 닫기" : cameraOpening ? "카메라 취소" : "📷 실시간 촬영"}
+          </button>
+        </div>
+
+        {cameraError && <p role="alert" style={styles.cameraError}>{cameraError}</p>}
+
+        {cameraActive && (
+          <div style={styles.liveCameraBox}>
+            <video ref={cameraVideoRef} autoPlay muted playsInline style={styles.liveCameraVideo} />
+            <div style={styles.liveCameraHint}>랜드마크가 화면 중앙에 오도록 맞춰주세요.</div>
+            <button type="button" onClick={captureLivePhoto} style={styles.liveShutterButton}>
+              <span style={styles.liveShutterInner} />
+              <span style={styles.shutterLabel}>사진 촬영</span>
+            </button>
+          </div>
+        )}
 
         {selectedImage && (
           <div style={styles.previewBox}>
@@ -671,6 +789,16 @@ const styles: Record<string, CSSProperties> = {
     fontSize: "13px",
   },
 
+  photoSourceActions: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "10px" },
+  sourceButton: { boxSizing: "border-box", width: "100%", minWidth: 0, padding: "10px 8px", textAlign: "center", fontSize: "13px" },
+  cameraStartButton: { minHeight: "52px", border: "1px solid #0284c7", borderRadius: "11px", background: "#fff", color: "#0369a1", fontWeight: 800, cursor: "pointer" },
+  cameraError: { margin: "12px 0 0", padding: "12px", borderRadius: "10px", background: "#fff1f1", color: "#a33a3a", fontSize: "13px" },
+  liveCameraBox: { position: "relative", marginTop: "14px", height: "min(65vh, 470px)", minHeight: "280px", overflow: "hidden", borderRadius: "16px", background: "#111" },
+  liveCameraVideo: { width: "100%", height: "100%", display: "block", objectFit: "cover" },
+  liveCameraHint: { position: "absolute", top: "14px", left: "12px", right: "12px", padding: "9px", borderRadius: "10px", background: "rgba(0,0,0,.6)", color: "#fff", textAlign: "center", fontSize: "13px", pointerEvents: "none" },
+  liveShutterButton: { position: "absolute", bottom: "18px", left: "50%", transform: "translateX(-50%)", width: "76px", height: "76px", borderRadius: "50%", border: "6px solid rgba(255,255,255,.8)", background: "rgba(30,30,30,.4)", display: "grid", placeItems: "center", cursor: "pointer" },
+  liveShutterInner: { width: "50px", height: "50px", borderRadius: "50%", background: "#fff" },
+  shutterLabel: { position: "absolute", width: "1px", height: "1px", padding: 0, margin: "-1px", overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" },
   fileLabel: {
     display: "flex",
     minHeight: "52px",
