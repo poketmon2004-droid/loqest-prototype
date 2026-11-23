@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import cvReadyPromise from "@techstark/opencv-js";
+import { GuideShapeOutline, type GuideShape } from "./GuideShapeSelector";
 import {
   FilesetResolver,
   GestureRecognizer,
@@ -20,6 +21,7 @@ type CameraCaptureProps = {
   landmarkLongitude: number;
   allowedRadius: number;
   referenceImages: string[];
+  guideShape: GuideShape;
   goodMatchesThreshold?: number;
   matchRatioThreshold: number;
   skipLocationVerification?: boolean;
@@ -305,6 +307,7 @@ export default function CameraCapture({
   landmarkLongitude,
   allowedRadius,
   referenceImages,
+  guideShape,
   goodMatchesThreshold = 45,
   matchRatioThreshold,
   skipLocationVerification = false,
@@ -1095,6 +1098,9 @@ export default function CameraCapture({
 
           {poseVerified ? (
             <div style={styles.landmarkFrame}>
+              <div style={styles.guideShapeSvg}>
+                <GuideShapeOutline shape={guideShape} stroke="#ffffff" />
+              </div>
               <span style={styles.frameText}>
                 {landmarkName}을 이 안에 맞춰 주세요
               </span>
@@ -1298,15 +1304,23 @@ const styles: Record<string, React.CSSProperties> = {
     height: "300px",
     zIndex: 2,
     boxSizing: "border-box",
-    border: "3px dashed white",
-    borderRadius: "18px",
     display: "flex",
     justifyContent: "center",
     alignItems: "flex-start",
     pointerEvents: "none",
   },
 
+  guideShapeSvg: {
+    position: "absolute",
+    inset: 0,
+    width: "100%",
+    height: "100%",
+    filter: "drop-shadow(0 1px 3px rgba(0, 0, 0, .7))",
+  },
+
   frameText: {
+    position: "relative",
+    zIndex: 1,
     marginTop: "10px",
     padding: "6px 10px",
     color: "white",
