@@ -341,6 +341,9 @@ export default function LandmarkTestPage() {
     if (analyzing || cameraOpening) return;
     stopLiveCamera();
     setCameraError("");
+    setResults([]);
+    setSavedTestMessage("");
+    setSaveFailed(false);
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraError("이 브라우저에서는 실시간 카메라를 지원하지 않습니다. 사진 보관함을 이용해주세요.");
       return;
@@ -617,7 +620,7 @@ export default function LandmarkTestPage() {
           </div>
         )}
 
-        {selectedImage && (
+        {selectedImage && !cameraActive && (
           <div style={styles.previewBox}>
             <img
               src={selectedImage}
@@ -627,7 +630,7 @@ export default function LandmarkTestPage() {
           </div>
         )}
 
-        {selectedImage && results.length === 0 && (
+        {selectedImage && !cameraActive && !cameraOpening && results.length === 0 && (
         <button
           type="button"
           onClick={analyzeImage}
@@ -652,7 +655,7 @@ export default function LandmarkTestPage() {
         </button>
         )}
 
-        {bestResult && (
+        {bestResult && !cameraActive && (
           <>
             <section style={{...styles.resultCard,background:landmarkPassed?"#ecf8f0":"#fff1f5",borderColor:landmarkPassed?"#bee7cc":"#f3b8cb"}} aria-live="polite">
               <div style={{...styles.resultIcon,background:landmarkPassed?"#d9f2e4":"#ffe0e9",color:landmarkPassed?"#197349":"#a74365"}} aria-hidden="true">{landmarkPassed?"✓":"✕"}</div>
@@ -689,7 +692,7 @@ export default function LandmarkTestPage() {
             </details>
           </>
         )}
-        {!bestResult && (
+        {!bestResult && !cameraActive && !cameraOpening && (
           selectedImage ? (
             <button
               type="button"
