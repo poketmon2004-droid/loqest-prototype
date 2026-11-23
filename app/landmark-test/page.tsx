@@ -390,10 +390,13 @@ export default function LandmarkTestPage() {
       `${landmarkName} 기준 사진 ${referenceImages.length}장과 특징점을 비교하고 있습니다.`
     );
 
-    const cv = await cvReadyPromise;
     let testDescriptors: any = null;
 
     try {
+      // Let the browser paint the loading overlay before CPU-intensive OpenCV work.
+      // This does not impose a minimum loading duration.
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      const cv = await cvReadyPromise;
       const testImage = await loadImage(selectedImage);
       testDescriptors = extractFeatures(cv, testImage);
 
@@ -468,11 +471,6 @@ export default function LandmarkTestPage() {
 
         <h1 style={styles.title}>{landmarkName} 랜드마크 인식 실험</h1>
 
-        <p style={styles.description}>
-          테스트 사진과 {landmarkName} 기준 사진 {referenceImages.length}장의
-          ORB 특징점을 비교합니다.
-        </p>
-
         {attractionError && (
           <div style={styles.errorBox}>{attractionError}</div>
         )}
@@ -539,7 +537,7 @@ export default function LandmarkTestPage() {
             </section>
             <div style={styles.resultActions}>
               {landmarkPassed && !saveFailed && activeAttractionId ? (
-                <Link href={"/admin/attractions/" + activeAttractionId} style={styles.resultPrimaryButton}>퀘스트 관리로 이동</Link>
+                <Link href={"/admin/attractions/" + activeAttractionId} style={styles.resultPrimaryButton}>테스트 완료하기</Link>
               ) : (
                 <button type="button" onClick={returnToTestStart} style={styles.resultPrimaryButton}>다시 테스트하기</button>
               )}
@@ -667,15 +665,17 @@ const styles: Record<string, CSSProperties> = {
 
   fileLabel: {
     display: "flex",
-    minHeight: "48px",
+    minHeight: "52px",
     alignItems: "center",
     justifyContent: "center",
-    border: "1px solid #8da8b5",
-    borderRadius: "14px",
-    background: "#ffffff",
-    color: "#315d70",
+    border: "1px solid #0284c7",
+    borderRadius: "11px",
+    background: "#0284c7",
+    color: "#ffffff",
+    fontSize: "15px",
     fontWeight: 800,
     cursor: "pointer",
+    boxShadow: "0 5px 12px rgba(2,132,199,.15)",
   },
 
   hiddenInput: {
