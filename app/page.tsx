@@ -24,6 +24,7 @@ type Landmark = {
   longitude: number;
   radius: number;
   referenceImages: string[];
+  representativeImage: string | null;
   goodMatchesThreshold: number;
   matchRatioThreshold: number;
   mapPosition: {
@@ -51,6 +52,7 @@ type PublicAttraction = {
   referenceImages?: Array<{
     dataUrl?: string;
     url?: string;
+    isRepresentative?: boolean;
   }>;
 };
 
@@ -92,6 +94,7 @@ const fallbackLandmarks: Landmark[] = [
     longitude: 127.130753,
     radius: 250,
     referenceImages: [],
+    representativeImage: null,
     goodMatchesThreshold: 45,
     matchRatioThreshold: 40,
     mapPosition: { x: 88, y: 108 },
@@ -114,6 +117,7 @@ const fallbackLandmarks: Landmark[] = [
     longitude: 127.130753,
     radius: 250,
     referenceImages: [],
+    representativeImage: null,
     goodMatchesThreshold: 45,
     matchRatioThreshold: 45,
     mapPosition: { x: 264, y: 250 },
@@ -136,6 +140,7 @@ const fallbackLandmarks: Landmark[] = [
     longitude: 127.130753,
     radius: 250,
     referenceImages: [],
+    representativeImage: null,
     goodMatchesThreshold: 45,
     matchRatioThreshold: 45,
     mapPosition: { x: 96, y: 396 },
@@ -172,6 +177,9 @@ function mapPublicAttractions(items: PublicAttraction[], tourId = "amsa"): Landm
     const referenceImages = (item.referenceImages ?? [])
       .map((image) => image.dataUrl ?? image.url ?? "")
       .filter((source): source is string => Boolean(source));
+    const representativeImage = (item.referenceImages ?? [])
+      .find((image) => image.isRepresentative)?.url ??
+      (item.referenceImages ?? []).find((image) => image.isRepresentative)?.dataUrl ?? null;
     const matchRatioThreshold = Number(
       item.landmarkThreshold ?? item.landmark_threshold ?? 30
     );
@@ -197,6 +205,7 @@ function mapPublicAttractions(items: PublicAttraction[], tourId = "amsa"): Landm
       longitude: Number(item.longitude),
       radius: Number(item.radius ?? 50),
       referenceImages,
+      representativeImage,
       goodMatchesThreshold: 45,
       matchRatioThreshold,
       mapPosition:
@@ -228,6 +237,7 @@ const testLandmarks: Landmark[] = [
     longitude: 0,
     radius: 0,
     referenceImages: [],
+    representativeImage: null,
     goodMatchesThreshold: 45,
     matchRatioThreshold: 30,
     mapPosition: { x: 180, y: 260 },
