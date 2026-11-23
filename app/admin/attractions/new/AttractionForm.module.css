@@ -744,3 +744,38 @@
   font-weight: 700;
   color: #3b6888;
 }
+
+/* Prominent live example above the smaller reference-image choices. */
+.representativePreviewSection {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 18px 0 16px;
+  padding: 17px;
+  border-radius: 14px;
+  border: 1px solid #d8e6f1;
+  background: #f5f9fc;
+}
+.representativePreviewSection > h3,
+.referenceGalleryTitle {
+  margin: 0;
+  color: #1c344a;
+  font-size: 16px;
+  font-weight: 800;
+}
+.referenceGalleryTitle { margin: 18px 0 2px; }
+.representativePreviewSection fieldset { margin-top: 14px !important; }
+.editPage .uploadArea .imagePreviewItem .representativeButton {
+  top: 8px;
+  left: 8px;
+  right: auto;
+  bottom: auto;
+}
+.editPage .uploadArea .imagePreviewItem .removeImageButton {
+  top: 7px;
+  right: 7px;
+  left: auto;
+  bottom: auto;
+}
+@media (max-width:700px) {
+  .representativePreviewSection { padding: 12px; }
+}
