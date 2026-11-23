@@ -15,5 +15,6 @@ create table if not exists public.recognition_test_records (
 alter table public.recognition_test_records enable row level security;
 -- Service-role API accesses the table; no anon/authenticated table grants added.
 revoke all on public.recognition_test_records from anon, authenticated;
+grant select, insert, update, delete on public.recognition_test_records to service_role;
 comment on table public.recognition_test_records is
   'Aggregated landmark recognition test results per attraction; accessed by server routes only.';
