@@ -89,7 +89,7 @@ const fallbackLandmarks: Landmark[] = [
     poseGuide:
       "1. 화면에 제시된 손동작을 따라 하면 촬영 버튼이 활성화됩니다.",
     landmarkGuide:
-      "2. 손을 내리고, 1분 안에 랜드마크를 가이드라인에 맞춰 촬영해 주세요.",
+      "2. 손을 내리고, 가이드라인에 맞춰 랜드마크를 촬영해주세요.",
     latitude: 37.559771,
     longitude: 127.130753,
     radius: 250,
@@ -112,7 +112,7 @@ const fallbackLandmarks: Landmark[] = [
     poseGuide:
       "1. 화면에 제시된 손동작을 따라 하면 촬영 버튼이 활성화됩니다.",
     landmarkGuide:
-      "2. 손을 내리고, 1분 안에 랜드마크를 가이드라인에 맞춰 촬영해 주세요.",
+      "2. 손을 내리고, 가이드라인에 맞춰 랜드마크를 촬영해주세요.",
     latitude: 37.559771,
     longitude: 127.130753,
     radius: 250,
@@ -135,7 +135,7 @@ const fallbackLandmarks: Landmark[] = [
     poseGuide:
       "1. 화면에 제시된 손동작을 따라 하면 촬영 버튼이 활성화됩니다.",
     landmarkGuide:
-      "2. 손을 내리고, 1분 안에 랜드마크를 가이드라인에 맞춰 촬영해 주세요.",
+      "2. 손을 내리고, 가이드라인에 맞춰 랜드마크를 촬영해주세요.",
     latitude: 37.559771,
     longitude: 127.130753,
     radius: 250,
@@ -200,7 +200,7 @@ function mapPublicAttractions(items: PublicAttraction[], tourId = "amsa"): Landm
         item.description || `${item.name} 인증 사진을 촬영합니다.`,
       poseGuide:
         "1. 화면에 제시된 손동작을 따라 하면 촬영 버튼이 활성화됩니다.",
-      landmarkGuide: `2. 손을 내리고, 1분 안에 ${guideMessage}`,
+      landmarkGuide: "2. 손을 내리고, 가이드라인에 맞춰 랜드마크를 촬영해주세요.",
       latitude: Number(item.latitude),
       longitude: Number(item.longitude),
       radius: Number(item.radius ?? 50),
@@ -232,7 +232,7 @@ const testLandmarks: Landmark[] = [
     poseGuide:
       "1. 화면에 제시된 손동작을 따라 하면 촬영 버튼이 활성화됩니다.",
     landmarkGuide:
-      "2. 손을 내리고, 1분 안에 랜드마크를 가이드라인에 맞춰 촬영해 주세요.",
+      "2. 손을 내리고, 가이드라인에 맞춰 랜드마크를 촬영해주세요.",
     latitude: 0,
     longitude: 0,
     radius: 0,
