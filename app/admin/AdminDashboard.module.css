@@ -755,12 +755,16 @@
   box-shadow:0 6px 14px rgba(19,139,93,.24);
 }
 .main .tourActions .tourActionButtons .tourHideButton {
-  background:#fff3e6;
-  border:1px solid #efc18b;
-  color:#98520a;
-  box-shadow:0 3px 9px rgba(152,82,10,.06);
+  background:#C47A30;
+  border:1px solid #AC6827;
+  color:#ffffff;
+  box-shadow:0 4px 10px rgba(172,104,39,.18);
 }
-.main .tourActions .tourActionButtons .tourHideButton:hover {background:#ffe8ce;}
+.main .tourActions .tourActionButtons .tourHideButton:hover {
+  background:#AC6827;
+  border-color:#97591F;
+  box-shadow:0 6px 14px rgba(172,104,39,.24);
+}
 .main .tourActions .tourActionButtons .tourStatusButton:disabled {opacity:.55;cursor:not-allowed;}
 .main .tourActions .tourActionButtons .tourStatusButton:focus-visible,
 .main .tourActions .tourActionButtons .tourEdit:focus-visible {outline:3px solid #8dccef;outline-offset:2px;}
