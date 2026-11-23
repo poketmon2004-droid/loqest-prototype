@@ -707,25 +707,66 @@
 .tourStatusPrivate {background:#eef1f5;color:#617181;border-color:#d4dce5;}
 .tourStatusDot {width:8px;height:8px;flex-shrink:0;border-radius:50%;background:currentColor;}
 .tourStatusError {color:#b42318!important;background:#fff2f2;border:1px solid #f0cbcb;border-radius:8px;padding:8px 10px;max-width:450px;}
-.tourActionButtons {display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
-.main .tourActions .tourActionButtons .tourEdit,
-.main .tourActions .tourStatusButton {display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:50px;padding:12px 18px;border-radius:10px;font:inherit;font-size:14px;font-weight:800;text-decoration:none;white-space:nowrap;cursor:pointer;}
-.main .tourActions .tourActionButtons .tourEdit {background:#fff;color:#31516b;border:1px solid #c9d9e6;box-shadow:none;}
-.main .tourActions .tourActionButtons .tourEdit:hover {background:#f4f9fc;}
-.tourStatusButton {border:1px solid transparent;}
-.main .tourActions .tourPublishButton {background:#0284c7;border-color:#0284c7;color:#fff;box-shadow:0 4px 10px rgba(2,132,199,.16);}
-.main .tourActions .tourPublishButton:hover {background:#036fa7;}
-.main .tourActions .tourHideButton {background:#fff5e9;border-color:#edbc86;color:#92510b;}
-.main .tourActions .tourHideButton:hover {background:#ffead0;}
-.main .tourActions .tourStatusButton:disabled {opacity:.55;cursor:not-allowed;}
-.main .tourActions .tourStatusButton:focus-visible,
-.main .tourActions .tourActionButtons .tourEdit:focus-visible {outline:3px solid #8dccef;outline-offset:2px;}
-@media(max-width:820px) {
-  .main .tourActions {flex-direction:column;align-items:stretch;}
-  .tourActionButtons {justify-content:stretch;width:100%;}
-  .tourActionButtons > * {flex:1 1 180px;}
+/* Two equal-sized actions with clearly distinct meanings. */
+.tourActionButtons {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  width:min(100%,420px);
+  flex:0 0 min(100%,420px);
 }
-@media(max-width:520px) {
-  .tourActionButtons {flex-direction:column;align-items:stretch;}
-  .tourActionButtons > * {width:100%;}
+.main .tourActions .tourActionButtons .tourEdit,
+.main .tourActions .tourActionButtons .tourStatusButton {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  min-height:54px;
+  height:54px;
+  padding:12px 10px;
+  border-radius:11px;
+  font:inherit;
+  font-size:14px;
+  line-height:1.25;
+  font-weight:800;
+  text-decoration:none;
+  white-space:nowrap;
+  text-align:center;
+  cursor:pointer;
+}
+.main .tourActions .tourActionButtons .tourEdit {
+  background:#fff;
+  border:1px solid #c9d4df;
+  color:#40566b;
+  box-shadow:none;
+}
+.main .tourActions .tourActionButtons .tourEdit:hover {background:#f4f7fa;border-color:#aebfce;}
+.main .tourActions .tourActionButtons .tourPublishButton {
+  background:#e5f6ec;
+  border:1px solid #9dd7b2;
+  color:#176a3c;
+  box-shadow:0 3px 9px rgba(23,106,60,.08);
+}
+.main .tourActions .tourActionButtons .tourPublishButton:hover {
+  background:#d1efdd;
+  border-color:#76c997;
+}
+.main .tourActions .tourActionButtons .tourHideButton {
+  background:#fff3e6;
+  border:1px solid #efc18b;
+  color:#98520a;
+  box-shadow:0 3px 9px rgba(152,82,10,.06);
+}
+.main .tourActions .tourActionButtons .tourHideButton:hover {background:#ffe8ce;}
+.main .tourActions .tourActionButtons .tourStatusButton:disabled {opacity:.55;cursor:not-allowed;}
+.main .tourActions .tourActionButtons .tourStatusButton:focus-visible,
+.main .tourActions .tourActionButtons .tourEdit:focus-visible {outline:3px solid #8dccef;outline-offset:2px;}
+@media(max-width:850px) {
+  .main .tourActions {flex-direction:column;align-items:stretch;}
+  .tourActionButtons {width:100%;flex:none;}
+}
+@media(max-width:430px) {
+  .tourActionButtons {grid-template-columns:1fr;}
 }
