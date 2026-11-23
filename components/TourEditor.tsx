@@ -106,13 +106,8 @@ export default function TourEditor({tourId}: {tourId?:string}) {
         </div>
         {tourId && <section className={styles.managementCard}>
           <h2>투어 운영 설정</h2>
-          <p className={styles.managementHelp}>공개 상태를 변경한 뒤 '변경사항 저장'을 눌러 적용하세요.</p>
+          <p className={styles.managementHelp}>투어 공개·비공개 전환은 투어 운영 대시보드에서 관리할 수 있습니다.</p>
           <div className={styles.managementActions}>
-            <button type="button" className={status==="공개"?styles.hideAction:styles.publishAction}
-              onClick={()=>setStatus(prev=>prev==="공개"?"비공개":"공개")} disabled={saving||deleting}
-              aria-label={status==="공개"?"비공개로 전환":"공개하기"}>
-              {status==="공개"?"비공개로 전환":"공개하기"}
-            </button>
             <button type="button" className={styles.deleteAction} onClick={deleteTour} disabled={deleting||saving}>
               {deleting?"삭제 중...":"투어 삭제"}
             </button>
