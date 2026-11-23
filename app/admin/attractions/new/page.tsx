@@ -17,6 +17,7 @@ import {
 import AdminBackButton from "@/components/AdminBackButton";
 import styles from "./AttractionForm.module.css";
 import AdminOperationOverlay from "@/components/AdminOperationOverlay";
+import GuideShapeSelector, { type GuideShape, guideShapeLabels } from "@/components/GuideShapeSelector";
 
 type Step = 1 | 2 | 3;
 
@@ -69,6 +70,7 @@ export default function NewAttractionPage() {
   const [referenceImages, setReferenceImages] =
     useState<ReferenceImage[]>([]);
   const [representativeImageId, setRepresentativeImageId] = useState<string | null>(null);
+  const [guideShape, setGuideShape] = useState<GuideShape>("rectangle");
 
   const [errorMessage, setErrorMessage] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -284,6 +286,7 @@ export default function NewAttractionPage() {
       radius: Number(form.radius),
       availableTime: "상시",
       landmarkThreshold: 70,
+      guideShape,
       representativeImageIndex: referenceImages.findIndex((image) => image.id === representativeImageId),
       guideMessage:
         "가이드라인에 맞춰 관광지와 함께 촬영해주세요.",
@@ -633,6 +636,7 @@ export default function NewAttractionPage() {
                   ))}
                 </div>
               )}
+              <GuideShapeSelector value={guideShape} onChange={setGuideShape} disabled={isProcessing} />
               {referenceImages.length > 0 && (
                 <p className={styles.representativeHint}>
                   {representativeImageId ? "✓ 대표 이미지 1장이 지정되었습니다." : "다음 단계로 넘어가려면 대표 이미지를 1장 지정해주세요."}
@@ -652,7 +656,7 @@ export default function NewAttractionPage() {
             </div>
             <div className={styles.reviewDetails}>
               <p><b>카테고리</b>{form.category}</p><p><b>인증 위치</b>{form.latitude}, {form.longitude}</p>
-              <p><b>인증 반경</b>{form.radius}m</p><p><b>랜드마크 이미지</b>{referenceImages.length}장</p><p><b>대표 이미지</b>{referenceImages.find((image) => image.id === representativeImageId)?.name ?? "미지정"}</p>
+              <p><b>인증 반경</b>{form.radius}m</p><p><b>랜드마크 이미지</b>{referenceImages.length}장</p><p><b>대표 이미지</b>{referenceImages.find((image) => image.id === representativeImageId)?.name ?? "미지정"}</p><p><b>촬영 가이드라인</b>{guideShapeLabels[guideShape]}</p>
             </div>
             <p className={styles.privateNotice}>등록된 퀘스트는 비공개 상태로 저장됩니다. 인식 테스트를 마친 뒤 공개할 수 있습니다.</p>
           </section>
