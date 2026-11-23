@@ -191,3 +191,12 @@
   .confirmCard .reviewPreviewCard p{font-size:13px;margin-bottom:15px}
   .confirmCard .reviewPreviewExplore{min-height:46px;font-size:14px}
 }
+
+/* Non-interactive saving state; navigation proceeds automatically on success. */
+.savingSpinner{
+  width:42px;height:42px;margin:0 auto 18px;
+  border:4px solid #d6e9ee;border-top-color:#2189bd;
+  border-radius:50%;animation:tour-saving-spin .85s linear infinite
+}
+@keyframes tour-saving-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.savingSpinner{animation-duration:2.5s}}
