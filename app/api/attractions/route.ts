@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
   }
 
   const input = JSON.parse(raw);
+  const guideShape = ["rectangle", "triangle", "circle"].includes(input.guideShape) ? input.guideShape : "rectangle";
   const files = formData.getAll("images").filter((value): value is File => value instanceof File);
   const representativeImageIndex = Number(input.representativeImageIndex);
   if (!Number.isSafeInteger(representativeImageIndex) || representativeImageIndex < 0 || representativeImageIndex >= files.length) {
@@ -102,6 +103,7 @@ export async function POST(request: NextRequest) {
     available_time: input.availableTime || "상시",
     landmark_threshold: Number(input.landmarkThreshold),
     guide_message: input.guideMessage || "",
+    guide_shape: guideShape,
     icon: input.icon || "📍",
     mission: input.mission || input.name,
     status: input.status,
