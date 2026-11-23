@@ -313,6 +313,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
         setErrorMessage("");
         setIsProcessing(true);
         setIsSaving(true);
+        let navigating = false;
 
         try {
             const response = await fetch(
@@ -375,6 +376,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                 );
             }
 
+            navigating = true;
             router.refresh();
             router.push(
                 referenceImagesChanged
@@ -390,8 +392,10 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                     : "관광지 정보를 저장하지 못했습니다."
             );
         } finally {
-            setIsSaving(false);
-            setIsProcessing(false);
+            if (!navigating) {
+                setIsSaving(false);
+                setIsProcessing(false);
+            }
         }
     };
 
