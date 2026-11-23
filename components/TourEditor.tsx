@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import AdminBackButton from "@/components/AdminBackButton";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getAdminApiKey, clearAdminApiKey } from "@/lib/adminApiKey";
 import styles from "./TourEditor.module.css";
@@ -21,7 +21,7 @@ export default function TourEditor({tourId}: {tourId?:string}) {
   const [deleting,setDeleting] = useState(false);
   const [status,setStatus] = useState("비공개");
   const [error,setError] = useState("");
-  const [successId,setSuccessId] = useState("");
+  const submitLock = useRef(false);
   useEffect(()=>{
     if(!tourId) return;
     let cancelled=false;
@@ -41,14 +41,16 @@ export default function TourEditor({tourId}: {tourId?:string}) {
   const fullRegion=[form.province.trim(),form.region.trim()].filter(Boolean).join(" ");
   const submit=async(e:FormEvent<HTMLFormElement>)=>{
     e.preventDefault();
+    if(submitLock.current)return;
     if(!tourId && step===1){if(!canContinue){setError("투어 이름, 소개(50자 이내), 지역을 입력해주세요.");return;}setStep(2);return;}
     if(!canContinue){setError("투어 이름, 소개(50자 이내), 지역을 입력해주세요.");return;}
     const confirmation = tourId
       ? `'${form.name}' 투어 정보를 수정하시겠습니까?\n공개 상태: ${status}`
       : `'${form.name}' 투어를 등록하시겠습니까?\n등록 후 비공개로 저장됩니다.`;
-    if(!window.confirm(confirmation))return;
+    if(tourId && !window.confirm(confirmation))return;
     const key=getAdminApiKey();
     if(!key){setError("관리자 API 키를 확인해주세요.");return;}
+    submitLock.current=true;
     setSaving(true);setError("");
     try{
       const url=tourId?`/api/tours/${encodeURIComponent(tourId)}`:"/api/tours";
@@ -60,9 +62,12 @@ export default function TourEditor({tourId}: {tourId?:string}) {
       if(!savedId)throw Error("등록된 투어 ID를 확인할 수 없습니다.");
       localStorage.setItem("loqest_active_tour_id",savedId);
       if(tourId){router.push(`/admin/tours/${encodeURIComponent(savedId)}`);router.refresh();}
-      else setSuccessId(savedId);
-    }catch(e){setError(e instanceof Error?e.message:"저장 중 오류가 발생했습니다.");}
-    finally{setSaving(false);}
+      else router.replace(`/admin/attractions/new?tourId=${encodeURIComponent(savedId)}`);
+    }catch(e){
+      submitLock.current=false;
+      setSaving(false);
+      setError(e instanceof Error?e.message:"저장 중 오류가 발생했습니다.");
+    }
   };
   const deleteTour=async()=>{
     if(!tourId)return;
@@ -129,13 +134,11 @@ export default function TourEditor({tourId}: {tourId?:string}) {
         <button className={styles.primary} disabled={saving||deleting||!canContinue}>{saving?"저장 중...":tourId?"변경사항 저장":step===1?"다음단계":"투어 등록하기"}</button>
       </footer>
     </form>
-    {successId&&<div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="투어 등록 완료">
+    {saving&&<div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={tourId?"투어 정보 저장 중":"투어 등록 중"} aria-live="polite">
       <div className={styles.modal}>
-        <div className={styles.successIcon}>✓</div>
-        <h2>새 관광지 등록을 완료했어요!</h2>
-        <p>이제 퀘스트를 추가하러 가세요.</p>
-        <button onClick={()=>router.push(`/admin/attractions/new?tourId=${encodeURIComponent(successId)}`)}>퀘스트 추가하러 가기</button>
-        <Link href={`/admin/tours/${encodeURIComponent(successId)}`}>투어 관리 화면으로</Link>
+        <div className={styles.savingSpinner} aria-hidden="true" />
+        <h2>{tourId?"변경사항을 저장하고 있어요":"투어를 등록하고 있어요"}</h2>
+        <p>{tourId?"저장이 완료되면 투어 관리 화면으로 이동합니다.":"잠시만 기다려 주세요. 등록이 끝나면 퀘스트 등록 화면으로 자동 이동합니다."}</p>
       </div>
     </div>}
   </main>;
