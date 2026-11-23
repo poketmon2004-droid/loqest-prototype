@@ -529,77 +529,44 @@ export default function LandmarkTestPage() {
         )}
 
         {bestResult && (
-          <section
-            style={{
-              ...styles.resultCard,
-              borderColor: landmarkPassed ? "#8bbca5" : "#e7b7ad",
-              background: landmarkPassed ? "#edf8f2" : "#fff3f0",
-            }}
-          >
-            <p
-              style={{
-                ...styles.resultLabel,
-                color: landmarkPassed ? "#34745a" : "#a85648",
-              }}
-            >
-              {landmarkPassed
-                ? `✓ ${landmarkName} 인증 성공`
-                : `✕ ${landmarkName} 인증 실패`}
-            </p>
-
-            <strong style={styles.resultNumber}>
-              좋은 특징점 {bestResult.goodMatches}개
-            </strong>
-
-            <p style={styles.resultText}>
-              전체 특징점 중 일치 비율:{" "}
-              {bestResult.matchRatio.toFixed(1)}%
-            </p>
-
-            <p style={styles.thresholdText}>
-              인증 기준: 특징점 {goodMatchesThreshold}개 이상 · 일치 비율{" "}
-              {matchRatioThreshold}% 이상
-            </p>
-
-            <p style={styles.fileName}>
-              가장 유사한 기준 사진: {bestResult.referenceName}
-            </p>
-          </section>
-        )}
-
-        {savedTestMessage && (
-          <p style={styles.savedMessage}>{savedTestMessage}</p>
-        )}
-
-        {results.length > 0 && (
-          <section style={styles.listSection}>
-            <h2 style={styles.listTitle}>기준 사진별 비교 결과</h2>
-
-            <div style={styles.resultList}>
-              {results.map((result, index) => (
-                <div
-                  key={result.referenceName}
-                  style={styles.resultItem}
-                >
-                  <div>
-                    <strong>{index + 1}위</strong>
-                    <p style={styles.itemFileName}>
-                      {result.referenceName}
-                    </p>
-                  </div>
-
-                  <div style={styles.itemScore}>
-                    <strong>{result.goodMatches}개</strong>
-                    <span>
-                      {result.matchRatio.toFixed(1)}%
-                    </span>
-                  </div>
-                </div>
-              ))}
+          <>
+            <section style={{...styles.resultCard,background:landmarkPassed?"#ecf8f0":"#fff1f5",borderColor:landmarkPassed?"#bee7cc":"#f3b8cb"}} aria-live="polite">
+              <div style={{...styles.resultIcon,background:landmarkPassed?"#d9f2e4":"#ffe0e9",color:landmarkPassed?"#197349":"#a74365"}} aria-hidden="true">{landmarkPassed?"✓":"✕"}</div>
+              <h2 style={{...styles.resultHeading,color:landmarkPassed?"#197349":"#a74365"}}>{landmarkPassed?"테스트 통과!":"테스트 실패"}</h2>
+              <p style={styles.resultDescription}>{landmarkPassed?"랜드마크 이미지가 정상적으로 인식되었습니다.":"랜드마크 이미지가 인증 기준에 미치지 못했습니다."}</p>
+              {saveFailed && <p style={{...styles.savedMessage,background:"#fff0f0",color:"#a74365"}}>{status} 결과가 저장되지 않았으므로 다시 테스트해주세요.</p>}
+              {!saveFailed && savedTestMessage && <p style={styles.savedMessage}>{savedTestMessage}</p>}
+            </section>
+            <div style={styles.resultActions}>
+              {landmarkPassed && !saveFailed && activeAttractionId ? (
+                <Link href={"/admin/attractions/" + activeAttractionId} style={styles.resultPrimaryButton}>퀘스트 관리로 이동</Link>
+              ) : (
+                <button type="button" onClick={returnToTestStart} style={styles.resultPrimaryButton}>다시 테스트하기</button>
+              )}
+              {landmarkPassed && !saveFailed ? (
+                <button type="button" onClick={returnToTestStart} style={styles.backButton}>다른 사진 테스트</button>
+              ) : activeAttractionId ? (
+                <Link href={"/admin/attractions/" + activeAttractionId + "/images"} style={styles.backButton}>기준 이미지 관리</Link>
+              ) : null}
             </div>
-          </section>
+            <details style={styles.details}>
+              <summary style={styles.detailsSummary}>상세 분석 결과 보기</summary>
+              <div style={styles.detailsBody}>
+                <p>좋은 특징점: <strong>{bestResult.goodMatches}개</strong></p>
+                <p>일치 비율: <strong>{bestResult.matchRatio.toFixed(1)}%</strong></p>
+                <p>인증 기준: 특징점 {goodMatchesThreshold}개 이상 · 일치 비율 {matchRatioThreshold}% 이상</p>
+                <p style={{overflowWrap:"anywhere"}}>가장 유사한 기준 사진: {bestResult.referenceName}</p>
+                <h3 style={styles.listTitle}>기준 사진별 비교 결과</h3>
+                <div style={styles.resultList}>
+                  {results.map((result,index)=><div key={result.referenceName+index} style={styles.resultItem}>
+                    <div><strong>{index+1}위</strong><p style={styles.itemFileName}>{result.referenceName}</p></div>
+                    <div style={styles.itemScore}><strong>{result.goodMatches}개</strong><span>{result.matchRatio.toFixed(1)}%</span></div>
+                  </div>)}
+                </div>
+              </div>
+            </details>
+          </>
         )}
-
         {selectedImage && !bestResult ? (
           <button
             type="button"
@@ -766,6 +733,14 @@ const styles: Record<string, CSSProperties> = {
     cursor: "pointer",
   },
 
+  resultActions:{display:"grid",gap:"12px",marginTop:"16px"},
+  resultPrimaryButton:{display:"flex",alignItems:"center",justifyContent:"center",width:"100%",boxSizing:"border-box",minHeight:"52px",padding:"13px 18px",background:"#0284c7",color:"#fff",border:0,borderRadius:"11px",fontWeight:800,fontSize:"15px",textDecoration:"none",cursor:"pointer"},
+  resultIcon:{width:"66px",height:"66px",display:"inline-flex",alignItems:"center",justifyContent:"center",borderRadius:"50%",fontSize:"34px",fontWeight:800},
+  resultHeading:{margin:"14px 0 8px",fontSize:"25px",fontWeight:800},
+  resultDescription:{margin:0,fontSize:"14px",lineHeight:1.6,color:"#64717a"},
+  details:{marginTop:"19px",border:"1px solid #dce6ee",borderRadius:"12px",background:"#fff",overflow:"hidden"},
+  detailsSummary:{padding:"16px 18px",cursor:"pointer",fontSize:"14px",fontWeight:800,color:"#315d70"},
+  detailsBody:{padding:"0 18px 18px",color:"#596b75",fontSize:"13px"},
   resultCard: {
     marginTop: "22px",
     padding: "20px",
