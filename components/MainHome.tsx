@@ -20,7 +20,6 @@ type MainHomeProps = {
   setSelectedProvince: (value: string) => void;
   availableProvinces: string[];
   filteredTours: PublicTour[];
-  hasTourSearch: boolean;
   hasUnreadBadge: boolean;
   enterTour: (tour: PublicTour) => void;
   goToTestHome: () => void;
@@ -36,7 +35,6 @@ export default function MainHome({
   setSelectedProvince,
   availableProvinces,
   filteredTours,
-  hasTourSearch,
   hasUnreadBadge,
   enterTour,
   goToTestHome,
@@ -149,11 +147,11 @@ export default function MainHome({
             </div>
           </section>
 
-          {!hasTourSearch ? null : filteredTours.length === 0 ? (
+          {filteredTours.length === 0 ? (
             <div style={styles.emptyDestination}>
-              <strong>조건에 맞는 여행지가 없습니다.</strong>
+              <strong>{searchQuery.trim() || selectedProvince !== "전체" ? "조건에 맞는 여행지가 없습니다." : "현재 공개된 여행지가 없습니다."}</strong>
               <p>
-                다른 여행지명이나 지역을 검색해주세요.
+                {searchQuery.trim() || selectedProvince !== "전체" ? "다른 여행지명이나 지역을 검색해주세요." : "새로운 투어가 공개되면 여기에 표시됩니다."}
               </p>
             </div>
           ) : (
