@@ -18,6 +18,7 @@ import styles from "../../new/AttractionForm.module.css";
 import AdminOperationOverlay from "@/components/AdminOperationOverlay";
 import AdminBackButton from "@/components/AdminBackButton";
 import GuideShapeSelector, { type GuideShape } from "@/components/GuideShapeSelector";
+import GuidePhotoPreview from "@/components/GuidePhotoPreview";
 
 type ReferenceImage = {
     id: string;
@@ -520,6 +521,15 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                                 <input type="file" accept="image/*" multiple onChange={handleReferenceImages} disabled={isProcessing}/>
                             </label>
                             {isProcessing && <p className={styles.uploadCount}>이미지를 처리하고 있습니다.</p>}
+                            <div className={styles.representativePreviewSection}>
+                                <h3>대표 이미지 촬영 예시</h3>
+                                <GuidePhotoPreview
+                                    src={referenceImages.find(image => image.id === representativeImageId)?.dataUrl}
+                                    name={referenceImages.find(image => image.id === representativeImageId)?.name}
+                                    shape={form.guideShape}
+                                />
+                                <GuideShapeSelector value={form.guideShape} onChange={value => updateForm("guideShape", value)} disabled={isProcessing} />
+                            </div>
                             {referenceImages.length === 0 ? (
                                 <div className={styles.emptyImageState}>
                                     <strong>등록된 랜드마크 이미지가 없습니다.</strong>
@@ -530,7 +540,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                                     <button type="button" className={styles.imageDisclosureButton}
                                         aria-expanded={showReferenceImages}
                                         onClick={()=>setShowReferenceImages(previous=>!previous)}>
-                                        <span>기존 사진 확인</span>
+                                        <span>등록된 사진 · 대표사진 선택</span>
                                         <span>{showReferenceImages?"접기 ↑":"사진 보기 ↓"}</span>
                                     </button>
                                     {showReferenceImages && (
@@ -552,7 +562,6 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                                 </div>
                             )}
                             {referenceImages.length > 0 && <p className={styles.representativeHint}>{representativeImageId ? "✓ 대표 이미지 1장이 지정되었습니다." : "대표 이미지를 1장 지정해주세요."}</p>}
-                            <GuideShapeSelector value={form.guideShape} onChange={value => updateForm("guideShape", value)} disabled={isProcessing} />
                         </div>
                     )}
                     {errorMessage && <p className={styles.errorMessage} role="alert">{errorMessage}</p>}
