@@ -17,6 +17,7 @@ import {
 import styles from "../../new/AttractionForm.module.css";
 import AdminOperationOverlay from "@/components/AdminOperationOverlay";
 import AdminBackButton from "@/components/AdminBackButton";
+import GuideShapeSelector, { type GuideShape } from "@/components/GuideShapeSelector";
 
 type ReferenceImage = {
     id: string;
@@ -38,6 +39,7 @@ type Attraction = {
     availableTime?: string;
     landmarkThreshold?: number;
     guideMessage?: string;
+    guideShape?: GuideShape;
     referenceImages: number;
     referenceImageData?: ReferenceImage[];
     firstSuccess: number | null;
@@ -57,6 +59,7 @@ type EditForm = {
     availableTime: string;
     landmarkThreshold: string;
     guideMessage: string;
+    guideShape: GuideShape;
     status: string;
 };
 
@@ -72,6 +75,7 @@ type AttractionApiResponse = {
     available_time?: string;
     landmark_threshold?: number;
     guide_message?: string;
+    guide_shape?: GuideShape;
     first_success?: number | null;
     status: string;
     quality?: string;
@@ -170,6 +174,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                     guideMessage:
                         data.guide_message ??
                         "가이드라인에 맞춰 관광지와 함께 촬영해주세요.",
+                    guideShape: data.guide_shape ?? "rectangle",
                     referenceImages: images.length,
                     referenceImageData: images,
                     firstSuccess: data.first_success ?? null,
@@ -204,6 +209,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                         attraction.guideMessage ??
                         "가이드라인에 맞춰 관광지와 함께 촬영해주세요.",
                     status: attraction.status,
+                    guideShape: attraction.guideShape ?? "rectangle",
                 });
             } catch (error) {
                 console.error(error);
@@ -341,6 +347,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                         availableTime: form.availableTime,
                         landmarkThreshold: threshold,
                         guideMessage: form.guideMessage,
+                        guideShape: form.guideShape,
                         status: referenceImagesChanged
                             ? "비공개"
                             : form.status,
@@ -502,6 +509,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                                     </label>
                                 </div>
                             </div>
+                            <GuideShapeSelector value={form.guideShape} onChange={value => updateForm("guideShape", value)} disabled={isProcessing} />
                         </>
                     ) : (
                         <div className={styles.uploadArea}>
@@ -545,6 +553,7 @@ export function QuestEditView({ imageMode = false }: { imageMode?: boolean }) {
                                 </div>
                             )}
                             {referenceImages.length > 0 && <p className={styles.representativeHint}>{representativeImageId ? "✓ 대표 이미지 1장이 지정되었습니다." : "대표 이미지를 1장 지정해주세요."}</p>}
+                            <GuideShapeSelector value={form.guideShape} onChange={value => updateForm("guideShape", value)} disabled={isProcessing} />
                         </div>
                     )}
                     {errorMessage && <p className={styles.errorMessage} role="alert">{errorMessage}</p>}
