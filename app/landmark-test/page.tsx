@@ -480,7 +480,7 @@ export default function LandmarkTestPage() {
           <p style={styles.statusText}>{status}</p>
         </div>
 
-        <label style={styles.fileLabel}>
+        <label style={selectedImage ? { ...styles.fileLabel, ...styles.changePhotoLabel } : styles.fileLabel}>
           {selectedImage ? "테스트 사진 변경" : "테스트 사진 선택"}
           <input
             type="file"
@@ -676,6 +676,16 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 800,
     cursor: "pointer",
     boxShadow: "0 5px 12px rgba(2,132,199,.15)",
+  },
+
+  changePhotoLabel: {
+    background: "#ffffff",
+    border: "1px solid #cddde9",
+    color: "#64748b",
+    boxShadow: "none",
+    fontSize: "14px",
+    fontWeight: 700,
+    minHeight: "44px",
   },
 
   hiddenInput: {
