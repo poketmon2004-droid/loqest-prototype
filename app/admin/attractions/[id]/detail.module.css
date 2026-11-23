@@ -386,3 +386,24 @@
 @media(max-width:520px){.questOverview{padding:15px;gap:12px}.questOverviewIcon{width:48px;height:48px;flex-basis:48px;font-size:23px}.questOverviewCopy h3{font-size:17px}.questStats{gap:8px}.questStat{padding:12px}.questStat strong{font-size:13px}.questImagesRow{padding:13px}.imageManageButton{padding:9px 11px;font-size:12px}}
 
 .coordinateHint{font-size:11px;font-weight:400;color:#92a2af;margin-left:3px}
+
+/* Pending image-recognition test: match the tour dashboard's pink action styling. */
+.actionNotice.actionPending {
+  background:#fff1f5;
+  border:1px solid #f3b8cb;
+}
+.actionNotice.actionPending strong { color:#a74365; }
+.actionNotice.actionPending p { color:#95657a; }
+.actionNotice.actionPending .primaryButton {
+  background:#fce0e9;
+  border:1px solid #f1a9c0;
+  color:#a23d65;
+}
+.actionNotice.actionPending .primaryButton:hover {
+  background:#f8cad9;
+  border-color:#e78cab;
+}
+.actionNotice.actionPending .primaryButton:focus-visible {
+  outline:3px solid #efadca;
+  outline-offset:2px;
+}
