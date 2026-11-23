@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import loadingStyles from "./LandmarkTest.module.css";
@@ -181,6 +181,7 @@ export default function LandmarkTestPage() {
   const [opencvReady, setOpencvReady] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState("OpenCV를 불러오는 중입니다.");
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<ComparisonResult[]>([]);
@@ -337,6 +338,18 @@ export default function LandmarkTestPage() {
     setStatus("사진을 선택했습니다. 분석 버튼을 눌러 주세요.");
   }
 
+  function retryWithAnotherPhoto() {
+    // Keep the selected-photo step rather than returning to the empty first screen.
+    setResults([]);
+    setSavedTestMessage("");
+    setSaveFailed(false);
+    setStatus("다른 테스트 사진을 선택해 주세요.");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+    }
+  }
+
   function returnToTestStart() {
     if (selectedImage) URL.revokeObjectURL(selectedImage);
     setSelectedImage(null);
@@ -484,6 +497,7 @@ export default function LandmarkTestPage() {
           {selectedImage ? "테스트 사진 변경" : "테스트 사진 선택"}
           <input
             type="file"
+            ref={fileInputRef}
             accept="image/*"
             onChange={handleFileChange}
             disabled={analyzing}
@@ -539,7 +553,7 @@ export default function LandmarkTestPage() {
               {landmarkPassed && !saveFailed && activeAttractionId ? (
                 <Link href={"/admin/attractions/" + activeAttractionId} style={styles.resultPrimaryButton}>테스트 완료하기</Link>
               ) : (
-                <button type="button" onClick={returnToTestStart} style={styles.resultPrimaryButton}>다시 테스트하기</button>
+                <button type="button" onClick={retryWithAnotherPhoto} style={styles.resultPrimaryButton}>다시 테스트하기</button>
               )}
               {landmarkPassed && !saveFailed && (
                 <button type="button" onClick={returnToTestStart} style={styles.backButton}>다른 사진 테스트</button>
