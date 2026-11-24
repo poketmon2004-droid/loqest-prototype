@@ -1006,8 +1006,29 @@ export default function CameraCapture({
         verificationError as GeolocationPositionError;
 
       if (gpsError.code === 1) {
+        // Permission-denied can originate from iOS settings, remembered site
+        // permissions, or a document policy. Preserve the native error detail
+        // instead of assuming the visitor explicitly tapped "Deny".
+        const nativeMessage =
+          typeof gpsError.message === "string" && gpsError.message.trim()
+            ? gpsError.message.trim().slice(0, 200)
+            : "브라우저에서 상세 사유를 제공하지 않았습니다.";
+        const secureContext = window.isSecureContext ? "HTTPS 정상" : "보안 연결 아님";
+        const policy = document as Document & {
+          permissionsPolicy?: { allowsFeature: (feature: string) => boolean };
+          featurePolicy?: { allowsFeature: (feature: string) => boolean };
+        };
+        let policyStatus = "확인 불가";
+        try {
+          const checker = policy.permissionsPolicy ?? policy.featurePolicy;
+          if (checker) {
+            policyStatus = checker.allowsFeature("geolocation") ? "허용" : "차단";
+          }
+        } catch {
+          // Safari may not expose Permissions Policy introspection.
+        }
         setError(
-          "GPS 오류 1: 브라우저에서 위치 사용이 거부되었습니다."
+          `GPS 오류 1: 위치 요청이 거부되었습니다. 사파리의 사이트별 위치 권한과 iPhone 설정의 'Safari 웹 사이트' 위치 서비스를 확인해주세요. (진단: ${secureContext} · 위치 정책 ${policyStatus} · 브라우저 응답: ${nativeMessage})`
         );
         return;
       }
