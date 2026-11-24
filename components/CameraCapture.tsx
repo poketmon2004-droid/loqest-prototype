@@ -750,6 +750,17 @@ export default function CameraCapture({
     }
   }
 
+  // Visitors already completed the one-time consent flow on the home page.
+  // Open the camera automatically for quests, retaining the retry button
+  // if Safari later revokes permissions.
+  useEffect(() => {
+    if (localStorage.getItem("loqestPermissionsPreparedV1") === "true") {
+      void startCamera();
+    }
+    // Camera start should run only when the verification component mounts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function beginVerification() {
     if (preparingPermissions || openingCamera) return;
     setPermissionStarted(true);
