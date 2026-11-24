@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { ensureGuestSession, setGuestCookie } from "@/lib/guestParticipation";
 
 export const dynamic = "force-dynamic";
 
@@ -111,13 +112,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(
-      {
-        message: "촬영 기록이 저장되었습니다.",
-        record: data,
-      },
+    // Maintain separate, informational guest stamp progress after a reported
+    // successful capture. This record is client-reported, NOT coupon eligibility.
+    // Keep capture audit logging independent of guest session failures.
+    let guestToken: string | null = null;
+    if (body.result === "success" && body.stage === "completed") {
+      try {
+        const { data: attraction, error: attractionError } = await supabaseAdmin
+          .from("attractions").select("id, tour_id")
+          .eq("id", Number(body.attractionId)).eq("tour_id", String(body.tourId))
+          .maybeSingle();
+        if (attractionError) throw attractionError;
+        if (attraction) {
+          const session = await ensureGuestSession(request);
+          guestToken = session.newToken;
+          const { error: stampError } = await supabaseAdmin.from("visitor_stamps").upsert({
+            session_id: session.id,
+            tour_id: String(body.tourId),
+            attraction_id: Number(body.attractionId),
+            evidence: "client_reported",
+          }, { onConflict: "session_id,attraction_id", ignoreDuplicates: true });
+          if (stampError) throw stampError;
+        }
+      } catch (stampError) {
+        console.error("Guest stamp persistence failed", stampError);
+      }
+    }
+
+    const response = NextResponse.json(
+      { message: "촬영 기록이 저장되었습니다.", record: data },
       { status: 201 }
     );
+    return setGuestCookie(response, guestToken);
   } catch (error) {
     console.error(error);
 
