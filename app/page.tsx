@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import MainHome, { type PublicTour } from "../components/MainHome";
 import QuestList from "../components/QuestList";
 import BadgeCollection from "../components/BadgeCollection";
@@ -278,6 +278,7 @@ export default function Home() {
     useState<string[]>([]);
 
   const [hasUnreadBadge, setHasUnreadBadge] = useState(false);
+  const progressVersionRef = useRef(0);
 
   const activeTourId = activeTour?.id ?? "amsa";
   const completedLandmarksKey = `${COMPLETED_LANDMARKS_KEY}:${activeTourId}`;
@@ -516,6 +517,40 @@ export default function Home() {
     }
   }, [landmarks, completedLandmarksKey, badgeDateKey, badgeSeenKey]);
 
+  // Keep the existing offline/local stamp experience while also restoring
+  // informational per-browser progress recorded by the server.
+  const landmarkIdsKey = landmarks.map(landmark => landmark.id).join("|");
+  useEffect(() => {
+    if (!landmarkIdsKey) return;
+    const version = progressVersionRef.current;
+    let cancelled = false;
+    const restoreGuestProgress = async () => {
+      try {
+        const start = await fetch("/api/participation", { method: "POST", cache: "no-store" });
+        if (!start.ok) return;
+        const response = await fetch(`/api/participation?tourId=${encodeURIComponent(activeTourId)}`, { cache: "no-store" });
+        if (!response.ok || cancelled || version !== progressVersionRef.current) return;
+        const body = await response.json() as { completedAttractionIds?: number[] };
+        if (!Array.isArray(body.completedAttractionIds) || cancelled || version !== progressVersionRef.current) return;
+        const allowedIds = new Set(landmarkIdsKey.split("|"));
+        const restored = body.completedAttractionIds
+          .map(id => `${activeTourId}-${id}`)
+          .filter(id => allowedIds.has(id));
+        if (restored.length === 0) return;
+        setCompletedLandmarks(previous => {
+          const merged = [...new Set([...previous, ...restored])];
+          localStorage.setItem(completedLandmarksKey, JSON.stringify(merged));
+          return merged;
+        });
+      } catch (error) {
+        // Offline access and the existing local stamps remain available.
+        console.warn("서버 스탬프 기록을 불러오지 못했습니다.", error);
+      }
+    };
+    void restoreGuestProgress();
+    return () => { cancelled = true; };
+  }, [activeTourId, completedLandmarksKey, landmarkIdsKey]);
+
   function saveCompletedLandmarks(ids: string[]) {
     setCompletedLandmarks(ids);
 
@@ -586,19 +621,26 @@ export default function Home() {
     setScreen("test-quests");
   }
 
-  function resetProgress() {
+  async function resetProgress() {
     const confirmed = window.confirm(
       "발급된 스탬프와 여행 뱃지를 모두 초기화할까요?"
     );
+    if (!confirmed) return;
 
-    if (!confirmed) {
+    // Clear server and local progress together so deleted stamps do not
+    // reappear on refresh. Historical capture audit logs are retained.
+    progressVersionRef.current += 1;
+    try {
+      const response = await fetch(`/api/participation?tourId=${encodeURIComponent(activeTourId)}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("서버 초기화 실패");
+    } catch (error) {
+      console.error(error);
+      window.alert("서버 스탬프 기록을 초기화하지 못했습니다. 다시 시도해주세요.");
       return;
     }
-
     setCompletedLandmarks([]);
     setBadgeEarnedAt(null);
     setHasUnreadBadge(false);
-
     localStorage.removeItem(completedLandmarksKey);
     localStorage.removeItem(badgeDateKey);
     localStorage.removeItem(badgeSeenKey);
