@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import type { PublicTour } from "./MainHome";
 
 type TourLandmark = {
@@ -28,6 +28,37 @@ export default function TourHome<T extends TourLandmark>({
   progressPercent, tourCompleted, onSelectLandmark,
   goToQuestList, resetProgress, goToMainHome, styles,
 }: TourHomeProps<T>) {
+  const [transferLink, setTransferLink] = useState("");
+  const [transferStatus, setTransferStatus] = useState("");
+  const [creatingTransfer, setCreatingTransfer] = useState(false);
+
+  async function createTransferLink() {
+    if (creatingTransfer) return;
+    setCreatingTransfer(true);
+    setTransferStatus("");
+    try {
+      const response = await fetch("/api/participation/transfer", {
+        method: "POST", cache: "no-store",
+      });
+      const data = await response.json() as { token?: string; message?: string };
+      if (!response.ok || !data.token) throw new Error(data.message || "링크 발급 실패");
+      const url = new URL("/continue", window.location.origin);
+      if (activeTour?.id) url.searchParams.set("tourId", activeTour.id);
+      url.hash = `token=${data.token}`;
+      setTransferLink(url.href);
+      try {
+        await navigator.clipboard.writeText(url.href);
+        setTransferStatus("이어하기 링크를 복사했어요. Safari 주소창에 붙여넣어 열어주세요.");
+      } catch {
+        setTransferStatus("아래 링크를 복사해서 Safari 주소창에서 열어주세요.");
+      }
+    } catch (error) {
+      setTransferStatus(error instanceof Error ? error.message : "링크를 만들지 못했어요.");
+    } finally {
+      setCreatingTransfer(false);
+    }
+  }
+
   // Keep visual quest positions independent of stored landmark coordinates.
   // Each quest gets its own row to prevent marker labels from overlapping.
   const mapHeight = Math.max(260, 210 + Math.max(0, landmarks.length - 1) * 155);
@@ -185,6 +216,38 @@ export default function TourHome<T extends TourLandmark>({
                 ? "탐험 계속하기"
                 : "탐험 시작하기"}
           </button>
+
+          <div style={{ padding: "18px", marginTop: "16px", background: "#f2f8f5", border: "1px solid #d4e8db", borderRadius: "16px" }}>
+            <strong style={{ display: "block", marginBottom: "8px", color: "#234b39" }}>
+              다른 브라우저에서 이어하기
+            </strong>
+            <p style={{ margin: "0 0 12px", fontSize: "13px", color: "#52685b", lineHeight: 1.65 }}>
+              카카오톡에서 시작했나요? 10분 동안 한 번 사용할 수 있는 링크를 만들어 Safari에서 스탬프 기록을 이어받으세요.
+            </p>
+            <button type="button" onClick={() => void createTransferLink()} disabled={creatingTransfer}
+              style={{ width: "100%", minHeight: "48px", borderRadius: "12px", border: "none", background: "#138B5D", color: "#fff", fontWeight: 800, fontSize: "14px", cursor: "pointer" }}>
+              {creatingTransfer ? "링크 만드는 중..." : "Safari에서 이어하기 링크 만들기"}
+            </button>
+            {transferStatus && <p role="status" style={{ margin: "12px 0 0", fontSize: "13px", lineHeight: 1.6, color: "#234b39" }}>{transferStatus}</p>}
+            {transferLink && (
+              <div style={{ marginTop: "10px" }}>
+                <input aria-label="기록 이어하기 링크" readOnly value={transferLink}
+                  onFocus={event => event.currentTarget.select()}
+                  style={{ boxSizing: "border-box", width: "100%", padding: "10px", border: "1px solid #bfd6c9", borderRadius: "9px", fontSize: "12px" }} />
+                <button type="button" onClick={() => {
+                  void navigator.clipboard.writeText(transferLink).then(
+                    () => setTransferStatus("링크를 복사했어요."),
+                    () => setTransferStatus("주소를 길게 눌러 직접 복사해주세요.")
+                  );
+                }} style={{ marginTop: "8px", background: "white", border: "1px solid #b7d8c5", borderRadius: "9px", padding: "9px 14px", fontWeight: 700 }}>
+                  링크 복사하기
+                </button>
+              </div>
+            )}
+            <p style={{ margin: "10px 0 0", color: "#66786d", fontSize: "12px", lineHeight: 1.55 }}>
+              링크를 다른 사람에게 공유하면 내 진행 기록을 볼 수 있으니 본인만 사용하세요.
+            </p>
+          </div>
 
           <button
             type="button"
