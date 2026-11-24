@@ -3,9 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const COOKIE_NAME = "loqest_guest_session";
+export function newGuestToken() { return randomBytes(32).toString("hex"); }
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 90;
 
-function hashToken(token: string) {
+export function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
@@ -18,13 +19,20 @@ export async function findGuestSession(request: NextRequest): Promise<string | n
     .eq("token_hash", hashToken(token))
     .maybeSingle();
   if (error) throw error;
-  return data?.id ?? null;
+  if (data?.id) return data.id;
+  const { data: shared, error: sharedError } = await supabaseAdmin
+    .from("visitor_session_tokens")
+    .select("session_id")
+    .eq("token_hash", hashToken(token))
+    .maybeSingle();
+  if (sharedError) throw sharedError;
+  return shared?.session_id ?? null;
 }
 
 export async function ensureGuestSession(request: NextRequest): Promise<{ id: string; newToken: string | null }> {
   const existing = await findGuestSession(request);
   if (existing) return { id: existing, newToken: null };
-  const newToken = randomBytes(32).toString("hex");
+  const newToken = newGuestToken();
   const { data, error } = await supabaseAdmin
     .from("visitor_sessions")
     .insert({ token_hash: hashToken(newToken) })
