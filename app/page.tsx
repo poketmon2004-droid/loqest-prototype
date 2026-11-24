@@ -350,6 +350,18 @@ export default function Home() {
 
         if (!cancelled) {
           setTours(result.tours);
+          const requestedTourId = new URLSearchParams(window.location.search).get("tourId");
+          const transferredTour = requestedTourId
+            ? result.tours.find(tour => tour.id === requestedTourId)
+            : undefined;
+          if (transferredTour) {
+            setActiveTour(transferredTour);
+            setScreen("home");
+            const cleanUrl = new URL(window.location.href);
+            cleanUrl.searchParams.delete("tourId");
+            window.history.replaceState(null, "", cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
+            return;
+          }
 
           setActiveTour((current) => {
             if (current) {
