@@ -75,6 +75,8 @@ const COMPLETED_LANDMARKS_KEY =
 const GANGDONG_BADGE_DATE_KEY =
   "loqestAmsaBadgeEarnedAt";
 
+const PERMISSION_READY_KEY = "loqestPermissionsPreparedV1";
+
 const COMPLETED_TEST_LANDMARKS_KEY =
   "loqestCompletedTestLandmarks";
 
@@ -254,6 +256,9 @@ const testLandmarks: Landmark[] = [
 
 
 export default function Home() {
+  const [permissionGate, setPermissionGate] = useState<"checking" | "required" | "ready">("checking");
+  const [preparingPermissions, setPreparingPermissions] = useState(false);
+  const [permissionError, setPermissionError] = useState("");
   const [tours, setTours] = useState<PublicTour[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProvince, setSelectedProvince] = useState("전체");
@@ -279,6 +284,47 @@ export default function Home() {
 
   const [hasUnreadBadge, setHasUnreadBadge] = useState(false);
   const progressVersionRef = useRef(0);
+
+  useEffect(() => {
+    setPermissionGate(localStorage.getItem(PERMISSION_READY_KEY) === "true" ? "ready" : "required");
+  }, []);
+
+  async function prepareTourPermissions() {
+    if (preparingPermissions) return;
+    setPreparingPermissions(true);
+    setPermissionError("");
+    let stream: MediaStream | null = null;
+    try {
+      if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia || !navigator.geolocation) {
+        throw new Error("카메라 또는 위치 기능을 지원하지 않는 환경입니다. Safari에서 HTTPS 주소로 접속해주세요.");
+      }
+      // Start from a direct button click so Safari can request camera consent.
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } }, audio: false });
+      await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        });
+      });
+      localStorage.setItem(PERMISSION_READY_KEY, "true");
+      setPermissionGate("ready");
+    } catch (error) {
+      const issue = error as Error & { code?: number };
+      if (issue.code === 1) {
+        setPermissionError("위치 접근이 거부되었습니다. iPhone 설정 → 개인정보 보호 및 보안 → 위치 서비스 → Safari 웹 사이트에서 위치 사용을 허용해주세요.");
+      } else if (issue.name === "NotAllowedError" || issue.name === "PermissionDeniedError") {
+        setPermissionError("카메라 접근이 거부되었습니다. Safari에서 이 사이트의 카메라 권한을 허용해주세요.");
+      } else if (issue.code === 2 || issue.code === 3) {
+        setPermissionError("위치를 확인할 수 없습니다. iPhone 위치 서비스를 켜고 네트워크 연결을 확인한 뒤 다시 시도해주세요.");
+      } else {
+        setPermissionError(issue.message || "권한을 확인하지 못했습니다. 설정을 확인한 뒤 다시 시도해주세요.");
+      }
+    } finally {
+      stream?.getTracks().forEach(track => track.stop());
+      setPreparingPermissions(false);
+    }
+  }
 
   const activeTourId = activeTour?.id ?? "amsa";
   const completedLandmarksKey = `${COMPLETED_LANDMARKS_KEY}:${activeTourId}`;
@@ -759,6 +805,35 @@ export default function Home() {
   const hasTourSearch =
     searchQuery.trim().length > 0 ||
     selectedProvince !== "전체";
+
+  if (permissionGate !== "ready") {
+    return (
+      <main style={{ ...styles.main, alignItems: "center", minHeight: "100dvh" }}>
+        <section style={{ ...styles.card, textAlign: "center", padding: "34px 24px" }} aria-labelledby="permissions-title">
+          <p style={{ margin: "0 0 10px", color: "#138B5D", fontSize: "26px", fontWeight: 900, letterSpacing: "0.08em" }}>LOQEST</p>
+          <div style={{ fontSize: "42px", marginBottom: "14px" }} aria-hidden="true">📍 📷</div>
+          <h1 id="permissions-title" style={{ color: "#23445d", fontSize: "23px", lineHeight: 1.4, margin: "0 0 14px" }}>
+            탐험을 시작하기 전에
+          </h1>
+          <p style={{ color: "#263238", fontWeight: 800, fontSize: "16px", lineHeight: 1.75, margin: "0 0 14px" }}>
+            카메라와 위치 접근을 모두 허용해야<br />LOQEST 스탬프 투어를 이용할 수 있습니다.
+          </p>
+          <p style={{ color: "#65737a", fontSize: "14px", lineHeight: 1.75, margin: "0 0 24px" }}>
+            카메라는 손동작 및 랜드마크 인증에,<br />위치는 관광지 방문 확인에 사용됩니다.<br />
+            아래 버튼을 누른 뒤 권한 요청을 각각 허용해주세요.
+          </p>
+          {permissionError && (
+            <p role="alert" style={{ background: "#fff1ed", color: "#9e2d1b", borderRadius: "12px", padding: "14px", fontSize: "14px", lineHeight: 1.65, textAlign: "left" }}>{permissionError}</p>
+          )}
+          <button type="button" onClick={() => void prepareTourPermissions()} disabled={preparingPermissions || permissionGate === "checking"}
+            style={{ width: "100%", minHeight: "54px", background: "#138B5D", border: "none", borderRadius: "14px", color: "white", fontWeight: 800, fontSize: "16px", opacity: preparingPermissions ? 0.6 : 1 }}>
+            {permissionGate === "checking" ? "확인 중..." : preparingPermissions ? "권한 확인 중..." : "탐험 준비하기"}
+          </button>
+          <p style={{ marginTop: "14px", fontSize: "12px", color: "#7b8589", lineHeight: 1.6 }}>권한을 허용한 후에는 투어를 바로 시작할 수 있어요.</p>
+        </section>
+      </main>
+    );
+  }
 
   if (screen === "main-home") {
     return (
