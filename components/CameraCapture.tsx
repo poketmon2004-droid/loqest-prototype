@@ -328,12 +328,13 @@ export default function CameraCapture({
   const thumbStableSinceRef = useRef<number | null>(null);
   const targetGestureRef =
     useRef<GestureName>("Thumb_Up");
-  const autoStartAttemptedRef = useRef(false);
   const captureAttemptRef = useRef(0);
   const captureSessionIdRef = useRef("");
 
   const [cameraOpen, setCameraOpen] = useState(false);
   const [openingCamera, setOpeningCamera] = useState(false);
+  const [preparingPermissions, setPreparingPermissions] = useState(false);
+  const [permissionStarted, setPermissionStarted] = useState(false);
   const [modelReady, setModelReady] = useState(false);
   const [photo, setPhoto] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -749,17 +750,34 @@ export default function CameraCapture({
     }
   }
 
-  useEffect(() => {
-    if (autoStartAttemptedRef.current) {
+  async function beginVerification() {
+    if (preparingPermissions || openingCamera) return;
+    setPermissionStarted(true);
+    setPreparingPermissions(true);
+    setError("");
+
+    try {
+      // Ask for location before opening the camera. The actual position is
+      // checked again at capture time to preserve the GPS verification rule.
+      if (!skipLocationVerification) {
+        await getCurrentLocation();
+      }
+    } catch (locationError) {
+      const errorCode = (locationError as GeolocationPositionError).code;
+      const message =
+        errorCode === 1
+          ? "위치 접근이 거부되었습니다. iPhone 설정 → 개인정보 보호 및 보안 → 위치 서비스 → Safari 웹 사이트에서 위치를 허용한 후 다시 시도해주세요."
+          : errorCode === 2
+            ? "현재 위치를 가져오지 못했습니다. 위치 서비스와 네트워크 연결을 확인한 뒤 다시 시도해주세요."
+            : "위치 확인 시간이 초과되었습니다. 다시 시도해주세요.";
+      setError(message);
+      setPreparingPermissions(false);
       return;
     }
 
-    autoStartAttemptedRef.current = true;
-    void startCamera();
-
-    // 퀘스트 화면이 처음 열릴 때 한 번만 카메라를 자동 실행합니다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    setPreparingPermissions(false);
+    await startCamera();
+  }
 
   function retryCapture() {
     setError("");
@@ -1095,15 +1113,29 @@ export default function CameraCapture({
       {!cameraOpen && !photo && !error && (
         <div
           style={styles.cameraPreparing}
-          role="status"
+          role={preparingPermissions || openingCamera ? "status" : undefined}
           aria-live="polite"
         >
-          <span style={styles.cameraPreparingIcon}>📷</span>
+          <span style={styles.cameraPreparingIcon}>{preparingPermissions ? "📍" : "📷"}</span>
           <strong>
-            {openingCamera
-              ? "카메라를 준비하고 있어요."
-              : "카메라를 불러오고 있어요."}
+            {preparingPermissions
+              ? "위치 권한을 확인하고 있어요."
+              : openingCamera
+                ? "카메라를 준비하고 있어요."
+                : "퀘스트 인증 준비"}
           </strong>
+          {!permissionStarted && (
+            <>
+              <span style={styles.permissionDescription}>
+                {skipLocationVerification
+                  ? "손동작 인증을 위해 카메라 접근이 필요해요."
+                  : "랜드마크 인증을 위해 위치와 카메라 접근이 필요해요.\n처음 이용할 때만 권한을 확인합니다."}
+              </span>
+              <button type="button" style={styles.permissionStartButton} onClick={beginVerification}>
+                인증 시작하기
+              </button>
+            </>
+          )}
         </div>
       )}
 
@@ -1216,9 +1248,10 @@ export default function CameraCapture({
           <button
             type="button"
             style={styles.retryButton}
-            onClick={startCamera}
+            onClick={beginVerification}
+            disabled={preparingPermissions || openingCamera}
           >
-            카메라 다시 실행하기
+            다시 시작하기
           </button>
         </div>
       )}
@@ -1298,6 +1331,26 @@ const styles: Record<string, React.CSSProperties> = {
 
   cameraPreparingIcon: {
     fontSize: "28px",
+  },
+  permissionDescription: {
+    fontSize: "14px",
+    fontWeight: 500,
+    lineHeight: 1.65,
+    whiteSpace: "pre-line",
+    color: "#576b73",
+  },
+  permissionStartButton: {
+    width: "100%",
+    maxWidth: "300px",
+    minHeight: "52px",
+    padding: "12px 20px",
+    border: "none",
+    borderRadius: "14px",
+    backgroundColor: "#138B5D",
+    color: "#fff",
+    fontSize: "16px",
+    fontWeight: 800,
+    cursor: "pointer",
   },
 
   cameraContainer: {
