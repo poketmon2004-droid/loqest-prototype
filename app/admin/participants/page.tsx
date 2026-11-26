@@ -17,7 +17,8 @@ function ParticipantsPageContent(){
  const [selected,setSelected]=useState<number|null>(null);
  const [filter,setFilter]=useState("all");const [days,setDays]=useState("7");
  const [loading,setLoading]=useState(true);const [error,setError]=useState("");
- useEffect(()=>{if(!tourId){setLoading(false);return;}let active=true;setLoading(true);
+ const [now,setNow]=useState(0);
+ useEffect(()=>{let active=true;const timer=window.setTimeout(()=>{setNow(Date.now());if(!tourId){setLoading(false);return;}setLoading(true);setError("");
   const key=getAdminApiKey();if(!key){setError("관리자 API 키를 확인해주세요.");setLoading(false);return;}
   const headers={"x-admin-api-key":key};
   void Promise.all([fetch(`/api/attractions?tourId=${encodeURIComponent(tourId)}&includeHidden=true`,{headers,cache:"no-store"}),fetch(`/api/capture-records?tourId=${encodeURIComponent(tourId)}`,{headers,cache:"no-store"}),fetch(`/api/tours/${encodeURIComponent(tourId)}?includeHidden=true`,{headers,cache:"no-store"})])
@@ -25,7 +26,7 @@ function ParticipantsPageContent(){
     const a=await ar.json(),r=await rr.json(),t=tr.ok?await tr.json():null;return {a:a.attractions||[],r:r.records||[],name:t?.tour?.name||"선택한 투어"};})
    .then(v=>{if(!active)return;setAttractions(v.a);setRecords(v.r);setTourName(v.name);setSelected(prev=>prev&&v.a.some((a:Attraction)=>a.id===prev)?prev:v.a[0]?.id??null);})
    .catch(e=>{if(active)setError(e instanceof Error?e.message:"조회에 실패했습니다.");})
-   .finally(()=>{if(active)setLoading(false);});return()=>{active=false;};
+   .finally(()=>{if(active){setNow(Date.now());setLoading(false);}});},0);return()=>{active=false;window.clearTimeout(timer);};
  },[tourId]);
  const success=(r:RecordItem)=>r.result==="success"&&r.stage==="completed";
  const visitorIds=useMemo(()=>new Set(records.map(r=>r.visitorId)),[records]);
@@ -38,10 +39,10 @@ function ParticipantsPageContent(){
    const shotsForSuccess=rec.filter(r=>successfulSessionIds.has(r.sessionId)).length;
    return {...a,attempts:rec.length,successes:completed.length,rate:rec.length?Math.round(completed.length/rec.length*100):null,firstRate:sessions.size?Math.round(firstSuccesses/sessions.size*100):null,average:successfulSessionIds.size?shotsForSuccess/successfulSessionIds.size:null};});
  const chosen=summaries.find(s=>s.id===selected);
- const now=Date.now(),windowMs=Number(days)*86400000;
+ const windowMs=Number(days)*86400000;
  const scoped=records.filter(r=>r.attractionId===selected&&(days==="all"||new Date(r.capturedAt).getTime()>=now-windowMs));
  const filtered=scoped.filter(r=>filter==="all"||(filter==="success"?success(r):!success(r))).sort((a,b)=>new Date(b.capturedAt).getTime()-new Date(a.capturedAt).getTime());
- const daily=Array.from({length:days==="all"?14:Math.min(Number(days),30)},(_,i)=>{const at=new Date();at.setHours(0,0,0,0);at.setDate(at.getDate()-(days==="all"?13:Number(days)-1-i));const key=at.toLocaleDateString("en-CA");const dayRecords=scoped.filter(r=>{const d=new Date(r.capturedAt);return !Number.isNaN(d.getTime())&&d.getFullYear()===at.getFullYear()&&d.getMonth()===at.getMonth()&&d.getDate()===at.getDate();});return {label:`${at.getMonth()+1}/${at.getDate()}`,count:dayRecords.length,success:dayRecords.filter(success).length,key};});
+ const daily=Array.from({length:days==="all"?14:Math.min(Number(days),30)},(_,i)=>{const at=new Date(now);at.setHours(0,0,0,0);at.setDate(at.getDate()-(days==="all"?13:Number(days)-1-i));const key=at.toLocaleDateString("en-CA");const dayRecords=scoped.filter(r=>{const d=new Date(r.capturedAt);return !Number.isNaN(d.getTime())&&d.getFullYear()===at.getFullYear()&&d.getMonth()===at.getMonth()&&d.getDate()===at.getDate();});return {label:`${at.getMonth()+1}/${at.getDate()}`,count:dayRecords.length,success:dayRecords.filter(success).length,key};});
  const maxCount=Math.max(1,...daily.map(d=>d.count));
  const csvDownload=()=>{const headers=["퀘스트","방문자 ID","세션 ID","인증 단계","결과","시도","촬영 일시"];const csv=[headers,...filtered.map(r=>[chosen?.name||"",r.visitorId,r.sessionId,stageText[r.stage],success(r)?"성공":"실패",String(r.attemptNumber),r.capturedAt])].map(row=>row.map(cell=>`"${String(cell).replace(/"/g,'""')}"`).join(",")).join("\r\n");const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download="loqest-capture-records.csv";link.click();URL.revokeObjectURL(url);};
  if(!tourId)return <main className={styles.page}><h1>투어를 먼저 선택해주세요.</h1><Link href="/admin">투어 목록으로</Link></main>;
