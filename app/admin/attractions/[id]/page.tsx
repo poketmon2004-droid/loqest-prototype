@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { clearAdminApiKey, getAdminApiKey } from "@/lib/adminApiKey";
 import styles from "./detail.module.css";
-import AdminBackButton from "@/components/AdminBackButton";
 import AdminOperationOverlay from "@/components/AdminOperationOverlay";
 
 type ReferenceImage = {
