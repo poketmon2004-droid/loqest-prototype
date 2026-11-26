@@ -707,8 +707,6 @@ export default function CameraCapture({
         ? Promise.resolve()
         : cvReadyPromise;
 
-      const isAndroid = /Android/i.test(navigator.userAgent);
-
       const cameraPromise =
         navigator.mediaDevices.getUserMedia({
           video: {
@@ -755,7 +753,8 @@ export default function CameraCapture({
   // if Safari later revokes permissions.
   useEffect(() => {
     if (localStorage.getItem("loqestPermissionsPreparedV1") === "true") {
-      void startCamera();
+      const timer = window.setTimeout(() => { void startCamera(); }, 0);
+      return () => window.clearTimeout(timer);
     }
     // Camera start should run only when the verification component mounts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
