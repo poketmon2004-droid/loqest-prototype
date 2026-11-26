@@ -17,6 +17,8 @@ type StoredReferenceImage = {
 };
 
 function authorized(_request: NextRequest) {
+  // Prototype placeholder: production authorization must be implemented before public service.
+  void _request;
   return true;
 }
 
