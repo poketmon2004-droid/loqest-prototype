@@ -27,7 +27,7 @@ export default function TourEditor({tourId}: {tourId?:string}) {
     if(!tourId) return;
     let cancelled=false;
     const key=getAdminApiKey();
-    if(!key){setError("관리자 API 키를 확인해주세요.");setLoading(false);return;}
+    if(!key){const timer=window.setTimeout(()=>{setError("관리자 API 키를 확인해주세요.");setLoading(false);},0);return()=>window.clearTimeout(timer);}
     void fetch(`/api/tours/${encodeURIComponent(tourId)}?includeHidden=true`,{headers:{"x-admin-api-key":key},cache:"no-store"})
       .then(async res=>{if(res.status===401){clearAdminApiKey();throw Error("관리자 API 키가 올바르지 않습니다.");}
         const body=await res.json();if(!res.ok||!body.tour)throw Error(body.message||"투어를 불러오지 못했습니다.");return body.tour as Tour;})
