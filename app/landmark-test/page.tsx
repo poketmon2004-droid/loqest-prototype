@@ -58,7 +58,10 @@ function loadImage(source: string): Promise<HTMLImageElement> {
   });
 }
 
-function extractFeatures(cv: any, image: HTMLImageElement) {
+type OpenCV = Awaited<typeof cvReadyPromise>;
+type DescriptorMat = ReturnType<OpenCV["Mat"]["prototype"]["clone"]>;
+
+function extractFeatures(cv: OpenCV, image: HTMLImageElement) {
   const source = cv.imread(image);
   const resized = new cv.Mat();
   const gray = new cv.Mat();
@@ -104,9 +107,9 @@ function extractFeatures(cv: any, image: HTMLImageElement) {
 }
 
 function compareDescriptors(
-  cv: any,
-  testDescriptors: any,
-  referenceDescriptors: any
+  cv: OpenCV,
+  testDescriptors: DescriptorMat,
+  referenceDescriptors: DescriptorMat
 ) {
   if (
     testDescriptors.empty() ||
@@ -495,7 +498,7 @@ export default function LandmarkTestPage() {
       `${landmarkName} 기준 사진 ${referenceImages.length}장과 특징점을 비교하고 있습니다.`
     );
 
-    let testDescriptors: any = null;
+    let testDescriptors: DescriptorMat | null = null;
 
     try {
       // Let the browser paint the loading overlay before CPU-intensive OpenCV work.
@@ -533,10 +536,6 @@ export default function LandmarkTestPage() {
 
       setResults(comparisonResults);
       const currentBestResult = comparisonResults[0];
-      const currentPassed =
-        currentBestResult !== undefined &&
-        currentBestResult.goodMatches >= goodMatchesThreshold &&
-        currentBestResult.matchRatio >= matchRatioThreshold;
 
       try {
         await saveRecognitionTestResult(currentBestResult?.goodMatches ?? 0, currentBestResult?.matchRatio ?? 0);
