@@ -4,6 +4,8 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 export const dynamic = "force-dynamic";
 
 function authorized(_request: NextRequest) {
+  // Prototype placeholder: production authorization must be implemented before public service.
+  void _request;
   return true;
 }
 
