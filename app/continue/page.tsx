@@ -1,24 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function ContinuePage() {
   const [token, setToken] = useState<string | null>(null);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const incomingRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     // Keep the secret out of subsequent navigation, referrers, and screenshots
     // of the address bar. URL fragments are not sent to the web server.
     const fragment = new URLSearchParams(window.location.hash.slice(1));
-    const incoming = fragment.get("token");
+    if (incomingRef.current === undefined) incomingRef.current = fragment.get("token");
+    const incoming = incomingRef.current;
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    // Hydrate the token from browser-only state; defer the render update.
+    const timer = window.setTimeout(() => {
     if (!incoming || !/^[a-f0-9]{64}$/.test(incoming)) {
       setStatus("유효한 이어하기 링크가 없습니다. 원래 브라우저에서 새 링크를 만들어주세요.");
       return;
     }
     setToken(incoming);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   async function receiveProgress() {
