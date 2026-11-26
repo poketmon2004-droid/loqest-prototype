@@ -286,7 +286,10 @@ export default function Home() {
   const progressVersionRef = useRef(0);
 
   useEffect(() => {
-    setPermissionGate(localStorage.getItem(PERMISSION_READY_KEY) === "true" ? "ready" : "required");
+    const timer = window.setTimeout(() => {
+      setPermissionGate(localStorage.getItem(PERMISSION_READY_KEY) === "true" ? "ready" : "required");
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   async function prepareTourPermissions() {
@@ -489,7 +492,7 @@ export default function Home() {
     );
   }, [badgeDateKey, badgeSeenKey]);
 
-  const [badgeEarnedAt, setBadgeEarnedAt] =
+  const [, setBadgeEarnedAt] =
     useState<string | null>(null);
 
   useEffect(() => {
@@ -503,6 +506,7 @@ export default function Home() {
 
         if (Array.isArray(parsed)) {
           const validIds = testLandmarks.map((landmark) => landmark.id);
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- restore browser-persisted test progress after hydration
           setCompletedTestLandmarks(
             parsed.filter(
               (id): id is string =>
@@ -547,7 +551,6 @@ export default function Home() {
         ...new Set(validSavedStamps),
       ];
 
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCompletedLandmarks(uniqueSavedStamps);
 
       if (
