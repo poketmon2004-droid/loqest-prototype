@@ -621,6 +621,8 @@ export default function LandmarkTestPage() {
 
         {selectedImage && !cameraActive && (
           <div style={styles.previewBox}>
+            {/* Browser-local photo preview: keep the original image without server optimization. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={selectedImage}
               alt="선택한 테스트 사진"
