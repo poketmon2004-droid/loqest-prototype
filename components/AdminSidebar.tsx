@@ -11,6 +11,8 @@ export default function AdminSidebar() {
   const [selected, setSelected] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
     const parts = pathname.split("/").filter(Boolean);
     const isGlobal = pathname === "/admin" || pathname === "/admin/tours/new";
     if (isGlobal) {
@@ -24,7 +26,6 @@ export default function AdminSidebar() {
       setSelected(null);
       return;
     }
-    let cancelled = false;
     localStorage.setItem("loqest_active_tour_id", tourId);
     setSelected({ id: tourId, name: "선택한 투어" });
     const key = getAdminApiKey();
@@ -36,7 +37,8 @@ export default function AdminSidebar() {
         if (cancelled) return;
         if (data?.tour?.name) setSelected({ id: tourId, name: data.tour.name });
       }).catch(() => {});
-    return () => { cancelled = true; };
+    }, 0);
+    return () => { cancelled = true; window.clearTimeout(timer); };
   }, [pathname]);
 
   const active = (path: string) => pathname === path || (path !== "/admin" && pathname.startsWith(path + "/"));
