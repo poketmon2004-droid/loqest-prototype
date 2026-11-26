@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function ContinuePage() {
@@ -68,7 +69,7 @@ export default function ContinuePage() {
           {loading ? "참여 기록 연결 중..." : "이 브라우저에서 이어하기"}
         </button>
         {status && <p role="alert" style={{ margin: "14px 0 0", color: "#a1322b", fontSize: "14px", lineHeight: 1.7 }}>{status}</p>}
-        <a href="/" style={{ display: "inline-block", marginTop: "22px", color: "#456174", fontSize: "14px" }}>처음부터 시작하기</a>
+        <Link href="/" style={{ display: "inline-block", marginTop: "22px", color: "#456174", fontSize: "14px" }}>처음부터 시작하기</Link>
       </section>
     </main>
   );
