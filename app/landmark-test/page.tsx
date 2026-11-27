@@ -10,14 +10,6 @@ import {
   getAdminApiKey,
 } from "@/lib/adminApiKey";
 
-const FALLBACK_LANDMARK_NAME = "노트북 키보드";
-
-const FALLBACK_REFERENCE_IMAGES = [
-  "/landmarks/home/reference/KakaoTalk_20260815_155103197_01.jpg",
-  "/landmarks/home/reference/KakaoTalk_20260815_155103197_02.jpg",
-  "/landmarks/home/reference/KakaoTalk_20260815_155103197_03.jpg",
-];
-
 const THRESHOLD = {
   goodMatches: 45,
   matchRatio: 30,
@@ -199,9 +191,9 @@ export default function LandmarkTestPage() {
       );
 
       if (!attractionId) {
-        setLandmarkName(FALLBACK_LANDMARK_NAME);
-        setReferenceImages(FALLBACK_REFERENCE_IMAGES);
-        setAttractionError("");
+        setLandmarkName("관광지");
+        setReferenceImages([]);
+        setAttractionError("관리자 화면에서 테스트할 퀘스트를 선택해주세요.");
         return;
       }
 
